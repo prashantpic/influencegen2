@@ -1,0 +1,36 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+# REQ-PAC-001: Model-level Access Control Lists (ACLs)
+
+# Access for Platform Administrator
+access_influence_gen_influencer_profile_admin,influence_gen.influencer_profile admin access,model_influence_gen_influencer_profile,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_kyc_data_admin,influence_gen.kyc_data admin access,model_influence_gen_kyc_data,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_campaign_admin,influence_gen.campaign admin access,model_influence_gen_campaign,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_campaign_application_admin,influence_gen.campaign_application admin access,model_influence_gen_campaign_application,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_content_submission_admin,influence_gen.content_submission admin access,model_influence_gen_content_submission,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_payment_record_admin,influence_gen.payment_record admin access,model_influence_gen_payment_record,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_ai_image_model_admin,influence_gen.ai_image_model admin access,model_influence_gen_ai_image_model,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_ai_prompt_template_admin,influence_gen.ai_prompt_template admin access,model_influence_gen_ai_prompt_template,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_ai_moderation_rule_admin,influence_gen.ai_moderation_rule admin access,model_influence_gen_ai_moderation_rule,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_data_retention_policy_admin,influence_gen.data_retention_policy admin access,model_influence_gen_data_retention_policy,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_legal_hold_admin,influence_gen.legal_hold admin access,model_influence_gen_legal_hold,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_alert_rule_admin,influence_gen.alert_rule admin access,model_influence_gen_alert_rule,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_maintenance_window_admin,influence_gen.maintenance_window admin access,model_influence_gen_maintenance_window,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_terms_version_admin,influence_gen.terms_version admin access,model_influence_gen_terms_version,group_influence_gen_platform_admin,1,1,1,1
+
+# Read-only access for logs by admin, creation by system
+access_influence_gen_audit_log_admin,influence_gen.audit_log admin access,model_influence_gen_audit_log,group_influence_gen_platform_admin,1,0,0,0
+access_influence_gen_usage_tracking_log_admin,influence_gen.usage_tracking_log admin access,model_influence_gen_usage_tracking_log,group_influence_gen_platform_admin,1,0,0,0
+
+# Wizard Models Access for Platform Administrator
+access_influence_gen_kyc_rejection_wizard_admin,influence_gen.kyc_rejection_wizard admin access,model_influence_gen_kyc_rejection_wizard,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_kyc_request_info_wizard_admin,influence_gen.kyc_request_info_wizard admin access,model_influence_gen_kyc_request_info_wizard,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_campaign_app_rejection_wizard_admin,influence_gen.campaign_app_rejection_wizard admin access,model_influence_gen_campaign_app_rejection_wizard,group_influence_gen_platform_admin,1,1,1,1
+access_influence_gen_content_revision_wizard_admin,influence_gen.content_revision_wizard admin access,model_influence_gen_content_revision_wizard,group_influence_gen_platform_admin,1,1,1,1
+
+# Access to Odoo's res.config.settings for platform admin
+# Note: The model 'influence_gen.config.settings' is a transient model inheriting 'res.config.settings'.
+# Access to 'res.config.settings' itself is typically managed by 'base.group_system' or 'base.group_erp_manager'.
+# If 'influence_gen.config.settings' is used directly in menus, it needs explicit access.
+# However, usually it's an action opening the standard settings view, which is already protected.
+# For direct access to a custom transient model inheriting res.config.settings:
+access_influence_gen_config_settings_admin,influence_gen.config.settings admin access,model_influence_gen_config_settings,group_influence_gen_platform_admin,1,1,1,1

@@ -1,0 +1,20 @@
+/*
+    InfluenceGen Admin Backend Custom Styles
+    REQ-UIUX-003: Custom Admin UI Styling
+    Add any custom SCSS/CSS rules here if needed.
+    Keep this minimal and leverage Odoo's utility classes and variables where possible.
+*/
+
+/* Example:
+.o_influence_gen_kpi_card {
+    border-left: 5px solid #7C7BAD; // Odoo primary color (example)
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.o_influence_gen_dashboard_title {
+    color: #333;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+*/
