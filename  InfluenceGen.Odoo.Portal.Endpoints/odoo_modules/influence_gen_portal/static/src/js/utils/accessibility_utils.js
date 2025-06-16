@@ -1,97 +1,91 @@
-odoo.define('influence_gen_portal.utils.accessibility', function (require) {
-'use strict';
+/** @odoo-module */
+
+import { _t } from "@web/core/l10n/translation";
 
 /**
- * Manages focus by attempting to set focus to the specified element.
- * @param {string} elementSelector - CSS selector for the target element.
+ * Utility functions for common accessibility tasks.
  */
-function manageFocus(elementSelector) {
-    try {
-        const el = document.querySelector(elementSelector);
+export const accessibilityUtils = {
+
+    /**
+     * Safely attempts to set keyboard focus to a specific element.
+     * Useful for managing focus after dynamic content changes or opening modals.
+     * @param {string|HTMLElement} element - CSS selector string or the actual HTMLElement.
+     */
+    manageFocus: function(element) {
+        let el;
+        if (typeof element === 'string') {
+            el = document.querySelector(element);
+        } else if (element instanceof HTMLElement) {
+            el = element;
+        }
+
         if (el && typeof el.focus === 'function') {
-            el.focus();
-        }
-    } catch (e) {
-        console.error(`Error trying to focus on element with selector: ${elementSelector}`, e);
-    }
-}
-
-/**
- * Announces a message to screen readers using an ARIA live region.
- * Creates or reuses a live region element.
- * @param {string} message - The message to be announced.
- * @param {string} [politeness='assertive'] - The politeness level ('assertive' or 'polite').
- */
-function announceToScreenReader(message, politeness = 'assertive') {
-    let liveRegion = document.getElementById('ig-sr-live-region');
-    if (!liveRegion) {
-        liveRegion = document.createElement('div');
-        liveRegion.id = 'ig-sr-live-region';
-        liveRegion.className = 'sr-only'; // Visually hidden
-        liveRegion.setAttribute('aria-live', politeness);
-        liveRegion.setAttribute('aria-atomic', 'true');
-        document.body.appendChild(liveRegion);
-    }
-
-    // Set politeness level before changing content
-    liveRegion.setAttribute('aria-live', politeness);
-
-    // Clear previous message before setting new one to ensure it's announced
-    liveRegion.textContent = '';
-    // Use a timeout to ensure the clear is processed before the new message
-    setTimeout(() => {
-        liveRegion.textContent = message;
-    }, 100); // Small delay might be needed for some screen readers
-}
-
-/**
- * Calculates the contrast ratio between two colors.
- * Useful for development to check if color combinations meet WCAG AA/AAA.
- * Not typically used at runtime for dynamic content adjustment in this context.
- * @param {string} fgColor - Foreground color (e.g., '#RRGGBB' or 'rgb(r,g,b)').
- * @param {string} bgColor - Background color (e.g., '#RRGGBB' or 'rgb(r,g,b)').
- * @returns {number} The contrast ratio.
- */
-function checkColorContrast(fgColor, bgColor) {
-    // Helper to parse color string to RGB array
-    function parseColor(colorStr) {
-        if (colorStr.startsWith('#')) {
-            const hex = colorStr.substring(1);
-            const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.substring(0, 2), 16);
-            const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.substring(2, 4), 16);
-            const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.substring(4, 6), 16);
-            return [r, g, b];
-        } else if (colorStr.startsWith('rgb')) {
-            const match = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-            if (match) {
-                return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
+            try {
+                 // Use requestAnimationFrame to ensure the element is visible and rendered
+                 requestAnimationFrame(() => {
+                     el.focus({ preventScroll: true }); // preventScroll is a good option
+                     // Optional: add an outline or highlight for a moment for visual confirmation
+                     // el.style.outline = '2px solid blue'; setTimeout(() => el.style.outline = '', 500);
+                 });
+            } catch (e) {
+                console.error("Failed to set focus:", e);
             }
+        } else {
+            console.warn("manageFocus: Element not found or not focusable.", element);
         }
-        console.warn('Invalid color format for contrast check:', colorStr);
-        return [0, 0, 0]; // Default to black on error
-    }
+    },
 
-    // Helper to calculate luminance
-    function getLuminance(rgb) {
-        const [r, g, b] = rgb.map(val => {
-            const srgb = val / 255;
-            return (srgb <= 0.03928) ? srgb / 12.92 : Math.pow((srgb + 0.055) / 1.055, 2.4);
-        });
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    }
+    /**
+     * Announces a message to screen readers using an ARIA live region.
+     * Create a live region element in your layout if one doesn't exist.
+     * Example HTML: <div id="live-region" aria-live="polite" class="visually-hidden"></div>
+     * @param {string} message - The message to announce.
+     * @param {'polite'|'assertive'} [priority='polite'] - The urgency of the message. 'polite' waits for user inactivity, 'assertive' interrupts immediately.
+     */
+    announceToScreenReader: function(message, priority = 'polite') {
+        let liveRegion = document.getElementById('o_live_region'); // Standard Odoo ID for live region
+        if (!liveRegion) {
+            // Create a visually hidden live region if it doesn't exist
+            liveRegion = document.createElement('div');
+            liveRegion.setAttribute('id', 'o_live_region');
+            liveRegion.classList.add('visually-hidden'); // Use Odoo's/Bootstrap's hidden class
+            liveRegion.setAttribute('role', 'status'); // More specific role
+            document.body.appendChild(liveRegion);
+        }
+         liveRegion.setAttribute('aria-live', priority);
+        // Using innerHTML to ensure screen readers pick up changes consistently
+        liveRegion.innerHTML = ''; // Clear previous message
+        const messageNode = document.createTextNode(message);
+        liveRegion.appendChild(messageNode);
 
-    const fgLuminance = getLuminance(parseColor(fgColor));
-    const bgLuminance = getLuminance(parseColor(bgColor));
+         // Optionally clear after a longer delay, but typically screen readers handle this.
+         // setTimeout(() => {
+         //      if (liveRegion.contains(messageNode)) {
+         //          liveRegion.removeChild(messageNode);
+         //      }
+         // }, 5000); // Adjust delay as needed, or remove clearing logic
+    },
 
-    const ratio = (Math.max(fgLuminance, bgLuminance) + 0.05) / (Math.min(fgLuminance, bgLuminance) + 0.05);
-    return parseFloat(ratio.toFixed(2));
-}
+     /**
+      * Placeholder for color contrast check (usually done in design/CSS, but can be useful programmatically)
+      * This is complex and typically relies on browser APIs or dedicated libraries.
+      * Not implemented here, but serves as a note.
+      * @param {string} fgColor - Foreground color (e.g., #RRGGBB or rgba()).
+      * @param {string} bgColor - Background color.
+      * @returns {number} - Contrast ratio.
+      */
+     checkColorContrast: function(fgColor, bgColor) {
+         console.warn("checkColorContrast utility is a placeholder. Contrast should be checked during design and QA using browser developer tools or specialized accessibility checkers.");
+         // Implementation would involve converting colors to RGB, calculating luminance, and then contrast ratio.
+         return 0; // Placeholder
+     },
 
-
-return {
-    manageFocus: manageFocus,
-    announceToScreenReader: announceToScreenReader,
-    checkColorContrast: checkColorContrast,
+     // Add other utilities like managing ARIA attributes for dynamic elements if needed.
 };
 
-});
+// Register as an Odoo JS module if needed
+// odoo.define('influence_gen_portal.utils.accessibility', function (require) {
+//     'use strict';
+//     return accessibilityUtils;
+// });

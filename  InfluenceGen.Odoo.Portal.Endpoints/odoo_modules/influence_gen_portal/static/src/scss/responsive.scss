@@ -1,104 +1,99 @@
-// InfluenceGen Portal Responsive SCSS
+/* odoo_modules/influence_gen_portal/static/src/scss/responsive.scss */
 
-// Odoo's Bootstrap 5 based framework provides extensive responsive utilities
-// (e.g., .d-none, .d-md-block, .col-md-6, .text-center, etc.).
-// This file should primarily contain custom responsive adjustments
-// for InfluenceGen portal specific components or layouts if Odoo's
-// utilities are not sufficient or need overrides.
+// Import Odoo's standard Bootstrap variables if needed for breakpoints
+@import 'web/static/src/scss/bs_variables'; // Provides $grid-breakpoints
+@import 'web/static/src/scss/mixins'; // Provides media-breakpoint-up/down
 
-// Common Breakpoints (align with Bootstrap 5 or customize)
-// Small devices (landscape phones, 576px and up)
-// @media (min-width: 576px) { ... }
+// Define responsive styles using media queries
+// Use Odoo/Bootstrap breakpoints: xs, sm, md, lg, xl, xxl
 
-// Medium devices (tablets, 768px and up)
-// @media (min-width: 768px) { ... }
+// Example: Adjust padding on small screens for the main content container
+@include media-breakpoint-down(sm) {
+    .o_portal_my_doc_container {
+        padding: $o-horizontal-padding; // Reduce padding on smaller screens
+    }
 
-// Large devices (desktops, 992px and up)
-// @media (min-width: 992px) { ... }
-
-// Extra large devices (large desktops, 1200px and up)
-// @media (min-width: 1200px) { ... }
-
-// Example: Adjusting portal navigation for smaller screens
-// This might be handled by Odoo's portal layout or website navbar by default.
-// If custom navigation is built:
-// .o_influence_gen_portal {
-//   .portal-navigation-main {
-//     @media (max-width: 991.98px) { // Below large breakpoint
-//       // Example: Collapse to a hamburger menu
-//       // display: none; // Hide desktop nav
-//     }
-//   }
-//   .portal-navigation-mobile-toggle {
-//     @media (min-width: 992px) {
-//       // display: none; // Hide mobile toggle on desktop
-//     }
-//   }
-// }
-
-// Example: Responsive adjustments for a custom dashboard widget
-// .igp-dashboard-widget {
-//   @media (max-width: 767.98px) { // Below medium breakpoint
-//     // Make widgets full width on smaller screens
-//     flex-basis: 100%;
-//     margin-bottom: 1rem;
-//   }
-// }
-
-// Example: Font size adjustments for smaller screens
-// body.o_influence_gen_portal {
-//   @media (max-width: 575.98px) { // Extra small devices
-//     font-size: 14px; // Slightly smaller base font size
-//     h1 {
-//       font-size: 2rem; // Adjust heading sizes
-//     }
-//   }
-// }
-
-// Example: Form layouts for onboarding on mobile
-// .onboarding-form-container {
-//   .form-group {
-//     @media (max-width: 767.98px) {
-//       // Stack form elements if they are side-by-side on desktop
-//       flex-direction: column;
-//       align-items: flex-start;
-//
-//       label, input, select, textarea {
-//         width: 100%;
-//         margin-bottom: 0.5rem;
-//       }
-//     }
-//   }
-// }
-
-// Ensure content like tables are scrollable on small screens if they overflow
-.table-responsive-igp { // Custom class if needed beyond Bootstrap's .table-responsive
-  @media (max-width: 767.98px) {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+    .o_portal_header h1,
+    .o_portal_my_doc_container h1 {
+        font-size: 1.75rem; // Slightly smaller H1 on mobile
+    }
+     .o_portal_header h2,
+    .o_portal_my_doc_container h2 {
+        font-size: 1.4rem; // Slightly smaller H2 on mobile
+    }
 }
 
-// Adjustments for specific components like AI Image Generator on mobile
-// .ai-image-generator-component {
-//   .parameter-controls {
-//     @media (max-width: 767.98px) {
-//       // Stack controls vertically
-//       flex-direction: column;
-//       .param-group {
-//         width: 100%;
-//         margin-bottom: 10px;
-//       }
-//     }
-//   }
-//   .generated-images-grid {
-//      @media (max-width: 575.98px) {
-//        // Single column image display
-//        grid-template-columns: 1fr;
-//      }
-//   }
-// }
+// Example: Stack columns or adjust layout for medium screens and below
+@include media-breakpoint-down(md) {
+    .o_portal_my_doc_container {
+        // If using Bootstrap rows/cols, they should be responsive by default (e.g., col-md-6 becomes col-12)
+        // This section can be for custom elements that don't use Bootstrap grid.
+    }
 
-// Placeholder for further responsive styles
+    // Example: For the AI Image Generator parameter grid
+    .o_influencegen_ai_image_generator {
+        .row.g-3 > [class*="col-md-"] { // Target columns designed for medium screens
+            flex-basis: 100%; // Make them full width on smaller screens
+            max-width: 100%;
+            margin-bottom: $grid-gutter-width * 0.5; // Add some space if stacked
+        }
+    }
+
+    // Example: For the AI Image Generator results grid
+    .o_influencegen_ai_image_generator {
+        .row > .col-md-4.col-sm-6 { // Target generated image cards
+            @include media-breakpoint-down(sm) { // On extra small to small, make them full width
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+        }
+    }
+
+    // Make tables scrollable on smaller screens if they are too wide
+    // Bootstrap's .table-responsive class should be used on the table's parent div in QWeb.
+    // This SCSS can ensure it works as expected or add further styling.
+    .table-responsive {
+        // Bootstrap handles this well. Can add custom scrollbar styles if desired.
+    }
+}
+
+// Example: Specific adjustments for larger screens
+@include media-breakpoint-up(lg) {
+    .o_portal_my_doc_container {
+        // Potentially increase padding or max-width for very large screens
+    }
+}
+
+// Specific component responsiveness not covered by Bootstrap grid
+// E.g., custom dashboard widgets
+.o_portal_dashboard {
+    .card {
+        @include media-breakpoint-down(sm) {
+            // Make cards full width on very small screens
+        }
+    }
+}
+
+// Adjust tab navigation for small screens if default Bootstrap tabs become too crowded
+.nav-tabs {
+    @include media-breakpoint-down(sm) {
+        // Consider making tabs scrollable horizontally or stacked
+        // display: flex;
+        // flex-wrap: nowrap;
+        // overflow-x: auto;
+        // -webkit-overflow-scrolling: touch; /* for smoother scrolling on iOS */
+        // .nav-item {
+        //     white-space: nowrap;
+        // }
+
+        // Or stack them:
+        // .nav-item {
+        //     width: 100%;
+        //     .nav-link {
+        //         border-bottom-left-radius: 0;
+        //         border-bottom-right-radius: 0;
+        //         border-right: $nav-tabs-border-width solid $nav-tabs-border-color; // Match Odoo/Bootstrap style
+        //     }
+        // }
+    }
+}

@@ -1,34 +1,47 @@
+<!-- odoo_modules/influence_gen_portal/views/assets.xml -->
 <odoo>
     <data>
+        <!-- Asset bundle for frontend portal assets -->
         <template id="assets_frontend_influence_gen" name="InfluenceGen Portal Assets" inherit_id="web.assets_frontend">
             <xpath expr="." position="inside">
+                <!-- SCSS -->
                 <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/portal_main.scss"/>
-                <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/accessibility.scss"/>
-                <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/responsive.scss"/>
-                <!-- Add component-specific SCSS if they are standalone, e.g. -->
-                <!-- <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/components/ai_image_generator.scss"/> -->
+                <!-- accessibility.scss and responsive.scss are imported by portal_main.scss -->
 
+                <!-- JS Services -->
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/services/portal_service.js"></script>
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/services/ai_image_service.js"></script>
 
+                <!-- JS Utilities -->
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/utils/accessibility_utils.js"></script>
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/utils/localization_utils.js"></script>
-                
-                <!-- OWL Components (JS) -->
+
+                <!-- OWL Components JS (should be loaded after core Odoo assets and services) -->
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/components/abstract_form_component.js"></script>
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/components/file_uploader_component.js"></script>
                 <script type="text/javascript" src="/influence_gen_portal/static/src/js/components/ai_image_generator_component.js"></script>
-                
-                <!-- Main portal JS, if any orchestrating logic -->
-                <script type="text/javascript" src="/influence_gen_portal/static/src/js/portal_main.js"></script>
+
+                <!-- Main portal JS, if any -->
+                <!-- <script type="text/javascript" src="/influence_gen_portal/static/src/js/portal_main.js"></script> -->
             </xpath>
         </template>
 
-        <template id="assets_qweb_influence_gen" name="InfluenceGen Portal QWeb Assets" inherit_id="web.assets_qweb">
+        <!-- Asset bundle for OWL component templates -->
+        <!-- Note: SDS specified these files to be loaded into 'web.assets_qweb' in __manifest__.py
+             The `src` attribute for <template> tag is for QWeb templates, not XML file paths directly for OWL.
+             The manifest entry under 'web.assets_qweb' is the correct way to load OWL XML templates.
+             This assets.xml is usually for CSS/JS.
+             However, to match SDS 4.3.14 (even if slightly unusual for OWL XML compared to manifest),
+             it's included here. The __manifest__.py method is generally preferred for OWL XML.
+             For OWL2, components define their templates internally or via separate XML files loaded in the manifest.
+             The 'web.assets_qweb' in manifest is the primary mechanism.
+        -->
+        <template id="assets_qweb_influence_gen_components" name="InfluenceGen Portal Component QWeb Assets" inherit_id="web.assets_qweb">
             <xpath expr="." position="inside">
                 <template src="/influence_gen_portal/static/src/xml/components/abstract_form_component.xml"/>
                 <template src="/influence_gen_portal/static/src/xml/components/file_uploader_component.xml"/>
                 <template src="/influence_gen_portal/static/src/xml/components/ai_image_generator_component.xml"/>
+                <!-- Add other component XML templates here -->
             </xpath>
         </template>
     </data>

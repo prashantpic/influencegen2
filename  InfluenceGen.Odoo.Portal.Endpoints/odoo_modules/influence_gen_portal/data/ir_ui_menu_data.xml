@@ -1,88 +1,98 @@
+<!-- odoo_modules/influence_gen_portal/data/ir_ui_menu_data.xml -->
 <odoo>
-    <data noupdate="1"> <!-- noupdate="1" to prevent overriding on module update if customized -->
+    <data noupdate="1">
+        <!-- Main Portal Menu for InfluenceGen -->
+        <!-- Parent menu is portal.portal_my_home which is the 'My Account' dropdown -->
 
-        <!-- Main Portal Menu Parent (from Odoo's portal module) -->
-        <!-- This assumes portal.portal_my_home is the main entry point for user-specific portal menus -->
-
-        <!-- Dashboard -->
+        <menuitem name="Dashboard"
+                  id="menu_influence_gen_dashboard"
+                  parent="portal.portal_my_home"
+                  sequence="10"
+                  action="action_influence_gen_dashboard"/>
         <record id="action_influence_gen_dashboard" model="ir.actions.act_url">
             <field name="name">Dashboard</field>
             <field name="url">/my/dashboard</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="My Dashboard" id="menu_influence_gen_dashboard"
-                  parent="portal.portal_my_home" sequence="10"
-                  action="action_influence_gen_dashboard"/>
 
-        <!-- Profile -->
+        <menuitem name="My Profile"
+                  id="menu_influence_gen_profile"
+                  parent="portal.portal_my_home"
+                  sequence="20"
+                  action="action_influence_gen_profile"/>
         <record id="action_influence_gen_profile" model="ir.actions.act_url">
             <field name="name">My Profile</field>
             <field name="url">/my/profile</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="My Profile" id="menu_influence_gen_profile"
-                  parent="portal.portal_my_home" sequence="20"
-                  action="action_influence_gen_profile"/>
 
-        <!-- Campaigns -->
+        <menuitem name="Campaigns"
+                  id="menu_influence_gen_campaigns"
+                  parent="portal.portal_my_home"
+                  sequence="30"
+                  action="action_influence_gen_campaigns"/>
         <record id="action_influence_gen_campaigns" model="ir.actions.act_url">
             <field name="name">Campaigns</field>
             <field name="url">/my/campaigns</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="Campaigns" id="menu_influence_gen_campaigns"
-                  parent="portal.portal_my_home" sequence="30"
-                  action="action_influence_gen_campaigns"/>
 
-        <!-- AI Image Generator -->
+        <menuitem name="AI Image Generator"
+                  id="menu_influence_gen_ai_image"
+                  parent="portal.portal_my_home"
+                  sequence="40"
+                  action="action_influence_gen_ai_image"/>
         <record id="action_influence_gen_ai_image" model="ir.actions.act_url">
             <field name="name">AI Image Generator</field>
             <field name="url">/my/ai-image-generator</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="AI Image Generator" id="menu_influence_gen_ai_image"
-                  parent="portal.portal_my_home" sequence="40"
-                  action="action_influence_gen_ai_image"/>
 
-        <!-- Payments -->
+        <menuitem name="Payments"
+                  id="menu_influence_gen_payments"
+                  parent="portal.portal_my_home"
+                  sequence="50"
+                  action="action_influence_gen_payments"/>
         <record id="action_influence_gen_payments" model="ir.actions.act_url">
             <field name="name">Payments</field>
             <field name="url">/my/payments</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="Payments" id="menu_influence_gen_payments"
-                  parent="portal.portal_my_home" sequence="50"
-                  action="action_influence_gen_payments"/>
 
-        <!-- Performance -->
+        <menuitem name="Performance"
+                  id="menu_influence_gen_performance"
+                  parent="portal.portal_my_home"
+                  sequence="60"
+                  action="action_influence_gen_performance"/>
         <record id="action_influence_gen_performance" model="ir.actions.act_url">
             <field name="name">Performance</field>
             <field name="url">/my/performance</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="Performance" id="menu_influence_gen_performance"
-                  parent="portal.portal_my_home" sequence="60"
-                  action="action_influence_gen_performance"/>
-        
-        <!-- Consent Management -->
+
+        <menuitem name="Terms &amp; Consent"
+                  id="menu_influence_gen_consent"
+                  parent="portal.portal_my_home"
+                  sequence="70"
+                  action="action_influence_gen_consent"/>
         <record id="action_influence_gen_consent" model="ir.actions.act_url">
             <field name="name">Terms &amp; Consent</field>
             <field name="url">/my/consent</field>
             <field name="target">self</field>
         </record>
-        <menuitem name="Terms &amp; Consent" id="menu_influence_gen_consent"
-                  parent="portal.portal_my_home" sequence="70"
-                  action="action_influence_gen_consent"/>
 
-        <!-- Help & Documentation -->
+        <!-- Add Help/Documentation link if it's an external URL or a specific portal page -->
+        <!-- Example: Link to a knowledge base page -->
+        <menuitem name="Help &amp; Documentation"
+                  id="menu_influence_gen_help"
+                  parent="portal.portal_my_home"
+                  sequence="100"
+                  action="action_influence_gen_help_kb"/>
         <record id="action_influence_gen_help_kb" model="ir.actions.act_url">
             <field name="name">Help &amp; Documentation</field>
-            <field name="url">/help/influencegen</field> <!-- Example URL, adjust as needed -->
-            <field name="target">self</field> <!-- Or 'new' if it's an external site -->
+            <field name="url">/help/influencegen</field> <!-- Example URL for KB, adjust as needed -->
+            <field name="target">self</field> <!-- Or _blank for external site -->
         </record>
-         <menuitem name="Help &amp; Documentation" id="menu_influence_gen_help"
-                  parent="portal.portal_my_home" sequence="100"
-                  action="action_influence_gen_help_kb"/>
 
     </data>
 </odoo>
