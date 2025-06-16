@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            IMPORTANT: These are placeholders. In a production environment,
+            these sensitive values MUST NOT be committed to version control
+            with real values. They should be set via environment variables,
+            Odoo's secrets management (Odoo Enterprise), or an external vault
+            and configured manually in Odoo's System Parameters after installation.
+            REQ-IL-008 mandates secure credential storage.
+        -->
+
+        <record id="n8n_webhook_url_param" model="ir.config_parameter">
+            <field name="key">influence_gen.n8n_webhook_url</field>
+            <field name="value">PLACEHOLDER_YOUR_N8N_WEBHOOK_URL_FOR_AI_GENERATION</field>
+        </record>
+
+        <record id="n8n_api_key_param" model="ir.config_parameter">
+            <field name="key">influence_gen.n8n_api_key</field>
+            <field name="value">PLACEHOLDER_YOUR_N8N_API_KEY_FOR_ODOO_TO_CALL_N8N</field>
+        </record>
+
+        <record id="n8n_callback_token_param" model="ir.config_parameter">
+            <field name="key">influence_gen.n8n_callback_token</field>
+            <field name="value">PLACEHOLDER_A_STRONG_SHARED_SECRET_FOR_N8N_TO_CALL_ODOO</field>
+        </record>
+
+         <record id="odoo_to_n8n_secret_token_param" model="ir.config_parameter">
+            <field name="key">influence_gen.odoo_to_n8n_secret_token</field>
+            <field name="value">PLACEHOLDER_A_STRONG_SHARED_SECRET_FOR_ODOO_TO_CALL_N8N_WEBHOOKS</field>
+        </record>
+
+    </data>
+</odoo>
