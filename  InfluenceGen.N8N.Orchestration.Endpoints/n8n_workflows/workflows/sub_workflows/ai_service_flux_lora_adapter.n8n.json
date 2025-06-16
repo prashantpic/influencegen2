@@ -1,0 +1,141 @@
+```json
+{
+  "name": "ai_service_flux_lora_adapter",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "guid-node-1",
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const InfluenceGen = {\n    N8N: {\n        Utils: {\n            Logging: {\n                formatLogEntry: function(level, message, context) {\n                    const logEntry = {\n                        timestamp: new Date().toISOString(),\n                        level: level,\n                        message: message,\n                        n8n: {\n                            executionId: context.workflowInstance && context.workflowInstance.id ? context.workflowInstance.id : 'UNKNOWN_EXECUTION_ID',\n                            workflowId: context.workflowInstance && context.workflowInstance.workflowId ? context.workflowInstance.workflowId : 'UNKNOWN_WORKFLOW_ID',\n                            nodeName: context.nodeName || 'UNKNOWN_NODE',\n                        },\n                        correlationId: context.correlationId || 'UNKNOWN_CORRELATION_ID',\n                    };\n                    if (context.data) {\n                        Object.assign(logEntry, context.data);\n                    } else if (context.payload) {\n                         Object.assign(logEntry, context.payload);\n                    }\n                    return logEntry;\n                },\n                logInfo: function(workflowInstance, nodeName, correlationId, message, data = {}) {\n                    const context = { workflowInstance, nodeName, correlationId, data };\n                    const logEntry = this.formatLogEntry(\"INFO\", message, context);\n                    console.log(JSON.stringify(logEntry));\n                },\n                logError: function(workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) {\n                    const context = { workflowInstance, nodeName, correlationId, data: errorDetails }; \n                    const logEntry = this.formatLogEntry(\"ERROR\", errorMessage, context);\n                    console.log(JSON.stringify(logEntry));\n                }\n            }\n        }\n    }\n};\nconst logging = InfluenceGen.N8N.Utils.Logging;\n\n// --- Main logic ---\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\nconst inputData = items[0].json;\nconst correlationId = inputData.correlationId || 'UNKNOWN_CORRELATION_ID_ADAPTER';\n\nlogging.logInfo(wfInstance, nodeName, correlationId, \"Flux LoRA Adapter: Request received\", { input: inputData });\n\nreturn items;"
+      },
+      "id": "guid-node-2",
+      "name": "Log Request Received",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "const InfluenceGen = {\n    N8N: {\n        Utils: {\n            Logging: {\n                formatLogEntry: function(level, message, context) {\n                    const logEntry = {\n                        timestamp: new Date().toISOString(),\n                        level: level,\n                        message: message,\n                        n8n: {\n                            executionId: context.workflowInstance && context.workflowInstance.id ? context.workflowInstance.id : 'UNKNOWN_EXECUTION_ID',\n                            workflowId: context.workflowInstance && context.workflowInstance.workflowId ? context.workflowInstance.workflowId : 'UNKNOWN_WORKFLOW_ID',\n                            nodeName: context.nodeName || 'UNKNOWN_NODE',\n                        },\n                        correlationId: context.correlationId || 'UNKNOWN_CORRELATION_ID',\n                    };\n                    if (context.data) {\n                        Object.assign(logEntry, context.data);\n                    } else if (context.payload) {\n                         Object.assign(logEntry, context.payload);\n                    }\n                    return logEntry;\n                },\n                logInfo: function(workflowInstance, nodeName, correlationId, message, data = {}) {\n                    const context = { workflowInstance, nodeName, correlationId, data };\n                    const logEntry = this.formatLogEntry(\"INFO\", message, context);\n                    console.log(JSON.stringify(logEntry));\n                },\n                logError: function(workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) {\n                    const context = { workflowInstance, nodeName, correlationId, data: errorDetails }; \n                    const logEntry = this.formatLogEntry(\"ERROR\", errorMessage, context);\n                    console.log(JSON.stringify(logEntry));\n                }\n            }\n        }\n    }\n};\nconst logging = InfluenceGen.N8N.Utils.Logging;\n\n// --- Main logic ---\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\nconst input = items[0].json;\nconst correlationId = input.correlationId || 'UNKNOWN_CORRELATION_ID_ADAPTER_MAPPING';\n\nconst aiServicePayload = {\n  text_prompt: input.prompt,\n  neg_prompt: input.negative_prompt,\n  model: input.model_identifier,\n  width: input.resolution ? parseInt(input.resolution.split('x')[0]) : 1024,\n  height: input.resolution ? parseInt(input.resolution.split('x')[1]) : 1024,\n};\n\nif (input.seed !== undefined && input.seed !== null) {\n  aiServicePayload.seed = input.seed;\n}\nif (input.inference_steps !== undefined && input.inference_steps !== null) {\n  aiServicePayload.steps = input.inference_steps; \n}\nif (input.cfg_scale !== undefined && input.cfg_scale !== null) {\n  aiServicePayload.cfg_scale = input.cfg_scale; \n}\n\nconst loggablePayload = { ...aiServicePayload };\nlogging.logInfo(wfInstance, nodeName, correlationId, \"Flux LoRA Adapter: Parameters mapped for AI service\", { mapped_payload: loggablePayload });\n\nreturn [{ json: { aiServicePayload, originalInput: input } }];"
+      },
+      "id": "guid-node-3",
+      "name": "Parameter Mapping",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.originalInput.ai_service_base_url }}/generate",
+        "authentication": "genericCredential",
+        "nodeCredential": {
+          "credentialName": "={{ $json.originalInput.api_credential_name }}"
+        },
+        "requestMethod": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ JSON.stringify($json.aiServicePayload) }}",
+        "options": {
+          "timeout": 120000,
+          "ignoreSSL": false,
+          "fullResponse": true
+        }
+      },
+      "id": "guid-node-4",
+      "name": "Call Flux LoRA AI Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        850,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "functionCode": "const InfluenceGen = {\n    N8N: {\n        Utils: {\n            Logging: {\n                formatLogEntry: function(level, message, context) {\n                    const logEntry = {\n                        timestamp: new Date().toISOString(),\n                        level: level,\n                        message: message,\n                        n8n: {\n                            executionId: context.workflowInstance && context.workflowInstance.id ? context.workflowInstance.id : 'UNKNOWN_EXECUTION_ID',\n                            workflowId: context.workflowInstance && context.workflowInstance.workflowId ? context.workflowInstance.workflowId : 'UNKNOWN_WORKFLOW_ID',\n                            nodeName: context.nodeName || 'UNKNOWN_NODE',\n                        },\n                        correlationId: context.correlationId || 'UNKNOWN_CORRELATION_ID',\n                    };\n                    if (context.data) {\n                        Object.assign(logEntry, context.data);\n                    } else if (context.payload) {\n                         Object.assign(logEntry, context.payload);\n                    }\n                    return logEntry;\n                },\n                logInfo: function(workflowInstance, nodeName, correlationId, message, data = {}) {\n                    const context = { workflowInstance, nodeName, correlationId, data };\n                    const logEntry = this.formatLogEntry(\"INFO\", message, context);\n                    console.log(JSON.stringify(logEntry));\n                },\n                logError: function(workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) {\n                    const context = { workflowInstance, nodeName, correlationId, data: errorDetails }; \n                    const logEntry = this.formatLogEntry(\"ERROR\", errorMessage, context);\n                    console.log(JSON.stringify(logEntry));\n                }\n            }\n        }\n    }\n};\nconst logging = InfluenceGen.N8N.Utils.Logging;\n\n// --- Main logic ---\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\n\nconst httpNodeOutput = items[0].json;\nconst originalInput = httpNodeOutput.originalInput;\nconst correlationId = originalInput.correlationId || 'UNKNOWN_CORRELATION_ID_ADAPTER_RESPONSE';\n\nlet outputData;\n\nif (httpNodeOutput.error) {\n    const errorMessage = httpNodeOutput.error.message || \"HTTP Request node failed before getting a response.\";\n    const errorCode = httpNodeOutput.error.code || \"ADAPTER_HTTP_NODE_ERROR\";\n    outputData = {\n        status: \"error\",\n        errorCode: errorCode,\n        errorMessage: errorMessage,\n        errorDetails: httpNodeOutput.error\n    };\n    logging.logError(wfInstance, nodeName, correlationId, `Flux LoRA Adapter: AI Service call failed (HTTP Node Error) - ${errorMessage}`, { error: outputData, request_payload: httpNodeOutput.aiServicePayload });\n} else if (httpNodeOutput.response && httpNodeOutput.response.statusCode >= 200 && httpNodeOutput.response.statusCode < 300) {\n    const aiResponseBody = httpNodeOutput.response.body;\n\n    const imageUrl = aiResponseBody.images && aiResponseBody.images[0] && aiResponseBody.images[0].url ? aiResponseBody.images[0].url : null;\n    const imageData = aiResponseBody.images && aiResponseBody.images[0] && aiResponseBody.images[0].base64 ? aiResponseBody.images[0].base64 : null;\n    let contentType = 'unknown';\n    if (imageUrl) {\n        contentType = 'image/url_reference';\n    } else if (imageData) {\n        contentType = (aiResponseBody.images && aiResponseBody.images[0] && aiResponseBody.images[0].content_type) ? aiResponseBody.images[0].content_type : 'image/png_base64';\n    }\n    const metadata = aiResponseBody.metadata || (aiResponseBody.images && aiResponseBody.images[0] && aiResponseBody.images[0].metadata) || {};\n\n    if (!imageUrl && !imageData) {\n         outputData = {\n            status: \"error\",\n            errorCode: \"ADAPTER_NO_IMAGE_DATA\",\n            errorMessage: \"AI service call successful but no image URL or data found in response.\"\n        };\n        logging.logError(wfInstance, nodeName, correlationId, \"Flux LoRA Adapter: AI Service call successful but no image data.\", { response_body: aiResponseBody, output: outputData });\n    } else {\n        outputData = {\n            status: \"success\",\n            imageUrl: imageUrl,\n            imageData: imageData,\n            contentType: contentType,\n            metadata: metadata\n        };\n        const loggableOutput = {...outputData};\n        if (loggableOutput.imageData && typeof loggableOutput.imageData === 'string') {\n            loggableOutput.imageData = loggableOutput.imageData.substring(0, 100) + '... [truncated]';\n        }\n        logging.logInfo(wfInstance, nodeName, correlationId, \"Flux LoRA Adapter: AI Service call successful\", { output: loggableOutput });\n    }\n} else {\n    const statusCode = httpNodeOutput.response ? httpNodeOutput.response.statusCode : \"N/A\";\n    const responseBody = httpNodeOutput.response ? httpNodeOutput.response.body : \"No response body\";\n    let serviceErrorMessage = \"AI service call failed or timed out.\";\n    let serviceErrorCode = `ADAPTER_AI_CALL_FAILED_${statusCode}`;\n\n    if (responseBody && typeof responseBody === 'object' && responseBody.error) {\n        serviceErrorMessage = typeof responseBody.error === 'object' ? JSON.stringify(responseBody.error) : String(responseBody.error);\n        if (responseBody.error_code) serviceErrorCode = String(responseBody.error_code);\n    } else if (typeof responseBody === 'string' && responseBody.length > 0) {\n        serviceErrorMessage = responseBody.substring(0, 500);\n    } else if (responseBody) {\n        try { serviceErrorMessage = JSON.stringify(responseBody).substring(0,500); } catch (e) { serviceErrorMessage = 'Failed to stringify response body.'; }\n    }\n\n    outputData = {\n        status: \"error\",\n        errorCode: serviceErrorCode,\n        errorMessage: serviceErrorMessage,\n        rawResponse: {\n            statusCode: statusCode,\n            bodyPreview: typeof responseBody === 'string' ? responseBody.substring(0,200) : (responseBody ? JSON.stringify(responseBody).substring(0,200) : null)\n        }\n    };\n    logging.logError(wfInstance, nodeName, correlationId, `Flux LoRA Adapter: AI Service call failed - ${serviceErrorMessage}`, { error: outputData, request_payload: httpNodeOutput.aiServicePayload, response_status: statusCode, response_body: responseBody });\n}\n\nreturn [{ json: outputData }];"
+      },
+      "id": "guid-node-5",
+      "name": "Process AI Service Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ],
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Log Request Received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Request Received": {
+      "main": [
+        [
+          {
+            "node": "Parameter Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parameter Mapping": {
+      "main": [
+        [
+          {
+            "node": "Call Flux LoRA AI Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Flux LoRA AI Service": {
+      "main": [
+        [
+          {
+            "node": "Process AI Service Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": "guid-workflow-flux-adapter",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [],
+  "versionId": "placeholder-version-id"
+}
+```
