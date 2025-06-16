@@ -2,77 +2,113 @@
     <data>
         <template id="portal_campaign_discovery_list" name="Campaign Discovery">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/campaigns', 'text': _t('Campaigns')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('Discover Campaigns')"/></h1>
-                    </t>
+                <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                <t t-call="portal.portal_common">
+                     <t t-call="portal.portal_header">
+                          <t t-set="title"><t t-esc="_('Discover Campaigns')"/></t>
+                     </t>
+
+                     <div class="o_portal_my_doc_container">
+                         <h2 class="mb-3"><t t-esc="_('Available Campaigns')"/></h2>
+
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
+
+                         <!-- Search, Filter, Sort Controls -->
+                         <div class="row mb-4 align-items-center">
+                             <div class="col-lg-5 mb-2 mb-lg-0">
+                                  <form action="/my/campaigns" method="get" class="d-flex">
+                                       <input type="text" name="search" class="form-control me-2" t-att-value="search" placeholder="Search campaigns..."/>
+                                       <!-- Keep existing filters/sort in hidden inputs -->
+                                      <t t-foreach="filter_args" t-as="key_val" t-key="key_val[0]">
+                                           <t t-if="key_val[0] != 'search'">
+                                                <input type="hidden" t-att-name="key_val[0]" t-att-value="key_val[1]"/>
+                                           </t>
+                                       </t>
+                                       <t t-if="sort_by"><input type="hidden" name="sort_by" t-att-value="sort_by"/></t>
+
+                                       <button type="submit" class="btn btn-primary"><i class="fa fa-search me-1"></i><t t-esc="_('Search')"/></button>
+                                  </form>
+                             </div>
+                              <div class="col-lg-4 col-md-6 mb-2 mb-md-0">
+                                   <form action="/my/campaigns" method="get" class="d-flex align-items-center">
+                                       <label for="sort_by_select" class="form-label me-2 mb-0 text-nowrap"><t t-esc="_('Sort by:')"/></label>
+                                       <select name="sort_by" id="sort_by_select" class="form-select" onchange="this.form.submit()">
+                                             <option value="write_date desc" t-att-selected="sort_by == 'write_date desc'"><t t-esc="_('Recently Added')"/></option>
+                                             <option value="submission_deadline asc" t-att-selected="sort_by == 'submission_deadline asc'"><t t-esc="_('Deadline Soonest')"/></option>
+                                             <option value="compensation_amount desc" t-att-selected="sort_by == 'compensation_amount desc'"><t t-esc="_('Compensation (High to Low)')"/></option>
+                                             <option value="compensation_amount asc" t-att-selected="sort_by == 'compensation_amount asc'"><t t-esc="_('Compensation (Low to High)')"/></option>
+                                       </select>
+                                        <!-- Keep existing filters/search in hidden inputs -->
+                                      <t t-foreach="filter_args" t-as="key_val" t-key="key_val[0]">
+                                             <input type="hidden" t-att-name="key_val[0]" t-att-value="key_val[1]"/>
+                                       </t>
+                                      <t t-if="search"><input type="hidden" name="search" t-att-value="search"/></t>
+                                   </form>
+                              </div>
+                              <div class="col-lg-3 col-md-6">
+                                  <!-- Filter Dropdowns (Example: Niche) -->
+                                   <form action="/my/campaigns" method="get" class="d-flex align-items-center">
+                                        <label for="filter_niche_select" class="form-label me-2 mb-0 text-nowrap"><t t-esc="_('Niche:')"/></label>
+                                          <select name="filter_niche" id="filter_niche_select" class="form-select" onchange="this.form.submit()">
+                                             <option value=""><t t-esc="_('-- All Niches --')"/></option>
+                                              <!-- Loop through available filter options fetched by controller -->
+                                               <t t-if="filter_options and filter_options.get('niches')">
+                                                   <t t-foreach="filter_options.get('niches')" t-as="niche">
+                                                        <option t-att-value="niche.id" t-att-selected="str(filter_args.get('filter_niche')) == str(niche.id)"><t t-esc="niche.name"/></option>
+                                                   </t>
+                                               </t>
+                                         </select>
+                                         <!-- Keep existing sort/search in hidden inputs -->
+                                         <t t-foreach="filter_args" t-as="key_val" t-key="key_val[0]">
+                                             <t t-if="key_val[0] != 'filter_niche'">
+                                                  <input type="hidden" t-att-name="key_val[0]" t-att-value="key_val[1]"/>
+                                             </t>
+                                          </t>
+                                        <t t-if="search"><input type="hidden" name="search" t-att-value="search"/></t>
+                                        <t t-if="sort_by"><input type="hidden" name="sort_by" t-att-value="sort_by"/></t>
+                                   </form>
+                              </div>
+                         </div>
+
+
+                         <!-- Campaign List -->
+                         <t t-if="campaigns">
+                             <div class="list-group">
+                                 <t t-foreach="campaigns" t-as="campaign">
+                                     <a t-attf-href="/my/campaigns/#{campaign.id}" class="list-group-item list-group-item-action flex-column align-items-start mb-2 shadow-sm rounded">
+                                         <div class="d-flex w-100 justify-content-between">
+                                             <h5 class="mb-1"><t t-esc="campaign.name"/></h5>
+                                             <small class="text-muted"><t t-esc="_('Deadline:')"/> <t t-esc="campaign.submission_deadline" t-options='{"widget": "date"}'/></small>
+                                         </div>
+                                         <p class="mb-1"><strong><t t-esc="_('Brand:')"/></strong> <t t-esc="campaign.brand_id.name"/></p>
+                                         <p class="mb-1 text-muted text-truncate" style="max-width: 600px;"><t t-esc="campaign.description"/></p>
+                                         <small><strong><t t-esc="_('Compensation:')"/></strong> <t t-esc="campaign.compensation_teaser or _('Details upon application')"/></small>
+                                          <span t-attf-class="badge float-end mt-1 bg-#{campaign.status == 'open' and 'success' or campaign.status == 'published' and 'info' or 'secondary'}">
+                                               <t t-esc="campaign.status_display"/>
+                                          </span>
+                                     </a>
+                                 </t>
+                             </div>
+
+                             <!-- Pagination -->
+                             <div class="o_portal_pager text-center mt-3">
+                                 <t t-call="portal.pager"/>
+                             </div>
+
+                         </t>
+                         <t t-else="">
+                             <div class="alert alert-info mt-4" role="alert">
+                                 <t t-if="search or filter_args">
+                                      <t t-esc="_('No campaigns found matching your criteria.')"/>
+                                 </t>
+                                 <t t-else="">
+                                     <t t-esc="_('No campaigns currently available for you to apply to. Check back soon!')"/>
+                                 </t>
+                             </div>
+                         </t>
+
+                     </div>
                 </t>
-
-                <div class="container mt-4">
-                    <div class="row mb-3">
-                        <div class="col-lg-12">
-                            <form action="/my/campaigns" method="get" class="form-inline">
-                                <div class="row g-2">
-                                    <div class="col-md-5">
-                                        <input type="text" name="search" class="form-control" t-att-value="search" placeholder="Search campaigns..."/>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <select name="filter_niche" class="form-select">
-                                            <option value=""><t t-esc="_t('All Niches')"/></option>
-                                            <t t-foreach="available_niches or []" t-as="niche">
-                                                <option t-att-value="niche.id" t-att-selected="niche.id == filter_niche"><t t-esc="niche.name"/></option>
-                                            </t>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                         <select name="sort_by" class="form-select">
-                                            <option value="deadline_asc" t-att-selected="sort_by == 'deadline_asc'"><t t-esc="_t('Deadline Asc')"/></option>
-                                            <option value="deadline_desc" t-att-selected="sort_by == 'deadline_desc'"><t t-esc="_t('Deadline Desc')"/></option>
-                                            <option value="compensation_desc" t-att-selected="sort_by == 'compensation_desc'"><t t-esc="_t('Compensation Desc')"/></option>
-                                            <option value="recent" t-att-selected="sort_by == 'recent' or not sort_by"><t t-esc="_t('Recently Added')"/></option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="submit" class="btn btn-primary w-100"><i class="fa fa-search me-1"/> <t t-esc="_t('Filter')"/></button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div t-if="not campaigns" class="alert alert-info" role="alert">
-                        <t t-esc="_t('No campaigns found matching your criteria. Please check back later or adjust your filters.')"/>
-                    </div>
-
-                    <div class="row">
-                        <t t-foreach="campaigns" t-as="campaign">
-                            <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card h-100 shadow-sm campaign-card">
-                                    <div class="card-body d-flex flex-column">
-                                        <h5 class="card-title"><a t-attf-href="/my/campaigns/#{campaign.id}" class="text-decoration-none"><t t-esc="campaign.name"/></a></h5>
-                                        <h6 class="card-subtitle mb-2 text-muted"><t t-esc="campaign.brandClient"/></h6>
-                                        <p class="card-text flex-grow-1"><t t-esc="campaign.description_short or campaign.description[:100] + '...'"/> </p>
-                                        <ul class="list-unstyled">
-                                            <li><strong><t t-esc="_t('Compensation:')"/></strong> <t t-esc="campaign.compensationModel_display"/> <t t-if="campaign.compensation_teaser"> (<t t-esc="campaign.compensation_teaser"/>)</t></li>
-                                            <li><strong><t t-esc="_t('Deadline:')"/></strong> <span t-field="campaign.submissionDeadline" t-options='{"widget": "date"}'/></li>
-                                        </ul>
-                                        <a t-attf-href="/my/campaigns/#{campaign.id}" class="btn btn-primary mt-auto"><t t-esc="_t('View Details')"/></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </t>
-                    </div>
-
-                    <t t-if="pager">
-                        <div class="mt-3">
-                            <t t-call="portal.pager"/>
-                        </div>
-                    </t>
-                </div>
             </t>
         </template>
     </data>

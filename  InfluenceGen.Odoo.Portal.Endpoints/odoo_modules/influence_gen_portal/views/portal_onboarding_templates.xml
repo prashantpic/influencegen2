@@ -1,398 +1,440 @@
 <odoo>
     <data>
-        <!-- Onboarding Step Indicator Snippet -->
-        <template id="portal_onboarding_steps" name="Onboarding Steps Indicator">
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li t-attf-class="breadcrumb-item #{step == 'register' and 'active'}">
-                        <t t-if="step != 'register'"><a href="/influencer/register"><t t-esc="_t('Register')"/></a></t>
-                        <t t-else=""><t t-esc="_t('Register')"/></t>
-                    </li>
-                    <li t-attf-class="breadcrumb-item #{step == 'kyc' and 'active'}" t-att-aria-current="#{step == 'kyc' and 'page'}">
-                        <t t-if="step != 'kyc' and kyc_allowed"><a href="/my/kyc/submit"><t t-esc="_t('KYC')"/></a></t>
-                        <t t-elif="step != 'kyc' and not kyc_allowed"><span class="text-muted"><t t-esc="_t('KYC')"/></span></t>
-                        <t t-else=""><t t-esc="_t('KYC')"/></t>
-                    </li>
-                    <li t-attf-class="breadcrumb-item #{step == 'social' and 'active'}" t-att-aria-current="#{step == 'social' and 'page'}">
-                         <t t-if="step != 'social' and social_allowed"><a href="/my/social/setup"><t t-esc="_t('Social Media')"/></a></t>
-                         <t t-elif="step != 'social' and not social_allowed"><span class="text-muted"><t t-esc="_t('Social Media')"/></span></t>
-                        <t t-else=""><t t-esc="_t('Social Media')"/></t>
-                    </li>
-                    <li t-attf-class="breadcrumb-item #{step == 'bank' and 'active'}" t-att-aria-current="#{step == 'bank' and 'page'}">
-                        <t t-if="step != 'bank' and bank_allowed"><a href="/my/bank/setup"><t t-esc="_t('Bank Details')"/></a></t>
-                        <t t-elif="step != 'bank' and not bank_allowed"><span class="text-muted"><t t-esc="_t('Bank Details')"/></span></t>
-                        <t t-else=""><t t-esc="_t('Bank Details')"/></t>
-                    </li>
-                    <li t-attf-class="breadcrumb-item #{step == 'tos' and 'active'}" t-att-aria-current="#{step == 'tos' and 'page'}">
-                        <t t-if="step != 'tos' and tos_allowed"><a href="/my/tos/agree"><t t-esc="_t('Terms of Service')"/></a></t>
-                        <t t-elif="step != 'tos' and not tos_allowed"><span class="text-muted"><t t-esc="_t('Terms of Service')"/></span></t>
-                        <t t-else=""><t t-esc="_t('Terms of Service')"/></t>
-                    </li>
-                </ol>
-            </nav>
-        </template>
-
-        <!-- Registration Form Template -->
-        <template id="portal_registration_form" name="Influencer Registration Form">
+        <template id="portal_registration_form" name="Influencer Registration">
             <t t-call="website.layout">
-                <div id="wrap" class="oe_structure oe_empty">
-                    <section class="py-5">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-md-6">
-                                    <t t-call="influence_gen_portal.portal_onboarding_steps"><t t-set="step" t-value="'register'"/></t>
-                                    <div class="card shadow">
-                                        <div class="card-header bg-primary text-white">
-                                            <h3 class="mb-0"><t t-esc="_t('Influencer Registration')"/></h3>
-                                        </div>
-                                        <div class="card-body">
-                                            <form action="/influencer/register/process" method="post">
-                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                <div t-if="error" class="alert alert-danger" role="alert">
-                                                    <t t-esc="error"/>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="fullName" class="form-label"><t t-esc="_t('Full Name')"/></label>
-                                                    <input type="text" name="fullName" t-att-value="fullName or ''" id="fullName" class="form-control" required="required" autofocus="autofocus"/>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="email" class="form-label"><t t-esc="_t('Email')"/></label>
-                                                    <input type="email" name="email" t-att-value="email or ''" id="email" class="form-control" required="required"/>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="password" class="form-label"><t t-esc="_t('Password')"/></label>
-                                                    <input type="password" name="password" id="password" class="form-control" required="required"/>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="confirm_password" class="form-label"><t t-esc="_t('Confirm Password')"/></label>
-                                                    <input type="password" name="confirm_password" id="confirm_password" class="form-control" required="required"/>
-                                                </div>
-                                                <div class="d-grid">
-                                                    <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-user-plus me-1"/> <t t-esc="_t('Register')"/></button>
-                                                </div>
-                                            </form>
-                                            <hr/>
-                                            <div class="text-center">
-                                                <t t-esc="_t('Already have an account?')"/> <a t-attf-href="/web/login?redirect=#{redirect or '/my/dashboard'}"><t t-esc="_t('Sign In')"/></a>
+                <div id="wrap">
+                    <div class="container my-5">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6 col-lg-5">
+                                <div class="card shadow-sm">
+                                    <div class="card-body p-4">
+                                        <h1 class="card-title text-center mb-4"><t t-esc="_('Influencer Registration')"/></h1>
+                                        <t t-if="error">
+                                             <div class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+                                        </t>
+                                         <t t-if="success">
+                                             <div class="alert alert-success" role="alert"><t t-esc="success"/></div>
+                                        </t>
+                                        <form action="/influencer/register/process" method="post">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                                             <div class="mb-3">
+                                                <label for="name" class="form-label"><t t-esc="_('Full Name')"/></label>
+                                                <input type="text" class="form-control" id="name" name="name" required="required" t-att-value="name" autofocus="autofocus"/>
+                                             </div>
+
+                                            <div class="mb-3">
+                                                <label for="login" class="form-label"><t t-esc="_('Email address')"/></label>
+                                                <input type="email" class="form-control" id="login" name="login" required="required" t-att-value="login"/>
                                             </div>
-                                        </div>
+
+                                            <div class="mb-3">
+                                                <label for="password" class="form-label"><t t-esc="_('Password')"/></label>
+                                                <input type="password" class="form-control" id="password" name="password" required="required"/>
+                                            </div>
+
+                                             <div class="mb-3">
+                                                <label for="confirm_password" class="form-label"><t t-esc="_('Confirm Password')"/></label>
+                                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required="required"/>
+                                             </div>
+
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary btn-lg"><t t-esc="_('Register')"/></button>
+                                            </div>
+
+                                            <div class="mt-3 text-center">
+                                                <p><t t-esc="_('Already have an account?')"/> <a href="/web/login"><t t-esc="_('Login')"/></a></p>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </div>
                 </div>
             </t>
         </template>
 
-        <!-- KYC Submission Form Template -->
-        <template id="portal_kyc_submission_form" name="Influencer KYC Submission Form">
+        <template id="portal_kyc_submission_form" name="Influencer KYC Submission">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/kyc/submit', 'text': _t('KYC Submission')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('KYC Document Submission')"/></h1>
+                <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                <t t-call="portal.portal_common">
+                    <t t-call="portal.portal_header">
+                        <t t-set="title"><t t-esc="_('KYC Verification')"/></t>
                     </t>
+                    <div class="o_portal_my_doc_container">
+                         <h2><t t-esc="_('Submit Your Verification Documents')"/></h2>
+                         <p><t t-esc="_('Please upload clear images of your government-issued ID. This is required to participate in paid campaigns.')"/></p>
+
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
+
+                         <t t-if="current_kyc_status == 'rejected'">
+                             <div class="alert alert-danger" role="alert">
+                                  <t t-esc="_('Your previous KYC submission was rejected. Please review any feedback and submit again with valid documents.')"/>
+                                  <!-- Optionally show rejection reason if available in qcontext -->
+                             </div>
+                         </t>
+                         <t t-elif="current_kyc_status == 'approved' or current_kyc_status == 'pending_review'">
+                              <div class="alert alert-info" role="alert">
+                                   <t t-esc="_('Your KYC status is currently:')"/> <strong><t t-esc="current_kyc_status_display"/></strong>.
+                                   <t t-if="current_kyc_status != 'approved'"><a href="/my/kyc/status" class="alert-link ms-2"><t t-esc="_('View Status Details')"/></a></t>
+                                   <t t-else=""><t t-esc="_(' No further action is required at this time.')"/></t>
+                              </div>
+                              <!-- Optionally disable form or hide it if status is approved/pending -->
+                         </t>
+
+
+                         <form action="/my/kyc/submit/process" method="post" enctype="multipart/form-data">
+                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                              <div class="mb-3">
+                                   <label for="document_type" class="form-label"><t t-esc="_('Type of Document')"/></label>
+                                    <select class="form-select" id="document_type" name="document_type" required="required">
+                                        <option value="" selected="selected" disabled="disabled"><t t-esc="_('-- Select Document Type --')"/></option>
+                                        <option value="passport"><t t-esc="_('Passport')"/></option>
+                                        <option value="national_id"><t t-esc="_('National ID Card')"/></option>
+                                        <option value="driving_license"><t t-esc="_('Driving License')"/></option>
+                                        <!-- Add other types as needed by business service -->
+                                    </select>
+                              </div>
+
+                             <div class="mb-3">
+                                  <label for="id_document_front" class="form-label"><t t-esc="_('ID Document (Front Side)')"/></label>
+                                  <input type="file" class="form-control" id="id_document_front" name="id_document_front" accept="image/jpeg,image/png,application/pdf" required="required"/>
+                                   <!-- For OWL Component:
+                                   <div id="kyc_front_uploader_mount_point"></div>
+                                   <script>
+                                        odoo.define('influence_gen_portal.kyc_front_uploader', function(require) {
+                                            'use strict';
+                                            var { mount } = require("@odoo/owl");
+                                            var { FileUploaderComponent } = require("influence_gen_portal.FileUploaderComponent"); // Assuming it's registered
+                                            mount(FileUploaderComponent, document.getElementById('kyc_front_uploader_mount_point'), {
+                                                env: odoo.owl_app.env, // Or correct env
+                                                props: {
+                                                    uploadUrl: '/my/kyc/upload/front', // Example dummy URL
+                                                    fieldName: 'id_document_front',
+                                                    acceptedFileTypes: 'image/jpeg,image/png,application/pdf',
+                                                    maxFileSize: 5 * 1024 * 1024, // 5MB
+                                                    label: "Upload Front Document",
+                                                }
+                                            });
+                                        });
+                                   </script>
+                                   -->
+                             </div>
+
+                             <div class="mb-3">
+                                  <label for="id_document_back" class="form-label"><t t-esc="_('ID Document (Back Side, if applicable)')"/></label>
+                                  <input type="file" class="form-control" id="id_document_back" name="id_document_back" accept="image/jpeg,image/png,application/pdf"/>
+                             </div>
+
+                              <p><small class="text-muted"><t t-esc="_('Accepted formats: JPG, PNG, PDF. Maximum file size: 5MB per file.')"/></small></p>
+
+
+                             <button type="submit" class="btn btn-primary"><i class="fa fa-upload me-1"></i><t t-esc="_('Submit for Verification')"/></button>
+                             <a href="/my/kyc/status" class="btn btn-link ms-2"><t t-esc="_('Check KYC Status')"/></a>
+
+                         </form>
+                    </div>
                 </t>
-                <div class="container mt-4">
-                    <t t-call="influence_gen_portal.portal_onboarding_steps"><t t-set="step" t-value="'kyc'"/></t>
-                    <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                     <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
-
-                    <t t-if="kyc_data and kyc_data.kycStatus == 'approved'">
-                         <div class="alert alert-success" role="alert">
-                            <h4 class="alert-heading"><i class="fa fa-check-circle me-1"/> <t t-esc="_t('KYC Already Approved!')"/></h4>
-                            <p><t t-esc="_t('Your KYC information is already verified and approved.')"/></p>
-                            <hr/>
-                            <a href="/my/dashboard" class="btn btn-primary"><t t-esc="_t('Go to Dashboard')"/></a>
-                        </div>
-                    </t>
-                    <t t-elif="kyc_data and kyc_data.kycStatus == 'pending'">
-                        <div class="alert alert-info" role="alert">
-                            <h4 class="alert-heading"><i class="fa fa-clock-o me-1"/> <t t-esc="_t('KYC Pending Review')"/></h4>
-                            <p><t t-esc="_t('Your documents are currently under review. We will notify you once the process is complete.')"/></p>
-                        </div>
-                    </t>
-                    <t t-else="">
-                        <form action="/my/kyc/submit/process" method="post" enctype="multipart/form-data">
-                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                             <div class="alert alert-info" role="alert">
-                                <strong><t t-esc="_t('Instructions:')"/></strong>
-                                <ul>
-                                    <li><t t-esc="_t('Please upload clear, legible copies of your identification document.')"/></li>
-                                    <li><t t-esc="_t('Accepted document types: Passport, National ID Card, Driver\'s License.')"/></li>
-                                    <li><t t-esc="_t('Ensure all four corners of the document are visible.')"/></li>
-                                    <li><t t-esc="_t('Max file size: 5MB. Accepted formats: JPG, PNG, PDF.')"/></li>
-                                </ul>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="documentType" class="form-label"><t t-esc="_t('Document Type')"/></label>
-                                <select class="form-select" id="documentType" name="documentType" required="required">
-                                    <option value="" selected="selected" disabled="disabled"><t t-esc="_t('Select Document Type...')"/></option>
-                                    <option value="passport"><t t-esc="_t('Passport')"/></option>
-                                    <option value="national_id"><t t-esc="_t('National ID Card')"/></option>
-                                    <option value="driver_license"><t t-esc="_t('Driver\'s License')"/></option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="documentFront" class="form-label"><t t-esc="_t('Document Front')"/></label>
-                                <div id="file_uploader_front_container">
-                                     <t t-call="influence_gen_portal.FileUploaderComponent">
-                                        <t t-set="props" t-value="{
-                                            'acceptedFileTypes': 'image/jpeg,image/png,application/pdf',
-                                            'maxFileSize': 5 * 1024 * 1024,
-                                            'uploadUrl': '/my/kyc/upload_document_chunk',
-                                            'fieldName': 'document_front_file',
-                                            'label': _t('Upload Front of Document')
-                                        }"/>
-                                    </t>
-                                </div>
-                                <input type="file" name="document_front_file_fallback" class="form-control d-none" accept="image/jpeg,image/png,application/pdf"/>
-                                <small class="form-text text-muted"><t t-esc="_t('If the uploader above does not work, use this standard file input.')"/></small>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="documentBack" class="form-label"><t t-esc="_t('Document Back (if applicable)')"/></label>
-                                <div id="file_uploader_back_container">
-                                     <t t-call="influence_gen_portal.FileUploaderComponent">
-                                         <t t-set="props" t-value="{
-                                            'acceptedFileTypes': 'image/jpeg,image/png,application/pdf',
-                                            'maxFileSize': 5 * 1024 * 1024,
-                                            'uploadUrl': '/my/kyc/upload_document_chunk',
-                                            'fieldName': 'document_back_file',
-                                            'label': _t('Upload Back of Document')
-                                        }"/>
-                                    </t>
-                                </div>
-                                 <input type="file" name="document_back_file_fallback" class="form-control d-none" accept="image/jpeg,image/png,application/pdf"/>
-                                 <small class="form-text text-muted"><t t-esc="_t('For documents like ID cards or driver\'s licenses that have information on both sides.')"/></small>
-                            </div>
-                            <input type="hidden" name="document_front_attachment_id" id="document_front_attachment_id"/>
-                            <input type="hidden" name="document_back_attachment_id" id="document_back_attachment_id"/>
-
-                            <button type="submit" class="btn btn-primary"><i class="fa fa-upload me-1"/> <t t-esc="_t('Submit KYC Documents')"/></button>
-                        </form>
-                    </t>
-                     <hr/>
-                    <a href="/my/kyc/status" class="btn btn-link"><t t-esc="_t('Check my KYC Status')"/></a>
-                </div>
-                 <!-- Mount point for OWL component if needed, and JS to initialize -->
-                <script type="text/javascript">
-                    odoo.loader. όταν hazırsa(function () {
-                        if (odoo.debug &amp;&amp; odoo.debug.assets) { // Ensures assets are loaded in debug mode
-                            // Placeholder: Logic to mount FileUploaderComponent instances if not done by t-call
-                            // Example:
-                            // const { mount } = owl;
-                            // const { FileUploaderComponent } = odoo.influence_gen_portal.components;
-                            // if (document.getElementById('file_uploader_front_container') &amp;&amp; FileUploaderComponent) {
-                            //    mount(FileUploaderComponent, document.getElementById('file_uploader_front_container'), { 
-                            //        props: { /* props as defined in t-call */ }
-                            //    });
-                            // }
-                            // Similar for back uploader
-                        }
-                    });
-                </script>
             </t>
         </template>
 
-        <!-- Social Media Setup Form Template -->
-        <template id="portal_social_media_form" name="Influencer Social Media Setup">
+        <template id="portal_social_media_form_page" name="Influencer Social Media Setup Page">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/social/setup', 'text': _t('Social Media Setup')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('Social Media Setup')"/></h1>
-                    </t>
-                </t>
-                <div class="container mt-4">
-                    <t t-call="influence_gen_portal.portal_onboarding_steps"><t t-set="step" t-value="'social'"/></t>
-                     <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                     <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
-                    <t t-call="influence_gen_portal.portal_social_media_form_snippet">
-                        <t t-set="form_action" t-value="'/my/social/setup/process?redirect=/my/bank/setup'"/>
-                    </t>
-                    <div class="mt-3 d-flex justify-content-between">
-                        <a href="/my/kyc/submit" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"/> <t t-esc="_t('Back to KYC')"/></a>
-                        <a href="/my/bank/setup" class="btn btn-primary"><t t-esc="_t('Next: Bank Details')"/> <i class="fa fa-arrow-right ms-1"/></a>
-                    </div>
-                </div>
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                      <t t-call="portal.portal_header">
+                           <t t-set="title"><t t-esc="_('Social Media Accounts')"/></t>
+                      </t>
+                     <div class="o_portal_my_doc_container">
+                         <h2><t t-esc="_('Connect Your Social Media Accounts')"/></h2>
+                         <p><t t-esc="_('Provide links to your primary social media profiles. Some platforms may require verification to confirm ownership.')"/></p>
+
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
+
+                          <form action="/my/social/setup/process" method="post">
+                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                              <div id="social_profiles_container">
+                                  <t t-set="profile_index" t-value="0"/>
+                                  <t t-if="social_profiles">
+                                       <t t-foreach="social_profiles" t-as="social">
+                                            <div class="social-profile-entry mb-3 p-3 border rounded">
+                                                 <input type="hidden" t-attf-name="social_media[#{profile_index}][id]" t-att-value="social.id"/>
+                                                 <div class="row">
+                                                    <div class="col-md-4 mb-2">
+                                                         <label class="form-label"><t t-esc="_('Platform')"/></label>
+                                                          <select class="form-select" t-attf-name="social_media[#{profile_index}][platform]" required="required">
+                                                              <option value="" selected="selected" disabled="disabled"><t t-esc="_('-- Select --')"/></option>
+                                                              <option value="Instagram" t-att-selected="social.platform == 'Instagram'">Instagram</option>
+                                                              <option value="TikTok" t-att-selected="social.platform == 'TikTok'">TikTok</option>
+                                                              <option value="YouTube" t-att-selected="social.platform == 'YouTube'">YouTube</option>
+                                                              <option value="Facebook" t-att-selected="social.platform == 'Facebook'">Facebook</option>
+                                                              <option value="Twitter" t-att-selected="social.platform == 'Twitter'">Twitter (X)</option>
+                                                              <option value="LinkedIn" t-att-selected="social.platform == 'LinkedIn'">LinkedIn</option>
+                                                              <option value="Other" t-att-selected="social.platform == 'Other'">Other</option>
+                                                          </select>
+                                                    </div>
+                                                     <div class="col-md-4 mb-2">
+                                                         <label class="form-label"><t t-esc="_('Handle / Username')"/></label>
+                                                         <input type="text" class="form-control" t-attf-name="social_media[#{profile_index}][handle]" t-att-value="social.handle"/>
+                                                    </div>
+                                                    <div class="col-md-4 mb-2">
+                                                         <label class="form-label"><t t-esc="_('Profile URL')"/></label>
+                                                         <input type="url" class="form-control" t-attf-name="social_media[#{profile_index}][url]" t-att-value="social.url" required="required"/>
+                                                    </div>
+                                                 </div>
+                                                  <div class="text-end">
+                                                       <button type="button" class="btn btn-danger btn-sm remove-social-profile" title="Remove this account"><i class="fa fa-trash"></i></button>
+                                                  </div>
+                                            </div>
+                                           <t t-set="profile_index" t-value="profile_index + 1"/>
+                                       </t>
+                                  </t>
+                                   <!-- Template for new entries - managed by JS -->
+                                   <div id="social_profile_template" class="social-profile-entry mb-3 p-3 border rounded d-none">
+                                        <div class="row">
+                                            <div class="col-md-4 mb-2">
+                                                 <label class="form-label"><t t-esc="_('Platform')"/></label>
+                                                  <select class="form-select" name="social_media[__INDEX__][platform]" required="required">
+                                                      <option value="" selected="selected" disabled="disabled"><t t-esc="_('-- Select --')"/></option>
+                                                      <option value="Instagram">Instagram</option>
+                                                      <option value="TikTok">TikTok</option>
+                                                      <option value="YouTube">YouTube</option>
+                                                      <option value="Facebook">Facebook</option>
+                                                      <option value="Twitter">Twitter (X)</option>
+                                                      <option value="LinkedIn">LinkedIn</option>
+                                                      <option value="Other">Other</option>
+                                                  </select>
+                                            </div>
+                                             <div class="col-md-4 mb-2">
+                                                 <label class="form-label"><t t-esc="_('Handle / Username')"/></label>
+                                                 <input type="text" class="form-control" name="social_media[__INDEX__][handle]"/>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                 <label class="form-label"><t t-esc="_('Profile URL')"/></label>
+                                                 <input type="url" class="form-control" name="social_media[__INDEX__][url]" required="required"/>
+                                            </div>
+                                        </div>
+                                         <div class="text-end">
+                                            <button type="button" class="btn btn-danger btn-sm remove-social-profile" title="Remove this account"><i class="fa fa-trash"></i></button>
+                                         </div>
+                                   </div>
+                              </div>
+
+                             <button type="button" id="add_social_profile" class="btn btn-secondary mb-3"><i class="fa fa-plus me-1"></i><t t-esc="_('Add Another Account')"/></button>
+
+                             <div class="mt-3">
+                                  <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"></i><t t-esc="_('Save Social Media Accounts')"/></button>
+                                  <a href="/my/profile" class="btn btn-link ms-2"><t t-esc="_('Back to Profile')"/></a>
+                             </div>
+                          </form>
+
+                          <script type="text/javascript">
+                              odoo.define('influence_gen_portal.social_media_form', function (require) {
+                                   'use strict';
+                                   var publicWidget = require('web.public.widget');
+
+                                   publicWidget.registry.SocialMediaFormWidget = publicWidget.Widget.extend({
+                                        selector: '#social_profiles_container', // Target the container of the form entries
+                                        events: {
+                                             'click .remove-social-profile': '_onRemoveProfile',
+                                        },
+                                        start: function () {
+                                             this._super.apply(this, arguments);
+                                             this.$formContainer = this.$el; // This is #social_profiles_container
+                                             this.$addButton = $('#add_social_profile');
+                                             this.$template = $('#social_profile_template').contents().clone(true); // Clone the template row
+
+                                             // Initial index based on existing entries
+                                             this.currentIndex = this.$formContainer.find('.social-profile-entry:not(.d-none)').length;
+
+                                             this.$addButton.on('click', this._onAddProfile.bind(this));
+                                        },
+                                        _onAddProfile: function() {
+                                             var $newEntry = this.$template.clone(true);
+                                             $newEntry.find('[name*="__INDEX__"]').each(function() {
+                                                  var name = $(this).attr('name');
+                                                  $(this).attr('name', name.replace('__INDEX__', this.currentIndex));
+                                             }.bind(this));
+                                             $newEntry.removeClass('d-none'); // Make it visible
+                                             this.$formContainer.append($newEntry); // Append to the container
+                                             this.currentIndex++;
+                                             $newEntry.find('input[required], select[required]').first().focus();
+                                        },
+                                        _onRemoveProfile: function(event) {
+                                             $(event.currentTarget).closest('.social-profile-entry').remove();
+                                             this._reIndexProfiles(); // Re-index remaining profiles
+                                        },
+                                         _reIndexProfiles: function() {
+                                             var newIndex = 0;
+                                             this.$formContainer.find('.social-profile-entry:not(.d-none)').each(function() {
+                                                 $(this).find('[name*="social_media["]').each(function() {
+                                                      var name = $(this).attr('name');
+                                                      if (name) {
+                                                          $(this).attr('name', name.replace(/\[\d+\]/, '[' + newIndex + ']'));
+                                                      }
+                                                 });
+                                                 newIndex++;
+                                             });
+                                            this.currentIndex = newIndex;
+                                         }
+                                   });
+                                   // Make sure it's instantiated once the DOM is ready for the form page
+                                   // If this script is part of the template, it will run when template is rendered.
+                              });
+                         </script>
+                     </div>
+                 </t>
             </t>
         </template>
 
-        <!-- Bank Account Setup Form Template -->
-        <template id="portal_bank_account_form" name="Influencer Bank Account Setup">
-            <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/bank/setup', 'text': _t('Bank Account Setup')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('Bank Account Setup')"/></h1>
-                    </t>
-                </t>
-                <div class="container mt-4">
-                     <t t-call="influence_gen_portal.portal_onboarding_steps"><t t-set="step" t-value="'bank'"/></t>
-                     <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                     <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
-                    <form action="/my/bank/setup/process?redirect=/my/tos/agree" method="post">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <t t-call="influence_gen_portal.portal_payment_info_template_content_form_fields_only"/>
-                        <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"/> <t t-esc="_t('Save Bank Account')"/></button>
-                    </form>
-                     <div class="mt-3 d-flex justify-content-between">
-                        <a href="/my/social/setup" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"/> <t t-esc="_t('Back to Social Media')"/></a>
-                        <a href="/my/tos/agree" class="btn btn-primary"><t t-esc="_t('Next: Terms of Service')"/> <i class="fa fa-arrow-right ms-1"/></a>
-                    </div>
-                </div>
-            </t>
-        </template>
-        
-        <!-- Snippet for bank account fields (used in onboarding and profile) -->
-        <template id="portal_payment_info_template_content_form_fields_only" name="Bank Account Form Fields">
-            <div class="alert alert-info" role="alert">
-                <t t-esc="_t('Please provide your bank account details accurately. This information will be used for campaign payouts. All sensitive data is stored encrypted.')"/>
-            </div>
-            <div class="row">
-                <div class="mb-3 col-md-6">
-                    <label for="onboarding_accountHolderName" class="form-label"><t t-esc="_t('Account Holder Name')"/></label>
-                    <input type="text" class="form-control" id="onboarding_accountHolderName" name="accountHolderName" t-att-value="bank_account.accountHolderName" required="required"/>
-                </div>
-                <div class="mb-3 col-md-6">
-                    <label for="onboarding_bankName" class="form-label"><t t-esc="_t('Bank Name')"/></label>
-                    <input type="text" class="form-control" id="onboarding_bankName" name="bankName" t-att-value="bank_account.bankName" required="required"/>
-                </div>
-            </div>
-            <div class="row">
-                <div class="mb-3 col-md-6">
-                    <label for="onboarding_accountNumber" class="form-label"><t t-esc="_t('Account Number')"/></label>
-                    <input type="text" class="form-control" id="onboarding_accountNumber" name="accountNumber" t-att-value="bank_account.accountNumber" required="required"/>
-                </div>
-                <div class="mb-3 col-md-6">
-                    <label for="onboarding_routingNumber" class="form-label"><t t-esc="_t('Routing Number / Sort Code (if applicable)')"/></label>
-                    <input type="text" class="form-control" id="onboarding_routingNumber" name="routingNumber" t-att-value="bank_account.routingNumber"/>
-                </div>
-            </div>
-            <div class="row">
-                <div class="mb-3 col-md-6">
-                    <label for="onboarding_iban" class="form-label"><t t-esc="_t('IBAN (if applicable)')"/></label>
-                    <input type="text" class="form-control" id="onboarding_iban" name="iban" t-att-value="bank_account.iban"/>
-                </div>
-                <div class="mb-3 col-md-6">
-                    <label for="onboarding_swiftCode" class="form-label"><t t-esc="_t('SWIFT/BIC Code (if applicable)')"/></label>
-                    <input type="text" class="form-control" id="onboarding_swiftCode" name="swiftCode" t-att-value="bank_account.swiftCode"/>
-                </div>
-            </div>
-             <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="onboarding_isPrimary" name="isPrimary" value="true" t-att-checked="bank_account.isPrimary or True"/> <!-- Default to true for first setup -->
-                <label class="form-check-label" for="onboarding_isPrimary"><t t-esc="_t('Set as primary account for payouts')"/></label>
-            </div>
-             <div class="form-text mt-2 mb-3"><t t-esc="_t('Bank account verification might involve micro-deposits or other checks as per system configuration.')"/></div>
+        <template id="portal_bank_account_form_page" name="Influencer Bank Account Setup Page">
+             <t t-call="portal.portal_layout">
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                      <t t-call="portal.portal_header">
+                           <t t-set="title"><t t-esc="_('Bank Account Details')"/></t>
+                      </t>
+                      <div class="o_portal_my_doc_container">
+                           <h2><t t-esc="_('Provide Bank Account Details')"/></h2>
+                           <p><t t-esc="_('This information is required for processing your payments. Your data is stored securely.')"/></p>
+                           <t t-call="influence_gen_portal.portal_flash_messages"/>
+                           <t t-call="influence_gen_portal.portal_bank_account_form_content"/>
+                      </div>
+                 </t>
+             </t>
         </template>
 
-        <!-- ToS Agreement Form Template -->
-        <template id="portal_tos_agreement_form" name="Influencer ToS Agreement">
-            <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/tos/agree', 'text': _t('Terms of Service')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('Terms of Service &amp; Privacy Policy Agreement')"/></h1>
-                    </t>
-                </t>
-                <div class="container mt-4">
-                     <t t-call="influence_gen_portal.portal_onboarding_steps"><t t-set="step" t-value="'tos'"/></t>
-                     <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                     <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
+         <template id="portal_bank_account_form_content" name="Bank Account Form Content Snippet">
+              <!-- This assumes 'bank_accounts' (a list, possibly empty or with one item for now) is in qcontext -->
+              <t t-set="bank_account" t-value="bank_accounts and bank_accounts[0] or None"/>
+              <form action="/my/bank/setup/process" method="post">
+                  <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                  <input type="hidden" name="bank_account_id" t-att-value="bank_account.id if bank_account else ''"/>
 
-                    <form action="/my/tos/agree/process?redirect=/my/dashboard" method="post">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="tos_version" t-att-value="current_tos.version"/>
-                        <input type="hidden" name="privacy_policy_version" t-att-value="current_privacy_policy.version"/>
+                  <div class="mb-3">
+                       <label for="account_holder_name" class="form-label"><t t-esc="_('Account Holder Name')"/></label>
+                       <input type="text" class="form-control" id="account_holder_name" name="account_holder_name"
+                              t-att-value="bank_account.account_holder_name if bank_account else ''" required="required"/>
+                  </div>
+                   <div class="mb-3">
+                       <label for="bank_name" class="form-label"><t t-esc="_('Bank Name')"/></label>
+                       <input type="text" class="form-control" id="bank_name" name="bank_name"
+                              t-att-value="bank_account.bank_name if bank_account else ''" required="required"/>
+                  </div>
+                  <div class="mb-3">
+                       <label for="account_number" class="form-label"><t t-esc="_('Account Number')"/></label>
+                       <input type="text" class="form-control" id="account_number" name="account_number"
+                              t-att-value="bank_account.account_number_display if bank_account else ''" required="required" aria-describedby="accountNumberHelp"/>
+                              <div id="accountNumberHelp" class="form-text"><t t-esc="_('For security, only the last 4 digits may be shown if an account is already on file.')"/></div>
+                  </div>
+                   <div class="mb-3">
+                       <label for="iban" class="form-label"><t t-esc="_('IBAN (International)')"/></label>
+                       <input type="text" class="form-control" id="iban" name="iban"
+                              t-att-value="bank_account.iban_display if bank_account else ''"/>
+                  </div>
+                   <div class="mb-3">
+                       <label for="swift_bic" class="form-label"><t t-esc="_('SWIFT/BIC Code (International)')"/></label>
+                       <input type="text" class="form-control" id="swift_bic" name="swift_bic"
+                              t-att-value="bank_account.swift_bic if bank_account else ''"/>
+                  </div>
+                   <!-- Add other relevant fields like bank address, routing number etc. -->
+                  <div class="mb-3 form-check">
+                      <input type="checkbox" class="form-check-input" id="is_primary_account" name="is_primary_account" value="1" t-att-checked="bank_account and bank_account.is_primary"/>
+                      <label class="form-check-label" for="is_primary_account"><t t-esc="_('Set as primary account for payouts')"/></label>
+                  </div>
 
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title"><t t-esc="_t('Terms of Service (Version %s)', current_tos.version)"/></h5>
-                                <p class="card-text"><t t-esc="_t('Please review our latest Terms of Service.')"/></p>
-                                <a t-att-href="current_tos.url or '/terms'" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary"><i class="fa fa-external-link me-1"/> <t t-esc="_t('View Terms of Service')"/></a>
+                   <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"></i><t t-esc="_('Save Bank Details')"/></button>
+                   <a href="/my/profile" class="btn btn-link ms-2"><t t-esc="_('Back to Profile')"/></a>
+              </form>
+               <t t-if="bank_account and bank_account.verification_status">
+                    <p class="mt-3"><t t-esc="_('Current Verification Status:')"/> <span t-attf-class="badge bg-#{bank_account.verification_status == 'verified' and 'success' or bank_account.verification_status == 'pending' and 'warning' or 'danger'}"><t t-esc="bank_account.verification_status_display"/></span></p>
+               </t>
+         </template>
+
+        <template id="portal_tos_agreement_form_page" name="Influencer ToS Agreement Page">
+             <t t-call="portal.portal_layout">
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                      <t t-call="portal.portal_header">
+                           <t t-set="title"><t t-esc="_('Terms &amp; Conditions Agreement')"/></t>
+                      </t>
+                      <div class="o_portal_my_doc_container">
+                           <h2><t t-esc="_('Review and Accept Our Terms')"/></h2>
+                           <p><t t-esc="_('Please carefully read our Terms of Service and Privacy Policy before proceeding.')"/></p>
+                           <t t-call="influence_gen_portal.portal_flash_messages"/>
+                           <t t-call="influence_gen_portal.portal_consent_management_content"/>
+                           <!-- Content is in portal_profile_templates.xml as portal_consent_management_content -->
+                      </div>
+                 </t>
+             </t>
+        </template>
+
+        <template id="portal_kyc_status_page_standalone" name="Influencer KYC Status Page (Standalone)">
+             <t t-call="portal.portal_layout">
+                  <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                  <t t-call="portal.portal_common">
+                       <t t-call="portal.portal_header">
+                            <t t-set="title"><t t-esc="_('KYC Status')"/></t>
+                       </t>
+                       <div class="o_portal_my_doc_container">
+                            <t t-call="influence_gen_portal.portal_flash_messages"/>
+                            <t t-call="influence_gen_portal.portal_kyc_status_content"/>
+                       </div>
+                  </t>
+             </t>
+        </template>
+
+        <template id="portal_kyc_status_content" name="KYC Status Content Snippet">
+             <!-- This template assumes 'kyc_status_details' is in qcontext -->
+             <t t-if="kyc_status_details">
+                  <p><strong><t t-esc="_('Current Status:')"/></strong>
+                       <span t-attf-class="badge fs-6 bg-#{kyc_status_details.get('status') == 'approved' and 'success' or kyc_status_details.get('status') == 'pending_review' and 'warning' or kyc_status_details.get('status') == 'rejected' and 'danger' or 'secondary'}">
+                            <t t-esc="kyc_status_details.get('status_display', _('Unknown'))"/>
+                       </span>
+                  </p>
+
+                  <t t-if="kyc_status_details.get('status') == 'approved'">
+                       <div class="alert alert-success" role="alert"><t t-esc="_('Your identity has been successfully verified.')"/></div>
+                       <p><t t-esc="_('Verification Date:')"/> <t t-esc="kyc_status_details.get('review_date')" t-options='{"widget": "datetime"}'/></p>
+                  </t>
+                   <t t-elif="kyc_status_details.get('status') == 'pending_review'">
+                       <div class="alert alert-info" role="alert"><t t-esc="_('Your documents are currently under review. This typically takes 1-2 business days.')"/></div>
+                        <p><t t-esc="_('Submission Date:')"/> <t t-esc="kyc_status_details.get('submission_date')" t-options='{"widget": "datetime"}'/></p>
+                  </t>
+                   <t t-elif="kyc_status_details.get('status') == 'rejected'">
+                       <div class="alert alert-danger" role="alert"><t t-esc="_('Your KYC submission was rejected.')"/></div>
+                        <t t-if="kyc_status_details.get('rejection_reason')">
+                            <div class="alert alert-warning" role="alert">
+                                 <strong><t t-esc="_('Reason:')"/></strong> <t t-esc="kyc_status_details.get('rejection_reason')"/>
                             </div>
-                        </div>
+                        </t>
+                        <p><a href="/my/kyc/submit" class="btn btn-warning"><i class="fa fa-refresh me-1"></i><t t-esc="_('Resubmit KYC Documents')"/></a></p>
+                  </t>
+                  <t t-else="">
+                       <!-- Status is 'not_submitted' or similar -->
+                      <div class="alert alert-secondary" role="alert"><t t-esc="_('You have not yet submitted your KYC documents.')"/></div>
+                      <p><a href="/my/kyc/submit" class="btn btn-primary"><i class="fa fa-upload me-1"></i><t t-esc="_('Submit KYC Documents Now')"/></a></p>
+                  </t>
 
-                        <div class="card mb-3">
-                             <div class="card-body">
-                                <h5 class="card-title"><t t-esc="_t('Privacy Policy (Version %s)', current_privacy_policy.version)"/></h5>
-                                <p class="card-text"><t t-esc="_t('Please review our latest Privacy Policy.')"/></p>
-                                <a t-att-href="current_privacy_policy.url or '/privacy'" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary"><i class="fa fa-external-link me-1"/> <t t-esc="_t('View Privacy Policy')"/></a>
-                            </div>
-                        </div>
+                  <t t-if="kyc_status_details.get('messages')">
+                       <h5 class="mt-4"><t t-esc="_('Messages from Support')"/></h5>
+                       <ul class="list-group">
+                            <t t-foreach="kyc_status_details['messages']" t-as="message">
+                                 <li class="list-group-item">
+                                     <p class="mb-1"><t t-esc="message.body"/></p>
+                                     <small class="text-muted"><t t-esc="message.date" t-options='{"widget": "datetime"}'/></small>
+                                 </li>
+                            </t>
+                       </ul>
+                  </t>
 
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" value="true" id="accept_terms_onboarding" name="accepted_terms" required="required"/>
-                            <label class="form-check-label" for="accept_terms_onboarding">
-                                <t t-esc="_t('I have read, understood, and agree to the InfluenceGen Terms of Service and Privacy Policy.')"/>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-success btn-lg"><i class="fa fa-check-square-o me-1"/> <t t-esc="_t('Agree and Complete Onboarding')"/></button>
-                    </form>
-                     <div class="mt-3 d-flex justify-content-start">
-                        <a href="/my/bank/setup" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"/> <t t-esc="_t('Back to Bank Details')"/></a>
-                    </div>
-                </div>
-            </t>
-        </template>
-        
-        <!-- KYC Status Page Template -->
-        <template id="portal_kyc_status_page" name="KYC Status Page">
-            <t t-call="portal.portal_layout">
-                 <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/kyc/status', 'text': _t('KYC Status')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('Your KYC Status')"/></h1>
-                    </t>
-                </t>
-                 <div class="container mt-4">
-                     <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                     <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
-                    <t t-call="influence_gen_portal.portal_kyc_status_display_snippet"/>
-                    <div class="mt-3">
-                         <a href="/my/dashboard" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"/> <t t-esc="_t('Back to Dashboard')"/></a>
-                    </div>
-                </div>
-            </t>
+             </t>
+             <t t-else="">
+                  <div class="alert alert-danger" role="alert"><t t-esc="_('Could not retrieve KYC status details. Please try again or contact support.')"/></div>
+             </t>
         </template>
 
     </data>

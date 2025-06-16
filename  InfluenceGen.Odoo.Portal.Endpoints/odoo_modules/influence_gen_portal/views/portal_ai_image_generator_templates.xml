@@ -1,72 +1,56 @@
 <odoo>
     <data>
-        <template id="portal_ai_image_generator_page" name="AI Image Generator">
+        <template id="portal_ai_image_generator_page" name="AI Image Generator Page">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/ai-image-generator', 'text': _t('AI Image Generator')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('AI Image Generator')"/></h1>
-                    </t>
-                </t>
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                      <t t-call="portal.portal_header">
+                           <t t-set="title"><t t-esc="_('AI Image Generator')"/></t>
+                      </t>
+                     <div class="o_portal_my_doc_container">
+                         <div class="d-flex justify-content-between align-items-center mb-3">
+                             <div>
+                                 <h2><t t-esc="_('Generate Images with AI')"/></h2>
+                                 <p class="lead"><t t-esc="_('Describe the image you want to create using text prompts and parameters.')"/></p>
+                             </div>
+                             <div class="text-end">
+                                 <span class="badge bg-info fs-6"><t t-esc="_('Quota:')"/> <t t-esc="ai_props.initialQuota.remaining if ai_props and ai_props.initialQuota else 'N/A'"/> / <t t-esc="ai_props.initialQuota.total if ai_props and ai_props.initialQuota else 'N/A'"/></span>
+                             </div>
+                         </div>
 
-                <div class="container mt-4">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
-                                <div>
-                                    <i class="fa fa-info-circle me-2"/>
-                                    <t t-esc="_t('Use your creativity to generate unique images for your content. Your usage is subject to a quota.')"/>
-                                </div>
-                                <div t-if="current_quota" class="fw-bold">
-                                    <t t-esc="_t('Quota: %s / %s remaining', current_quota.remaining, current_quota.total)"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Placeholder for OWL AIImageGeneratorComponent -->
-                    <div id="ai-image-generator-app" class="mt-3">
-                        <!-- This div will be targeted by JavaScript to mount the OWL component. -->
-                        <div class="text-center p-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden"><t t-esc="_t('Loading AI Image Generator...')"/></span>
-                            </div>
-                            <p class="mt-2"><t t-esc="_t('Loading AI Image Generator...')"/></p>
-                        </div>
-                    </div>
-                </div>
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
 
-                <script type="text/javascript">
-                    odoo.loader. όταν hazırsa(function () {
-                        const { mount } = owl;
-                        const target = document.getElementById('ai-image-generator-app');
-                        
-                        // Check if odoo.influence_gen_portal.components.AIImageGeneratorComponent is available
-                        // This relies on the assets being loaded and the component registered correctly.
-                        if (target &amp;&amp; odoo &amp;&amp; odoo.influence_gen_portal &amp;&amp; odoo.influence_gen_portal.components &amp;&amp; odoo.influence_gen_portal.components.AIImageGeneratorComponent) {
-                            const AIImageGeneratorComponent = odoo.influence_gen_portal.components.AIImageGeneratorComponent;
-                            const initialQuota = <t t-esc="json.dumps(current_quota or {'used': 0, 'total': 0})"/>;
-                            const defaultParams = <t t-esc="json.dumps(default_params or {})"/>;
-                            const paramRanges = <t t-esc="json.dumps(param_ranges or {})"/>;
+                         <!-- AI Image Generator OWL Component Mount Point -->
+                         <!-- The 'ai_props' dictionary comes from the controller's qcontext -->
+                         <div id="ai_image_generator_app" class="mt-4">
+                             <!-- This div will be targeted by JavaScript to mount the OWL component -->
+                             <!-- Props are passed from the controller's qcontext -->
+                             <div t-if="ai_props"
+                                  t-component="'influence_gen_portal.AIImageGeneratorComponent'"
+                                  t-props="ai_props"/>
+                             <div t-else="" class="alert alert-warning" role="alert">
+                                 <t t-esc="_('AI Image Generator component could not be loaded. Configuration might be missing.')"/>
+                             </div>
+                         </div>
 
-                            mount(AIImageGeneratorComponent, target, {
-                                props: {
-                                    initialQuota: initialQuota,
-                                    defaultParams: defaultParams,
-                                    paramRanges: paramRanges,
-                                }
-                            });
-                        } else {
-                            if (target) {
-                                target.innerHTML = `&lt;div class="alert alert-danger" role="alert"&gt;<t t-esc="_t('Error: Could not load the AI Image Generator component. Please try refreshing the page or contact support.')"/>&lt;/div&gt;`;
-                            }
-                            console.error("AIImageGeneratorComponent not found or target element missing.");
-                        }
-                    });
-                </script>
+
+                         <!-- Additional guidance or links -->
+                         <div class="mt-5 p-3 bg-light rounded">
+                             <h4><t t-esc="_('Tips for better results:')"/></h4>
+                              <ul class="list-unstyled">
+                                   <li><i class="fa fa-check-circle text-success me-1"></i><t t-esc="_('Be specific and descriptive in your prompt.')"/></li>
+                                   <li><i class="fa fa-check-circle text-success me-1"></i><t t-esc="_('Use negative prompts to exclude unwanted elements or styles.')"/></li>
+                                   <li><i class="fa fa-check-circle text-success me-1"></i><t t-esc="_('Experiment with different models and parameters to achieve unique styles.')"/></li>
+                                   <li><i class="fa fa-check-circle text-success me-1"></i><t t-esc="_('Consider aspect ratio and resolution for your intended use.')"/></li>
+                              </ul>
+                              <!-- Link to AI image guide if available
+                              <p><a href="/help/ai-image-guide" class="btn btn-sm btn-outline-secondary"><i class="fa fa-book me-1"></i><t t-esc="_('View AI Image Generation Guide')"/></a></p>
+                              -->
+                         </div>
+
+                     </div>
+                 </t>
             </t>
         </template>
     </data>

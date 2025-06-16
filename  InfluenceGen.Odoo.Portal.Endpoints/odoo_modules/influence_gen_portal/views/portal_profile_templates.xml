@@ -2,367 +2,276 @@
     <data>
         <template id="portal_profile_main" name="Influencer Profile">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/profile', 'text': _t('My Profile')}
-                ]"/>
-                <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('My Profile')"/></h1>
-                    </t>
-                </t>
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                     <t t-call="portal.portal_header">
+                          <t t-set="title"><t t-esc="_('My Profile')"/></t>
+                     </t>
 
-                <div class="container mt-4">
-                    <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                    <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
+                     <div class="o_portal_my_doc_container">
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
 
-                    <ul class="nav nav-tabs" id="profileTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="true"><t t-esc="_t('Personal &amp; Contact')"/></button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="professional-info-tab" data-bs-toggle="tab" data-bs-target="#professional-info" type="button" role="tab" aria-controls="professional-info" aria-selected="false"><t t-esc="_t('Professional Info')"/></button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="social-media-tab" data-bs-toggle="tab" data-bs-target="#social-media" type="button" role="tab" aria-controls="social-media" aria-selected="false"><t t-esc="_t('Social Media')"/></button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="kyc-status-tab" data-bs-toggle="tab" data-bs-target="#kyc-status" type="button" role="tab" aria-controls="kyc-status" aria-selected="false"><t t-esc="_t('KYC Status')"/></button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="payment-info-tab-btn" data-bs-toggle="tab" data-bs-target="#payment-info" type="button" role="tab" aria-controls="payment-info" aria-selected="false"><t t-esc="_t('Payments')"/></button>
-                        </li>
-                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="consent-management-tab-btn" data-bs-toggle="tab" data-bs-target="#consent-management" type="button" role="tab" aria-controls="consent-management" aria-selected="false"><t t-esc="_t('Consent')"/></button>
-                        </li>
-                    </ul>
+                         <!-- Tabbed Interface for Profile Sections -->
+                         <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+                             <li class="nav-item" role="presentation">
+                                 <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab" aria-controls="personal" aria-selected="true"><t t-esc="_('Personal &amp; Professional')"/></button>
+                             </li>
+                             <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="social-tab" data-bs-toggle="tab" data-bs-target="#social" type="button" role="tab" aria-controls="social" aria-selected="false"><t t-esc="_('Social Media')"/></button>
+                             </li>
+                              <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="kyc-tab" data-bs-toggle="tab" data-bs-target="#kyc" type="button" role="tab" aria-controls="kyc" aria-selected="false"><t t-esc="_('KYC Status')"/></button>
+                             </li>
+                             <li class="nav-item" role="presentation">
+                                 <button class="nav-link" id="payment-tab" data-bs-toggle="tab" data-bs-target="#payment" type="button" role="tab" aria-controls="payment" aria-selected="false"><t t-esc="_('Payment Info')"/></button>
+                             </li>
+                             <li class="nav-item" role="presentation">
+                                 <button class="nav-link" id="consent-tab" data-bs-toggle="tab" data-bs-target="#consent" type="button" role="tab" aria-controls="consent" aria-selected="false"><t t-esc="_('Terms &amp; Consent')"/></button>
+                             </li>
+                         </ul>
 
-                    <div class="tab-content pt-3" id="profileTabsContent">
-                        <!-- Personal & Contact Info Tab -->
-                        <div class="tab-pane fade show active" id="personal-info" role="tabpanel" aria-labelledby="personal-info-tab">
-                            <h4 class="mb-3"><t t-esc="_t('Personal &amp; Contact Information')"/></h4>
-                            <form t-attf-action="/my/profile/update?redirect=/my/profile%23personal-info" method="post">
-                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                <input type="hidden" name="form_section" value="personal_contact"/>
-                                <div class="row">
-                                    <div class="mb-3 col-md-6">
-                                        <label for="fullName" class="form-label"><t t-esc="_t('Full Name')"/></label>
-                                        <input type="text" class="form-control" id="fullName" name="fullName" t-att-value="influencer_profile.fullName" required="required"/>
+                         <div class="tab-content mt-3" id="profileTabsContent">
+                             <!-- Personal & Professional Tab -->
+                             <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
+                                 <h3><t t-esc="_('Personal &amp; Professional Information')"/></h3>
+                                 <form action="/my/profile/update" method="post">
+                                      <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                                      <div class="mb-3">
+                                           <label for="full_name" class="form-label"><t t-esc="_('Full Name')"/></label>
+                                           <input type="text" class="form-control" id="full_name" name="full_name" t-att-value="influencer.name" required="required"/>
+                                      </div>
+
+                                      <div class="mb-3">
+                                           <label for="email" class="form-label"><t t-esc="_('Email')"/></label>
+                                           <!-- Email usually displayed only, change via account settings or special process -->
+                                           <input type="email" class="form-control" id="email" t-att-value="influencer.user_id.login" disabled="disabled" aria-describedby="emailHelp"/>
+                                           <div id="emailHelp" class="form-text"><t t-esc="_('To change your email, please contact support or manage your Odoo account settings.')"/></div>
+                                      </div>
+
+                                      <div class="mb-3">
+                                           <label for="phone" class="form-label"><t t-esc="_('Phone Number')"/></label>
+                                           <input type="tel" class="form-control" id="phone" name="phone" t-att-value="influencer.phone"/>
+                                      </div>
+
+                                      <div class="mb-3">
+                                           <label for="residential_address" class="form-label"><t t-esc="_('Residential Address')"/></label>
+                                           <textarea class="form-control" id="residential_address" name="residential_address" rows="3"><t t-esc="influencer.residential_address"/></textarea>
+                                      </div>
+
+                                      <hr/>
+
+                                      <!-- Professional Info -->
+                                      <div class="mb-3">
+                                           <label for="areas_of_influence" class="form-label"><t t-esc="_('Areas of Influence (e.g., Fashion, Tech, Travel)')"/></label>
+                                           <!-- This could be a tag input or multi-select -->
+                                           <input type="text" class="form-control" id="areas_of_influence" name="areas_of_influence" t-att-value="influencer.areas_of_influence_display" aria-describedby="areasHelp"/> <!-- Assuming display helper -->
+                                           <div id="areasHelp" class="form-text"><t t-esc="_('Comma-separated list of your primary niches.')"/></div>
+                                      </div>
+
+                                      <div class="mb-3">
+                                           <label for="audience_demographics" class="form-label"><t t-esc="_('Audience Demographics')"/></label>
+                                           <!-- Could be structured inputs or a textarea -->
+                                            <textarea class="form-control" id="audience_demographics" name="audience_demographics" rows="3" aria-describedby="audienceHelp"><t t-esc="influencer.audience_demographics_display"/></textarea>
+                                            <div id="audienceHelp" class="form-text"><t t-esc="_('Briefly describe your audience (e.g., age range, gender, location). This helps match you with relevant campaigns.')"/></div>
+                                      </div>
+
+
+                                       <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"></i><t t-esc="_('Save Changes')"/></button>
+                                 </form>
+                             </div>
+
+                             <!-- Social Media Tab -->
+                              <div class="tab-pane fade" id="social" role="tabpanel" aria-labelledby="social-tab">
+                                   <h3><t t-esc="_('Social Media Accounts')"/></h3>
+                                   <p><t t-esc="_('Add or update your social media profiles. Verification may be required.')"/></p>
+                                   <a href="/my/social/setup" class="btn btn-secondary mb-3"><i class="fa fa-plus-circle me-1"></i><t t-esc="_('Manage Social Media Accounts')"/></a>
+                                  <!-- Optionally display a list of existing accounts here -->
+                                   <div t-if="profile_details and profile_details.get('social_profiles')">
+                                        <h4><t t-esc="_('Linked Accounts')"/></h4>
+                                        <ul class="list-group">
+                                             <t t-foreach="profile_details['social_profiles']" t-as="social">
+                                                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                       <div>
+                                                            <strong><t t-esc="social.platform"/>:</strong> <a t-att-href="social.url or '#'" target="_blank" rel="noopener noreferrer"><t t-esc="social.handle or social.url"/></a>
+                                                            <span t-attf-class="badge ms-2 bg-#{social.verification_status == 'verified' and 'success' or social.verification_status == 'pending' and 'warning' or 'danger'}">
+                                                                <t t-esc="social.verification_status_display"/>
+                                                           </span>
+                                                       </div>
+                                                       <!-- Add edit/remove links if needed, linking back to /my/social/setup with parameters -->
+                                                  </li>
+                                             </t>
+                                        </ul>
+                                   </div>
+                                    <div t-elif="not profile_details or not profile_details.get('social_profiles')" class="alert alert-info" role="alert">
+                                        <t t-esc="_('No social media accounts linked yet.')"/>
                                     </div>
-                                    <div class="mb-3 col-md-6">
-                                        <label for="email" class="form-label"><t t-esc="_t('Email Address')"/></label>
-                                        <input type="email" class="form-control" id="email" name="email" t-att-value="influencer_profile.email" readonly="readonly" aria-describedby="emailHelp"/>
-                                        <div id="emailHelp" class="form-text"><t t-esc="_t('To change your email, please contact support.')"/></div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="mb-3 col-md-6">
-                                        <label for="phone" class="form-label"><t t-esc="_t('Phone Number')"/></label>
-                                        <input type="tel" class="form-control" id="phone" name="phone" t-att-value="influencer_profile.phone"/>
-                                    </div>
-                                    <div class="mb-3 col-md-6">
-                                        <label for="residentialAddress" class="form-label"><t t-esc="_t('Residential Address')"/></label>
-                                        <textarea class="form-control" id="residentialAddress" name="residentialAddress" rows="3"><t t-esc="influencer_profile.residentialAddress"/></textarea>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"/> <t t-esc="_t('Save Personal Info')"/></button>
-                            </form>
-                        </div>
+                              </div>
 
-                        <!-- Professional Info Tab -->
-                        <div class="tab-pane fade" id="professional-info" role="tabpanel" aria-labelledby="professional-info-tab">
-                            <h4 class="mb-3"><t t-esc="_t('Professional Information')"/></h4>
-                             <form t-attf-action="/my/profile/update?redirect=/my/profile%23professional-info" method="post">
-                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                <input type="hidden" name="form_section" value="professional"/>
-                                <div class="mb-3">
-                                    <label for="areasOfInfluence" class="form-label"><t t-esc="_t('Areas of Influence (comma-separated)')"/></label>
-                                    <input type="text" class="form-control" id="areasOfInfluence" name="areasOfInfluence" t-att-value="influencer_profile.areasOfInfluence_display"/>
-                                    <div class="form-text"><t t-esc="_t('e.g., Fashion, Gaming, Technology, Travel')"/></div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="audienceDemographics" class="form-label"><t t-esc="_t('Audience Demographics (Brief Description)')"/></label>
-                                    <textarea class="form-control" id="audienceDemographics" name="audienceDemographics" rows="3"><t t-esc="influencer_profile.audienceDemographics_display"/></textarea>
-                                    <div class="form-text"><t t-esc="_t('e.g., Age 18-35, Mostly female, USA &amp; Canada')"/></div>
-                                </div>
-                                <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"/> <t t-esc="_t('Save Professional Info')"/></button>
-                            </form>
-                        </div>
+                             <!-- KYC Status Tab -->
+                             <div class="tab-pane fade" id="kyc" role="tabpanel" aria-labelledby="kyc-tab">
+                                  <h3><t t-esc="_('KYC Verification Status')"/></h3>
+                                   <!-- Call KYC Status Template or render details directly -->
+                                   <t t-call="influence_gen_portal.portal_kyc_status_page_content"/>
+                             </div>
 
-                        <!-- Social Media Accounts Tab -->
-                        <div class="tab-pane fade" id="social-media" role="tabpanel" aria-labelledby="social-media-tab">
-                            <h4 class="mb-3"><t t-esc="_t('Social Media Accounts')"/></h4>
-                            <t t-call="influence_gen_portal.portal_social_media_form_snippet"/>
-                        </div>
+                             <!-- Payment Information Tab -->
+                             <div class="tab-pane fade" id="payment" role="tabpanel" aria-labelledby="payment-tab">
+                                 <h3><t t-esc="_('Payment Information')"/></h3>
+                                  <!-- Call Payment Info Template or render details directly -->
+                                 <t t-call="influence_gen_portal.portal_payment_info_content"/>
+                             </div>
 
-                        <!-- KYC Status Tab -->
-                        <div class="tab-pane fade" id="kyc-status" role="tabpanel" aria-labelledby="kyc-status-tab">
-                             <t t-call="influence_gen_portal.portal_kyc_status_display_snippet"/>
-                        </div>
-
-                        <!-- Payment Information Tab -->
-                        <div class="tab-pane fade" id="payment-info" role="tabpanel" aria-labelledby="payment-info-tab-btn">
-                            <t t-call="influence_gen_portal.portal_payment_info_template_content"/>
-                        </div>
-
-                        <!-- Consent Management Tab -->
-                        <div class="tab-pane fade" id="consent-management" role="tabpanel" aria-labelledby="consent-management-tab-btn">
-                             <t t-call="influence_gen_portal.portal_consent_management_template_content"/>
-                        </div>
-                    </div>
-                </div>
-            </t>
-        </template>
-
-        <!-- Snippet for Social Media Form (used in profile and onboarding) -->
-        <template id="portal_social_media_form_snippet" name="Social Media Form Snippet">
-            <div class="alert alert-info" role="alert">
-                <t t-esc="_t('Link your social media accounts. Some platforms may require re-verification if you change your handle.')"/>
-            </div>
-            <form t-attf-action="/my/social/setup/process?redirect=/my/profile%23social-media" method="post">
-                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                <t t-if="social_media_accounts">
-                    <h5><t t-esc="_t('Linked Accounts')"/></h5>
-                    <ul class="list-group mb-3">
-                        <t t-foreach="social_media_accounts" t-as="account">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong t-esc="account.platform"/>: <a t-att-href="account.url" target="_blank" rel="noopener noreferrer"><t t-esc="account.handle"/></a>
-                                    <br/>
-                                    <small t-if="account.verificationStatus == 'verified'" class="text-success"><i class="fa fa-check-circle me-1"/> <t t-esc="_t('Verified on %s', account.verifiedAt)"/></small>
-                                    <small t-elif="account.verificationStatus == 'pending'" class="text-warning"><i class="fa fa-clock-o me-1"/> <t t-esc="_t('Verification Pending')"/></small>
-                                    <small t-elif="account.verificationStatus == 'failed'" class="text-danger"><i class="fa fa-times-circle me-1"/> <t t-esc="_t('Verification Failed')"/></small>
-                                </div>
-                                <!-- Add edit/delete buttons if functionality exists -->
-                            </li>
-                        </t>
-                    </ul>
-                </t>
-
-                <h5><t t-esc="_t('Add New Account')"/></h5>
-                <div class="row">
-                    <div class="mb-3 col-md-4">
-                        <label for="social_platform" class="form-label"><t t-esc="_t('Platform')"/></label>
-                        <select class="form-select" id="social_platform" name="platform" required="required">
-                            <option value="" selected="selected" disabled="disabled"><t t-esc="_t('Select Platform...')"/></option>
-                            <option value="Instagram">Instagram</option>
-                            <option value="TikTok">TikTok</option>
-                            <option value="YouTube">YouTube</option>
-                            <option value="Twitter">Twitter / X</option>
-                            <option value="Facebook">Facebook</option>
-                            <option value="LinkedIn">LinkedIn</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="mb-3 col-md-4">
-                        <label for="social_handle" class="form-label"><t t-esc="_t('Handle/Username')"/></label>
-                        <input type="text" class="form-control" id="social_handle" name="handle" required="required"/>
-                    </div>
-                    <div class="mb-3 col-md-4">
-                        <label for="social_url" class="form-label"><t t-esc="_t('Profile URL (Optional)')"/></label>
-                        <input type="url" class="form-control" id="social_url" name="url" placeholder="https://..."/>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fa fa-plus me-1"/> <t t-esc="_t('Add Account')"/></button>
-                 <div class="form-text mt-2"><t t-esc="_t('Account verification may involve linking via OAuth or adding a code to your bio, depending on the platform and system configuration.')"/></div>
-            </form>
-        </template>
-        
-        <!-- Snippet for KYC Status Display (used in profile and onboarding status page) -->
-        <template id="portal_kyc_status_display_snippet" name="KYC Status Display Snippet">
-            <h4 class="mb-3"><t t-esc="_t('KYC Status')"/></h4>
-            <t t-if="kyc_data">
-                <div t-if="kyc_data.kycStatus == 'approved'" class="alert alert-success" role="alert">
-                    <h5 class="alert-heading"><i class="fa fa-check-circle me-1"/> <t t-esc="_t('KYC Approved!')"/></h5>
-                    <p><t t-esc="_t('Your KYC verification was successfully approved on %s.', kyc_data.reviewedAt)"/></p>
-                </div>
-                <div t-elif="kyc_data.kycStatus == 'pending'" class="alert alert-info" role="alert">
-                    <h5 class="alert-heading"><i class="fa fa-clock-o me-1"/> <t t-esc="_t('KYC Pending Review')"/></h5>
-                    <p><t t-esc="_t('Your KYC documents have been submitted and are awaiting review. This usually takes 1-3 business days.')"/></p>
-                </div>
-                 <div t-elif="kyc_data.kycStatus == 'in_review'" class="alert alert-info" role="alert">
-                    <h5 class="alert-heading"><i class="fa fa-search me-1"/> <t t-esc="_t('KYC In Review')"/></h5>
-                    <p><t t-esc="_t('Your KYC documents are currently being reviewed by our team.')"/></p>
-                </div>
-                <div t-elif="kyc_data.kycStatus == 'rejected' or kyc_data.kycStatus == 'needs_more_info'" class="alert alert-danger" role="alert">
-                    <h5 class="alert-heading"><i class="fa fa-times-circle me-1"/> <t t-esc="_t('KYC Action Required')"/></h5>
-                    <p><t t-esc="_t('There was an issue with your KYC submission.')"/></p>
-                    <t t-if="kyc_data.notes">
-                        <hr/>
-                        <p class="mb-0"><strong><t t-esc="_t('Reviewer Feedback:')"/></strong> <t t-esc="kyc_data.notes"/></p>
-                    </t>
-                    <hr/>
-                    <a href="/my/kyc/submit" class="btn btn-warning"><i class="fa fa-pencil me-1"/> <t t-esc="_t('Resubmit KYC Documents')"/></a>
-                </div>
-                <t t-if="kyc_data.kycStatus != 'approved'">
-                    <p><t t-esc="_t('Current Status:')"/> <strong t-esc="kyc_data.kycStatus_display"/>.</p>
-                    <p><t t-esc="_t('Submitted on:')"/> <t t-esc="kyc_data.createdAt" t-options='{"widget": "datetime"}'/>.</p>
-                </t>
-            </t>
-            <t t-else="">
-                 <div class="alert alert-warning" role="alert">
-                    <h5 class="alert-heading"><i class="fa fa-exclamation-triangle me-1"/> <t t-esc="_t('KYC Not Submitted')"/></h5>
-                    <p><t t-esc="_t('You have not yet submitted your KYC documents. Please complete this step to fully activate your account.')"/></p>
-                    <hr/>
-                    <a href="/my/kyc/submit" class="btn btn-primary"><i class="fa fa-upload me-1"/> <t t-esc="_t('Submit KYC Documents')"/></a>
-                </div>
-            </t>
-        </template>
-
-        <!-- Payment Info Template Content -->
-        <template id="portal_payment_info_template_content" name="Payment Information Content">
-            <h4 class="mb-3"><t t-esc="_t('Payment Information')"/></h4>
-             <form t-attf-action="/my/payments/update?redirect=/my/profile%23payment-info" method="post">
-                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                <h5><t t-esc="_t('Bank Account Details')"/></h5>
-                <t t-if="bank_accounts">
-                    <ul class="list-group mb-3">
-                        <t t-foreach="bank_accounts" t-as="account">
-                            <li t-attf-class="list-group-item #{account.isPrimary and 'list-group-item-success'}">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong><t t-esc="account.bankName"/></strong> - <span class="text-muted"><t t-esc="_t('Acc. Holder:')"/> <t t-esc="account.accountHolderName"/></span>
-                                        <br/>
-                                        <span class="text-muted"><t t-esc="_t('Account No:')"/> ****<t t-esc="account.accountNumber_last4"/></span>
-                                        <t t-if="account.isPrimary"><span class="badge bg-success ms-2"><t t-esc="_t('Primary')"/></span></t>
-                                    </div>
-                                    <div>
-                                         <small t-if="account.verificationStatus == 'verified'" class="text-success"><i class="fa fa-check-circle me-1"/> <t t-esc="_t('Verified')"/></small>
-                                         <small t-elif="account.verificationStatus == 'pending'" class="text-warning"><i class="fa fa-clock-o me-1"/> <t t-esc="_t('Pending Verification')"/></small>
-                                         <small t-elif="account.verificationStatus == 'failed'" class="text-danger"><i class="fa fa-times-circle me-1"/> <t t-esc="_t('Verification Failed')"/></small>
-                                         <!-- TODO: Edit/Delete/Set Primary buttons -->
-                                    </div>
-                                </div>
-                            </li>
-                        </t>
-                    </ul>
-                </t>
-                <t t-else="">
-                    <div class="alert alert-warning" role="alert">
-                        <t t-esc="_t('No bank account details found. Please add your bank account to receive payments.')"/>
-                    </div>
-                </t>
-
-                <h5 class="mt-3"><t t-esc="_t('Add/Update Bank Account')"/></h5>
-                 <div class="row">
-                    <div class="mb-3 col-md-6">
-                        <label for="accountHolderName" class="form-label"><t t-esc="_t('Account Holder Name')"/></label>
-                        <input type="text" class="form-control" id="accountHolderName" name="accountHolderName" required="required"/>
-                    </div>
-                    <div class="mb-3 col-md-6">
-                        <label for="bankName" class="form-label"><t t-esc="_t('Bank Name')"/></label>
-                        <input type="text" class="form-control" id="bankName" name="bankName" required="required"/>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="mb-3 col-md-6">
-                        <label for="accountNumber" class="form-label"><t t-esc="_t('Account Number')"/></label>
-                        <input type="text" class="form-control" id="accountNumber" name="accountNumber" required="required"/>
-                    </div>
-                    <div class="mb-3 col-md-6">
-                        <label for="routingNumber" class="form-label"><t t-esc="_t('Routing Number / Sort Code (if applicable)')"/></label>
-                        <input type="text" class="form-control" id="routingNumber" name="routingNumber"/>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="mb-3 col-md-6">
-                        <label for="iban" class="form-label"><t t-esc="_t('IBAN (if applicable)')"/></label>
-                        <input type="text" class="form-control" id="iban" name="iban"/>
-                    </div>
-                    <div class="mb-3 col-md-6">
-                        <label for="swiftCode" class="form-label"><t t-esc="_t('SWIFT/BIC Code (if applicable)')"/></label>
-                        <input type="text" class="form-control" id="swiftCode" name="swiftCode"/>
-                    </div>
-                </div>
-                 <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="isPrimary" name="isPrimary" value="true"/>
-                    <label class="form-check-label" for="isPrimary"><t t-esc="_t('Set as primary account for payouts')"/></label>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"/> <t t-esc="_t('Save Bank Account')"/></button>
-            </form>
-
-            <h5 class="mt-4"><t t-esc="_t('Payment History')"/></h5>
-            <t t-if="payment_history">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col"><t t-esc="_t('Date')"/></th>
-                                <th scope="col"><t t-esc="_t('Campaign/Description')"/></th>
-                                <th scope="col" class="text-end"><t t-esc="_t('Amount')"/></th>
-                                <th scope="col"><t t-esc="_t('Status')"/></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <t t-foreach="payment_history" t-as="payment">
-                                <tr>
-                                    <td><span t-esc="payment.date" t-options='{"widget": "date"}'/></td>
-                                    <td><t t-esc="payment.description"/></td>
-                                    <td class="text-end"><span t-esc="payment.amount" t-options='{"widget": "monetary", "display_currency": payment.currency_id}'/></td>
-                                    <td>
-                                        <span t-if="payment.status == 'paid'" class="badge bg-success"><t t-esc="payment.status_display"/></span>
-                                        <span t-elif="payment.status == 'pending'" class="badge bg-warning text-dark"><t t-esc="payment.status_display"/></span>
-                                        <span t-elif="payment.status == 'in_progress'" class="badge bg-info text-dark"><t t-esc="payment.status_display"/></span>
-                                        <span t-else="" class="badge bg-danger"><t t-esc="payment.status_display"/></span>
-                                    </td>
-                                </tr>
-                            </t>
-                        </tbody>
-                    </table>
-                </div>
-            </t>
-            <t t-else="">
-                <p><t t-esc="_t('No payment history available.')"/></p>
-            </t>
-        </template>
-
-        <!-- Consent Management Template Content -->
-        <template id="portal_consent_management_template_content" name="Consent Management Content">
-            <h4 class="mb-3"><t t-esc="_t('Terms &amp; Consent Management')"/></h4>
-            <t t-if="pending_consent">
-                <div class="alert alert-warning" role="alert">
-                    <h5 class="alert-heading"><i class="fa fa-exclamation-triangle me-1"/> <t t-esc="_t('Action Required: Updated Terms')"/></h5>
-                    <p><t t-esc="_t('Our Terms of Service and/or Privacy Policy have been updated. Please review and accept the latest versions to continue using our platform.')"/></p>
-                    <hr/>
-                    <form t-attf-action="/my/consent/accept?redirect=/my/profile%23consent-management" method="post">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <input type="hidden" name="tos_version" t-att-value="pending_consent.new_tos_version"/>
-                        <input type="hidden" name="privacy_policy_version" t-att-value="pending_consent.new_privacy_policy_version"/>
-                         <div class="mb-2">
-                             <a t-att-href="pending_consent.tos_url" target="_blank" rel="noopener noreferrer"><t t-esc="_t('View Latest Terms of Service (v%s)', pending_consent.new_tos_version)"/></a>
+                              <!-- Consent Tab -->
+                             <div class="tab-pane fade" id="consent" role="tabpanel" aria-labelledby="consent-tab">
+                                  <h3><t t-esc="_('Terms &amp; Consent')"/></h3>
+                                   <!-- Call Consent Management Template or render details directly -->
+                                  <t t-call="influence_gen_portal.portal_consent_management_content"/>
+                             </div>
                          </div>
-                         <div class="mb-3">
-                             <a t-att-href="pending_consent.privacy_policy_url" target="_blank" rel="noopener noreferrer"><t t-esc="_t('View Latest Privacy Policy (v%s)', pending_consent.new_privacy_policy_version)"/></a>
-                         </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" value="true" id="accept_terms_checkbox" name="accepted_terms" required="required"/>
-                            <label class="form-check-label" for="accept_terms_checkbox">
-                                <t t-esc="_t('I have read and agree to the latest Terms of Service and Privacy Policy.')"/>
+                     </div>
+                 </t>
+            </t>
+        </template>
+
+         <!-- Template snippet for Payment Info - can be included in profile page or stand alone -->
+        <template id="portal_payment_info_page" name="Influencer Payment Info Page">
+            <t t-call="portal.portal_layout">
+                <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                <t t-call="portal.portal_common">
+                    <t t-call="portal.portal_header">
+                         <t t-set="title"><t t-esc="_('My Payments')"/></t>
+                    </t>
+                    <div class="o_portal_my_doc_container">
+                        <t t-call="influence_gen_portal.portal_flash_messages"/>
+                        <t t-call="influence_gen_portal.portal_payment_info_content"/>
+                    </div>
+                </t>
+            </t>
+        </template>
+
+        <template id="portal_payment_info_content" name="Influencer Payment Info Content">
+            <!-- This template assumes it receives 'payment_data' and 'influencer' from the controller -->
+            <h3><t t-esc="_('Bank Account Details')"/></h3>
+            <p><t t-esc="_('Manage your bank accounts for receiving payments.')"/></p>
+            <t t-call="influence_gen_portal.portal_bank_account_form_content"/> <!-- Call bank account form snippet -->
+
+            <t t-if="payment_data and payment_data.get('payment_history')">
+                  <h4 class="mt-4"><t t-esc="_('Payment History')"/></h4>
+                  <div class="table-responsive">
+                      <table class="table table-striped">
+                            <thead>
+                                 <tr>
+                                      <th><t t-esc="_('Date')"/></th>
+                                      <th><t t-esc="_('Campaign')"/></th>
+                                      <th><t t-esc="_('Amount')"/></th>
+                                      <th><t t-esc="_('Status')"/></th>
+                                      <th><t t-esc="_('Details')"/></th>
+                                 </tr>
+                            </thead>
+                            <tbody>
+                                 <t t-foreach="payment_data['payment_history']" t-as="payment">
+                                      <tr>
+                                           <td><t t-esc="payment.paid_date or payment.due_date" t-options='{"widget": "date"}'/></td>
+                                           <td><t t-esc="payment.campaign_id.name if payment.campaign_id else _('N/A')"/></td>
+                                           <td><t t-esc="payment.amount" t-options='{"widget": "monetary", "display_currency": payment.currency_id}'/></td>
+                                           <td><span t-attf-class="badge bg-#{payment.status == 'paid' and 'success' or payment.status == 'pending' and 'warning' or 'secondary'}"><t t-esc="payment.status_display"/></span></td>
+                                           <td>
+                                               <!-- Link to payment record details if a portal page for it exists -->
+                                               <!-- <a t-attf-href="/my/payments/#{payment.id}" class="btn btn-sm btn-outline-info"><t t-esc="_('View')"/></a> -->
+                                               <t t-if="payment.transaction_id"><t t-esc="payment.transaction_id"/></t>
+                                           </td>
+                                      </tr>
+                                 </t>
+                            </tbody>
+                      </table>
+                  </div>
+            </t>
+            <t t-elif="not payment_data or not payment_data.get('payment_history')" class="mt-3">
+                 <div class="alert alert-info" role="alert"><t t-esc="_('No payment history available.')"/></div>
+            </t>
+        </template>
+
+        <!-- Template snippet for Consent Management - can be included in profile page or stand alone -->
+        <template id="portal_consent_management_page" name="Influencer Consent Management Page">
+            <t t-call="portal.portal_layout">
+                <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                <t t-call="portal.portal_common">
+                     <t t-call="portal.portal_header">
+                          <t t-set="title"><t t-esc="_('Terms &amp; Consent')"/></t>
+                     </t>
+                     <div class="o_portal_my_doc_container">
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
+                         <t t-call="influence_gen_portal.portal_consent_management_content"/>
+                     </div>
+                </t>
+            </t>
+        </template>
+
+         <template id="portal_consent_management_content" name="Influencer Consent Management Content">
+             <!-- This template assumes it receives 'consent_data' and 'influencer' -->
+             <h3><t t-esc="_('Terms of Service and Privacy Policy Agreement')"/></h3>
+
+             <t t-if="consent_data and not consent_data.get('accepted_latest')">
+                  <div class="alert alert-warning" role="alert">
+                        <t t-esc="_('Important: New versions of our Terms of Service and/or Privacy Policy are available. Please review and accept to continue using the platform.')"/>
+                  </div>
+                  <form action="/my/consent/accept" method="post">
+                       <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                       <input type="hidden" name="tos_version" t-att-value="consent_data.get('latest_tos_version')"/>
+                       <input type="hidden" name="privacy_policy_version" t-att-value="consent_data.get('latest_privacy_policy_version')"/>
+                       <input type="hidden" name="redirect" t-att-value="request.httprequest.path"/>
+
+                       <h4><t t-esc="_('Latest Versions')"/></h4>
+                       <p>
+                            <t t-esc="_('Terms of Service Version:')"/> <a t-att-href="consent_data.get('latest_tos_url', '#')" target="_blank"><t t-esc="consent_data.get('latest_tos_version')"/></a> <br/>
+                            <t t-esc="_('Privacy Policy Version:')"/> <a t-att-href="consent_data.get('latest_privacy_policy_url', '#')" target="_blank"><t t-esc="consent_data.get('latest_privacy_policy_version')"/></a>
+                       </p>
+
+                       <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="acceptTerms" name="accept_terms" required="required"/>
+                            <label class="form-check-label" for="acceptTerms">
+                                 <t t-esc="_('I have read and agree to the latest Terms of Service and Privacy Policy.')"/>
                             </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary"><i class="fa fa-check me-1"/> <t t-esc="_t('Accept Updated Terms')"/></button>
-                    </form>
-                </div>
+                       </div>
+
+                       <button type="submit" class="btn btn-primary"><i class="fa fa-check me-1"></i><t t-esc="_('Accept Terms')"/></button>
+                  </form>
+             </t>
+            <t t-else="">
+                 <div class="alert alert-success" role="alert">
+                      <t t-esc="_('You have accepted the latest Terms of Service and Privacy Policy.')"/>
+                 </div>
             </t>
 
-            <h5><t t-esc="_t('Your Consent History')"/></h5>
-            <t t-if="consent_history">
-                 <ul class="list-group">
-                    <t t-foreach="consent_history" t-as="consent">
-                        <li class="list-group-item">
-                            <t t-esc="_t('Agreed to Terms of Service version')"/> <strong t-esc="consent.tosVersion"/> <t t-esc="_t('and Privacy Policy version')"/> <strong t-esc="consent.privacyPolicyVersion"/> <t t-esc="_t('on')"/> <span t-esc="consent.consentDate" t-options='{"widget": "datetime"}'/>.
-                        </li>
-                    </t>
-                </ul>
+
+            <h4 class="mt-4"><t t-esc="_('Consent History')"/></h4>
+            <t t-if="consent_data and consent_data.get('history')">
+                  <div class="table-responsive">
+                      <table class="table table-striped">
+                            <thead>
+                                 <tr>
+                                      <th><t t-esc="_('Date Accepted')"/></th>
+                                      <th><t t-esc="_('Terms Version')"/></th>
+                                      <th><t t-esc="_('Privacy Policy Version')"/></th>
+                                 </tr>
+                            </thead>
+                            <tbody>
+                                 <t t-foreach="consent_data['history']" t-as="consent">
+                                      <tr>
+                                           <td><t t-esc="consent.consent_date" t-options='{"widget": "datetime"}'/></td>
+                                           <td><t t-esc="consent.tos_version"/></td>
+                                           <td><t t-esc="consent.privacy_policy_version"/></td>
+                                      </tr>
+                                 </t>
+                            </tbody>
+                      </table>
+                  </div>
             </t>
-            <t t-else="">
-                <p><t t-esc="_t('No consent history found.')"/></p>
+            <t t-elif="not consent_data or not consent_data.get('history')" class="mt-3">
+                 <div class="alert alert-info" role="alert"><t t-esc="_('No consent history recorded.')"/></div>
             </t>
-        </template>
+         </template>
 
     </data>
 </odoo>

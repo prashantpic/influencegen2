@@ -1,144 +1,119 @@
 <odoo>
     <data>
-        <template id="portal_content_submission_page" name="Content Submission Form">
+        <template id="portal_content_submission_page" name="Content Submission">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/campaigns', 'text': _t('Campaigns')},
-                    {'url': campaign_application.campaign_id.get_portal_url(), 'text': campaign_application.campaign_id.name},
-                    {'url': '#', 'text': _t('Submit Content')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('Submit Content for: %s', campaign_application.campaign_id.name)"/></h1>
-                    </t>
-                </t>
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                      <t t-call="portal.portal_header">
+                           <t t-set="title"><t t-esc="_('Submit Content for:')"/> <t t-esc="campaign.name"/></t>
+                      </t>
+                     <div class="o_portal_my_doc_container">
+                         <h2><t t-esc="_('Submit Your Campaign Content')"/></h2>
+                         <p><t t-esc="_('Please provide the required content and details for your approved application for the campaign:')"/> <strong><t t-esc="campaign.name"/></strong>.</p>
 
-                <div class="container mt-4">
-                     <div t-if="error_message" class="alert alert-danger" role="alert">
-                        <t t-esc="error_message"/>
-                    </div>
-                     <div t-if="success_message" class="alert alert-success" role="alert">
-                        <t t-esc="success_message"/>
-                    </div>
+                          <t t-call="influence_gen_portal.portal_flash_messages"/>
 
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light">
-                            <h4 class="mb-0"><t t-esc="_t('Content Submission Form')"/></h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info">
-                                <p><strong><t t-esc="_t('Campaign:')"/></strong> <t t-esc="campaign_application.campaign_id.name"/></p>
-                                <p><strong><t t-esc="_t('Submission Deadline:')"/></strong> <span t-field="campaign_application.campaign_id.submissionDeadline" t-options='{"widget": "datetime"}'/></p>
-                                <p><a t-att-href="campaign_application.campaign_id.get_portal_url()" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link me-1"/> <t t-esc="_t('Review Campaign Brief &amp; Requirements')"/></a></p>
-                            </div>
+                         <div class="card mb-4 shadow-sm">
+                              <div class="card-header bg-light">
+                                   <h5 class="mb-0"><t t-esc="_('Campaign Brief &amp; Requirements')"/></h5>
+                              </div>
+                              <div class="card-body">
+                                   <p><strong><t t-esc="_('Brand:')"/></strong> <t t-esc="campaign.brand_id.name"/></p>
+                                    <p><strong><t t-esc="_('Content Submission Deadline:')"/></strong> <span class="fw-bold text-danger"><t t-esc="campaign.submission_deadline" t-options='{"widget": "date"}'/></span></p>
+                                   <p class="mt-3"><a t-attf-href="/my/campaigns/#{campaign.id}" target="_blank"><i class="fa fa-external-link me-1"></i><t t-esc="_('Review Full Campaign Brief &amp; Requirements')"/></a></p>
+                              </div>
+                         </div>
 
-                            <form t-attf-action="/my/campaigns/submit/#{campaign_application.id}/process" method="post" enctype="multipart/form-data">
-                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
-                                <div class="mb-3">
-                                    <label for="caption" class="form-label"><h5><t t-esc="_t('Caption / Text Content')"/></h5></label>
-                                    <textarea class="form-control" id="caption" name="caption" rows="5" placeholder="Enter your post caption here..."></textarea>
-                                </div>
+                          <form t-attf-action="/my/campaigns/submit/#{application.id}/process" method="post" enctype="multipart/form-data">
+                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
-                                <div class="mb-3">
-                                    <label for="content_files" class="form-label"><h5><t t-esc="_t('Upload Media (Images/Videos)')"/></h5></label>
-                                    <div id="file_uploader_content_container">
-                                        <t t-call="influence_gen_portal.FileUploaderComponent">
-                                            <t t-set="props" t-value="{
-                                                'acceptedFileTypes': 'image/jpeg,image/png,image/gif,video/mp4,video/quicktime',
-                                                'maxFileSize': 25 * 1024 * 1024, /* 25MB example */
-                                                'uploadUrl': '/my/campaigns/upload_content_chunk', /* Needs a controller */
-                                                'fieldName': 'content_files',
-                                                'multiple': True,
-                                                'label': _t('Upload Images or Videos')
-                                            }"/>
-                                        </t>
-                                    </div>
-                                    <input type="file" name="content_files_fallback" class="form-control d-none" multiple="multiple" accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"/>
-                                    <small class="form-text text-muted"><t t-esc="_t('Max 25MB per file. Accepted formats: JPG, PNG, GIF, MP4, MOV.')"/></small>
-                                    <!-- Hidden input to store attachment IDs from FileUploaderComponent -->
-                                    <input type="hidden" name="content_attachment_ids" id="content_attachment_ids"/>
-                                </div>
+                              <!-- Text Caption -->
+                              <div class="mb-3">
+                                   <label for="text_caption" class="form-label"><t t-esc="_('Text Caption / Description')"/></label>
+                                   <textarea class="form-control" id="text_caption" name="text_caption" rows="4" placeholder="Enter the caption for your post..."></textarea>
+                                   <small class="form-text text-muted"><t t-esc="_('Provide the text you will use in your post. Include all required mentions and hashtags.')"/></small>
+                              </div>
 
-                                <div class="mb-3">
-                                    <label for="post_link" class="form-label"><h5><t t-esc="_t('Link to Draft/Published Post (Optional)')"/></h5></label>
-                                    <input type="url" class="form-control" id="post_link" name="post_link" placeholder="https://www.instagram.com/p/yourpost/..."/>
-                                </div>
+                               <!-- File Uploads -->
+                              <div class="mb-3">
+                                   <label for="content_files" class="form-label"><t t-esc="_('Upload Media (Images/Videos)')"/></label>
+                                   <input type="file" class="form-control" id="content_files" name="content_files" multiple="multiple" accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"/>
+                                    <small class="form-text text-muted"><t t-esc="_('Upload images or videos as required by the campaign. Max 25MB per file.')"/></small>
 
-                                <t t-if="eligible_ai_images">
+                                   <!-- For OWL Component based uploader (Example, not fully integrated here for brevity):
+                                   <div id="content_uploader_mount_point"></div>
+                                   <script>
+                                        // This script would mount the FileUploaderComponent here.
+                                        // It would need proper props: uploadUrl (e.g., /my/content/upload/temp), fieldName, etc.
+                                        // The component would emit events with uploaded file IDs, which then need to be
+                                        // collected and submitted with this main form, perhaps via hidden inputs.
+                                        // This is more complex than a simple input type="file".
+                                   </script>
+                                   -->
+                              </div>
+
+                              <!-- Link to Published Post -->
+                              <div class="mb-3">
+                                   <label for="post_url" class="form-label"><t t-esc="_('Link to Draft or Published Post URL')"/></label>
+                                   <input type="url" class="form-control" id="post_url" name="post_url" placeholder="https://instagram.com/p/yourpostid"/>
+                                   <small class="form-text text-muted"><t t-esc="_('Provide the URL of your post on the social media platform if available.')"/></small>
+                              </div>
+
+                              <!-- Select from AI-Generated Images -->
+                               <t t-if="submission_data and submission_data.get('eligible_ai_images')">
                                     <div class="mb-3">
-                                        <label for="ai_image_ids" class="form-label"><h5><t t-esc="_t('Select AI-Generated Images (Optional)')"/></h5></label>
-                                        <p><t t-esc="_t('You can select images you previously generated using our AI tool to include in your submission.')"/></p>
-                                        <div class="row">
-                                            <t t-foreach="eligible_ai_images" t-as="image">
-                                                <div class="col-md-3 mb-2">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="ai_image_ids" t-att-value="image.id" t-att-id="'ai_image_' + str(image.id)"/>
-                                                        <label class="form-check-label" t-att-for="'ai_image_' + str(image.id)">
-                                                            <img t-att-src="image.thumbnailUrl or image.storageUrl" t-att-alt="_t('AI Generated Image %s', image.id)" class="img-thumbnail" style="max-height: 100px;"/>
-                                                            <small class="d-block text-muted" t-esc="image.prompt_short or _t('Image %s', image.id)"/>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </t>
-                                        </div>
+                                         <label class="form-label fw-bold"><t t-esc="_('Select from Your AI-Generated Images for this Campaign')"/></label>
+                                         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                                              <t t-foreach="submission_data.get('eligible_ai_images')" t-as="ai_image">
+                                                   <div class="col">
+                                                        <div class="card h-100 shadow-sm">
+                                                             <img t-att-src="ai_image.url" class="card-img-top" style="height: 150px; object-fit: cover;" t-att-alt="ai_image.prompt" loading="lazy"/>
+                                                             <div class="card-body p-2">
+                                                                  <div class="form-check">
+                                                                       <input class="form-check-input" type="checkbox" t-attf-id="ai_image_#{ai_image.id}" name="selected_ai_image_ids" t-att-value="ai_image.id"/>
+                                                                       <label class="form-check-label small" t-attf-for="ai_image_#{ai_image.id}"><t t-esc="_('Include this image')"/></label>
+                                                                  </div>
+                                                             </div>
+                                                        </div>
+                                                   </div>
+                                              </t>
+                                         </div>
+                                         <small class="form-text text-muted mt-1 d-block"><t t-esc="_('Select any AI-generated images you wish to submit as part of your content.')"/></small>
                                     </div>
-                                </t>
-                                <t t-else="">
-                                     <div class="mb-3">
-                                        <label class="form-label"><h5><t t-esc="_t('AI-Generated Images')"/></h5></label>
-                                        <p><t t-esc="_t('No AI-generated images are currently eligible for this campaign, or you haven\'t generated any yet.')"/> <a href="/my/ai-image-generator"><t t-esc="_t('Go to AI Image Generator')"/></a></p>
-                                    </div>
-                                </t>
+                               </t>
 
-                                <button type="submit" class="btn btn-success btn-lg"><i class="fa fa-upload me-1"/> <t t-esc="_t('Submit Content')"/></button>
-                            </form>
 
-                            <hr/>
-                            <h5><t t-esc="_t('Submission History &amp; Feedback')"/></h5>
-                            <t t-if="submission_history">
-                                <ul class="list-group">
-                                    <t t-foreach="submission_history" t-as="submission">
-                                        <li class="list-group-item">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-1"><t t-esc="_t('Version %s - Submitted on:', submission.version)"/> <span t-field="submission.submissionDate" t-options='{"widget": "datetime"}'/></h6>
-                                                <span t-attf-class="badge #{submission.reviewStatus == 'approved' and 'bg-success' or submission.reviewStatus == 'rejected' and 'bg-danger' or submission.reviewStatus == 'needs_revision' and 'bg-warning text-dark' or 'bg-info text-dark'}"><t t-esc="submission.reviewStatus_display"/></span>
-                                            </div>
-                                            <p t-if="submission.feedback" class="mb-1"><strong><t t-esc="_t('Feedback:')"/></strong> <t t-esc="submission.feedback"/></p>
-                                            <!-- Links to submitted content, if available -->
-                                        </li>
-                                    </t>
-                                </ul>
-                            </t>
-                            <t t-else="">
-                                <p><t t-esc="_t('No submission history for this campaign application yet.')"/></p>
-                            </t>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <a t-attf-href="/my/campaigns/#{campaign_application.campaign_id.id}" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"/> <t t-esc="_t('Back to Campaign Details')"/></a>
-                    </div>
-                </div>
-                 <!-- Script to handle FileUploaderComponent output -->
-                <script type="text/javascript">
-                    odoo.loader. όταν hazırsa(function () {
-                        // This logic should be part of the FileUploaderComponent itself, emitting events
-                        // with attachment IDs. The parent form would listen to these events.
-                        // For demonstration, if using a global event bus or direct DOM manipulation (not ideal):
-                        // const uploaderContainer = document.getElementById('file_uploader_content_container');
-                        // if (uploaderContainer) {
-                        //    uploaderContainer.addEventListener('upload-success', function(event) {
-                        //        const attachmentIdsInput = document.getElementById('content_attachment_ids');
-                        //        let currentIds = attachmentIdsInput.value ? attachmentIdsInput.value.split(',') : [];
-                        //        if (event.detail &amp;&amp; event.detail.attachment_id) { // Assuming event.detail has attachment_id
-                        //            currentIds.push(event.detail.attachment_id);
-                        //            attachmentIdsInput.value = currentIds.join(',');
-                        //        }
-                        //    });
-                        // }
-                    });
-                </script>
+                             <!-- Submission History (Optional, but good for revisions) -->
+                             <t t-if="submission_data and submission_data.get('submission_history')">
+                                  <h4 class="mt-4"><t t-esc="_('Submission History &amp; Feedback')"/></h4>
+                                   <ul class="list-group">
+                                        <t t-foreach="submission_data.get('submission_history')" t-as="submission">
+                                             <li class="list-group-item">
+                                                 <div class="d-flex w-100 justify-content-between">
+                                                      <h6 class="mb-1"><t t-esc="_('Submission #')"/><t t-esc="submission.version"/> (<t t-esc="submission.submission_date" t-options='{"widget": "datetime"}'/>)</h6>
+                                                      <span t-attf-class="badge bg-#{submission.review_status == 'approved' and 'success' or submission.review_status == 'rejected' and 'danger' or submission.review_status == 'needs_revision' and 'warning' or 'info'}">
+                                                           <t t-esc="submission.review_status_display"/>
+                                                      </span>
+                                                 </div>
+                                                  <p class="mb-1"><t t-esc="_('Content link/details:')"/> <a t-if="submission.content_url" t-att-href="submission.content_url" target="_blank"><t t-esc="submission.content_url"/></a> <t t-else=""><t t-esc="_('Files Submitted')"/></t></p>
+                                                  <t t-if="submission.feedback">
+                                                       <small class="text-muted"><t t-esc="_('Feedback:')"/> <span class="fst-italic" t-esc="submission.feedback"/></small>
+                                                  </t>
+                                             </li>
+                                        </t>
+                                   </ul>
+                             </t>
+
+
+                             <div class="mt-4 d-flex justify-content-between">
+                                 <a t-attf-href="/my/campaigns/#{campaign.id}" class="btn btn-secondary"><i class="fa fa-times me-1"></i><t t-esc="_('Cancel')"/></a>
+                                 <button type="submit" class="btn btn-primary btn-lg"><i class="fa fa-paper-plane me-1"></i><t t-esc="_('Submit Content')"/></button>
+                             </div>
+                          </form>
+
+                     </div>
+                 </t>
             </t>
         </template>
     </data>

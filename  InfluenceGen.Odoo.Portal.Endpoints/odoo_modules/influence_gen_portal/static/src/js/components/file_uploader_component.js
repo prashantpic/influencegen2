@@ -1,271 +1,182 @@
-odoo.define('influence_gen_portal.FileUploaderComponent', function (require) {
-    'use strict';
+/** @odoo-module */
 
-    const { Component, useState, useRef, onMounted, onWillUnmount } = owl;
-    const { _t } = require('web.core');
-    const rpc = require('web.rpc'); // Using Odoo's global RPC for simplicity, could use a service
+import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
+import { _t } from "@web/core/l10n/translation";
 
-    class FileUploaderComponent extends Component {
-        static template = 'influence_gen_portal.FileUploaderComponentTemplate';
-        static props = {
-            acceptedFileTypes: { type: String, optional: false }, // e.g., "image/jpeg,image/png,.pdf"
-            maxFileSize: { type: Number, optional: true, default: 5 * 1024 * 1024 }, // 5MB
-            uploadUrl: { type: String, optional: false }, // Backend URL for upload
-            fieldName: { type: String, optional: false }, // Field name for the backend
-            multiple: { type: Boolean, optional: true, default: false },
-            label: { type: String, optional: true, default: _t("Upload File(s)") },
-            parentFormInputId: { type: String, optional: true }, // ID of a hidden input in parent form to store attachment IDs
-            onUploadSuccess: { type: Function, optional: true},
-            onUploadError: { type: Function, optional: true},
-            onFileRemoved: { type: Function, optional: true},
-        };
+export class FileUploaderComponent extends Component {
+    setup() {
+        // No direct RPC from here; relies on native form submission or parent component handling.
+        // If this component were to upload directly via AJAX, it would need rpc/notification services.
+        this.notification = useService("notification"); // For client-side validation messages
 
-        setup() {
-            this.state = useState({
-                selectedFiles: [], // { file: File, name: String, size: Number, type: String, status: String, progress: Number, errorMessage: String, serverId: null }
-                isDragging: false,
-            });
+        this.state = useState({
+            selectedFiles: [], // [{ file: File, name: string, size: number, type: string, previewUrl?: string, error?: string }]
+            isDragging: false,
+        });
 
-            this.fileInputRef = useRef('fileInput');
-            this.dropZoneRef = useRef('dropZone');
+        this.fileInputRef = useRef("fileInput");
+        this.dropAreaRef = useRef("dropArea");
 
-            this.handleDragOver = this.handleDragOver.bind(this);
-            this.handleDragLeave = this.handleDragLeave.bind(this);
-            this.handleDrop = this.handleDrop.bind(this);
-            this.handleFileChange = this.handleFileChange.bind(this);
-
-            onMounted(() => {
-                if (this.dropZoneRef.el) {
-                    this.dropZoneRef.el.addEventListener('dragover', this.handleDragOver);
-                    this.dropZoneRef.el.addEventListener('dragleave', this.handleDragLeave);
-                    this.dropZoneRef.el.addEventListener('drop', this.handleDrop);
-                }
-            });
-
-            onWillUnmount(() => {
-                if (this.dropZoneRef.el) {
-                    this.dropZoneRef.el.removeEventListener('dragover', this.handleDragOver);
-                    this.dropZoneRef.el.removeEventListener('dragleave', this.handleDragLeave);
-                    this.dropZoneRef.el.removeEventListener('drop', this.handleDrop);
-                }
-            });
-        }
-
-        handleDragOver(event) {
-            event.preventDefault();
-            this.state.isDragging = true;
-        }
-
-        handleDragLeave(event) {
-            event.preventDefault();
-            this.state.isDragging = false;
-        }
-
-        handleDrop(event) {
-            event.preventDefault();
-            this.state.isDragging = false;
-            const files = event.dataTransfer.files;
-            if (files.length) {
-                this._addFilesToList(files);
+        // Bind event listeners for drag/drop if dropAreaRef is used
+        onMounted(() => {
+            if (this.dropAreaRef.el) {
+                this.dropAreaRef.el.addEventListener('dragover', this._onDragOver.bind(this), false);
+                this.dropAreaRef.el.addEventListener('dragleave', this._onDragLeave.bind(this), false);
+                this.dropAreaRef.el.addEventListener('drop', this._onDrop.bind(this), false);
             }
-        }
+        });
+        onWillUnmount(() => {
+            if (this.dropAreaRef.el) {
+                this.dropAreaRef.el.removeEventListener('dragover', this._onDragOver);
+                this.dropAreaRef.el.removeEventListener('dragleave', this._onDragLeave);
+                this.dropAreaRef.el.removeEventListener('drop', this._onDrop);
+            }
+        });
+    }
 
-        handleFileChange(event) {
-            const files = event.target.files;
-            if (files.length) {
-                this._addFilesToList(files);
-            }
-            // Reset file input to allow selecting the same file again
-            if (this.fileInputRef.el) {
-                 this.fileInputRef.el.value = '';
-            }
-        }
+    /**
+     * Handle file selection via input or drop.
+     * @param {FileList} fileList
+     */
+    _handleFileSelection(fileList) {
+        const filesToAdd = [];
+        for (let i = 0; i < fileList.length; i++) {
+            const file = fileList[i];
+            const validationError = this._validateFile(file);
 
-        _addFilesToList(fileList) {
-            const newFiles = [];
-            for (let i = 0; i < fileList.length; i++) {
-                const file = fileList[i];
-                const validation = this._validateFile(file);
-                if (validation.isValid) {
-                    const fileObject = {
-                        file: file,
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        status: 'pending', // 'pending', 'uploading', 'success', 'error'
-                        progress: 0,
-                        errorMessage: null,
-                        serverId: null, // To store ID from server on success
-                    };
-                    if (!this.props.multiple) {
-                        this.state.selectedFiles.splice(0, this.state.selectedFiles.length); // Clear existing for single file
-                    }
-                    newFiles.push(fileObject);
-                } else {
-                     // Immediately show error for this file, or collect and show all
-                    owl.Component.env.services.notification.add(
-                        validation.errorMessage,
-                        { type: 'danger', title: _t('Validation Error') }
-                    );
-                }
-            }
-            
-            if (newFiles.length > 0) {
-                 if (this.props.multiple) {
-                    this.state.selectedFiles.push(...newFiles);
-                } else {
-                    this.state.selectedFiles = newFiles;
-                }
-                // Optionally auto-start upload
-                newFiles.forEach(f => this.startUpload(f));
-            }
-        }
-
-        _validateFile(file) {
-            const acceptedTypes = this.props.acceptedFileTypes.split(',').map(t => t.trim().toLowerCase());
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            const fileMimeType = file.type.toLowerCase();
-
-            let typeMatch = false;
-            if (acceptedTypes.some(type => type.startsWith('.'))) { // Check extension
-                if (acceptedTypes.includes(fileExtension)) {
-                    typeMatch = true;
-                }
-            }
-            if (!typeMatch && acceptedTypes.some(type => type.includes('/'))) { // Check MIME type
-                 if (acceptedTypes.includes(fileMimeType)) {
-                    typeMatch = true;
-                 } else if (acceptedTypes.some(accepted => accepted.endsWith('/*') && fileMimeType.startsWith(accepted.slice(0, -1)))) {
-                    typeMatch = true; // Wildcard match like image/*
+            if (validationError) {
+                 this.notification.add(validationError, { type: 'warning' });
+                 // Optionally add to list with error for display, but prevent actual form submission use
+                 // filesToAdd.push({ file, name: file.name, size: file.size, type: file.type, error: validationError });
+            } else {
+                 const fileObject = { file, name: file.name, size: file.size, type: file.type, error: null };
+                 // Generate preview for images
+                 if (file.type.startsWith('image/')) {
+                     fileObject.previewUrl = URL.createObjectURL(file);
                  }
+                 filesToAdd.push(fileObject);
             }
-             if (!typeMatch && acceptedTypes.some(type => !type.startsWith('.') && !type.includes('/'))) {
-                // This case is ambiguous, but we can assume it's a general type and perhaps allow if other checks pass
-                // For now, strict matching on extension or full MIME type
-             }
+        }
 
+        if (this.props.multiple) {
+             this.state.selectedFiles = [...this.state.selectedFiles, ...filesToAdd];
+        } else {
+             // Revoke previous preview URL if any
+             if (this.state.selectedFiles.length > 0 && this.state.selectedFiles[0].previewUrl) {
+                URL.revokeObjectURL(this.state.selectedFiles[0].previewUrl);
+             }
+             this.state.selectedFiles = filesToAdd.slice(0, 1);
+        }
+        this.trigger('files-selected', { files: this.state.selectedFiles.map(f => f.file) });
+    }
+
+    /**
+     * Client-side file validation (type, size).
+     * @param {File} file
+     * @returns {string|null} - Error message or null if valid.
+     */
+    _validateFile(file) {
+        if (this.props.acceptedFileTypes) {
+            const allowedTypes = this.props.acceptedFileTypes.split(',').map(t => t.trim().toLowerCase());
+            const fileType = file.type.toLowerCase();
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+            const typeMatch = allowedTypes.some(allowed => {
+                 if (allowed.startsWith('.')) { // Extension match
+                      return fileExtension === allowed;
+                 } else if (allowed.endsWith('/*')) { // MIME type wildcard match (e.g., image/*)
+                      return fileType.startsWith(allowed.slice(0, -1));
+                 } else { // Exact MIME type match
+                      return fileType === allowed;
+                 }
+            });
 
             if (!typeMatch) {
-                return { isValid: false, errorMessage: _t("File type '%s' is not accepted. Accepted types: %s", file.type || fileExtension, this.props.acceptedFileTypes) };
-            }
-
-            if (file.size > this.props.maxFileSize) {
-                return { isValid: false, errorMessage: _t("File '%s' is too large (%s). Maximum size is %s.", file.name, this._formatFileSize(file.size), this._formatFileSize(this.props.maxFileSize)) };
-            }
-            return { isValid: true };
-        }
-
-        async startUpload(fileObject) {
-            if (fileObject.status !== 'pending' &amp;&amp; fileObject.status !== 'error') return;
-
-            fileObject.status = 'uploading';
-            fileObject.progress = 0;
-            fileObject.errorMessage = null;
-
-            const formData = new FormData();
-            formData.append(this.props.fieldName, fileObject.file);
-            formData.append('csrf_token', odoo.csrf_token); // Odoo global CSRF token
-
-            try {
-                // Using Odoo's RPC for upload to leverage session and CSRF handling, if applicable
-                // This assumes uploadUrl is an Odoo controller route.
-                // For raw XHR:
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', this.props.uploadUrl, true);
-                
-                // Odoo's CSRF token for non-RPC jQuery.ajax can be added as a header if needed
-                // For simple POSTs via controller, Odoo handles CSRF if 'csrf_token' is in form data.
-                
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        fileObject.progress = Math.round((event.loaded * 100) / event.total);
-                    }
-                };
-
-                xhr.onload = () => {
-                    if (xhr.status >= 200 &amp;&amp; xhr.status < 300) {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.error) {
-                            fileObject.status = 'error';
-                            fileObject.errorMessage = response.error.message || _t("Unknown server error.");
-                            if (this.props.onUploadError) this.props.onUploadError(fileObject, response.error);
-                        } else {
-                            fileObject.status = 'success';
-                            fileObject.progress = 100;
-                            fileObject.serverId = response.id || response.attachment_id || null; // Assuming server returns ID
-                            if (this.props.onUploadSuccess) this.props.onUploadSuccess(fileObject, response);
-                            this._updateParentFormInput();
-                        }
-                    } else {
-                        fileObject.status = 'error';
-                        fileObject.errorMessage = _t("Upload failed. Server responded with status %s.", xhr.status);
-                        if (this.props.onUploadError) this.props.onUploadError(fileObject, {message: fileObject.errorMessage});
-                    }
-                };
-
-                xhr.onerror = () => {
-                    fileObject.status = 'error';
-                    fileObject.errorMessage = _t("Network error during upload.");
-                     if (this.props.onUploadError) this.props.onUploadError(fileObject, {message: fileObject.errorMessage});
-                };
-                
-                xhr.send(formData);
-
-            } catch (error) {
-                console.error("Upload error:", error);
-                fileObject.status = 'error';
-                fileObject.errorMessage = error.message || _t("An unexpected error occurred during upload.");
-                if (this.props.onUploadError) this.props.onUploadError(fileObject, error);
+                 return _t("File type '%(fileType)s' for file '%(fileName)s' is not allowed. Accepted types: %(acceptedTypes)s").replace('%(fileType)s', file.type).replace('%(fileName)s', file.name).replace('%(acceptedTypes)s', this.props.acceptedFileTypes);
             }
         }
 
-        removeFile(fileObject) {
-            const index = this.state.selectedFiles.indexOf(fileObject);
-            if (index > -1) {
-                this.state.selectedFiles.splice(index, 1);
-                // If there's an XHR associated, abort it (more complex to track here)
-                // For now, just remove from list. If serverId exists, might need to inform server.
-                if (this.props.onFileRemoved) this.props.onFileRemoved(fileObject);
-                this._updateParentFormInput();
-            }
+        if (this.props.maxFileSize && file.size > this.props.maxFileSize) {
+            const maxMb = (this.props.maxFileSize / (1024 * 1024)).toFixed(2);
+            return _t("File '%(fileName)s' (%(fileSize)sMB) exceeds the maximum allowed size (%(maxSize)sMB).").replace('%(fileName)s', file.name).replace('%(fileSize)s', (file.size / (1024 * 1024)).toFixed(2)).replace('%(maxSize)s', maxMb);
         }
-        
-        _updateParentFormInput() {
-            if (this.props.parentFormInputId) {
-                const inputEl = document.getElementById(this.props.parentFormInputId);
-                if (inputEl) {
-                    const successfulUploadIds = this.state.selectedFiles
-                        .filter(f => f.status === 'success' &amp;&amp; f.serverId)
-                        .map(f => f.serverId);
-                    inputEl.value = successfulUploadIds.join(',');
-                }
-            }
-        }
-
-        _formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        triggerFileInput() {
-            if (this.fileInputRef.el) {
-                this.fileInputRef.el.click();
-            }
-        }
-    }
-
-    if (odoo.influence_gen_portal &amp;&amp; odoo.influence_gen_portal.components) {
-        odoo.influence_gen_portal.components.FileUploaderComponent = FileUploaderComponent;
-    } else {
-        // Fallback or error if namespace doesn't exist. This assumes a global setup.
-        // For direct registration as an OWL component in an Odoo view:
-        // Component.env.componentCollector.add("influence_gen_portal.FileUploaderComponent", FileUploaderComponent);
-        // This is typically handled by Odoo's asset system when components are in assets_qweb.
+        return null; // Valid
     }
 
 
-    return FileUploaderComponent;
-});
+    /**
+     * Remove a file from the selected list.
+     * @param {Object} fileObject - Object from state.selectedFiles.
+     */
+    removeFile(fileObject) {
+        if (fileObject.previewUrl) {
+            URL.revokeObjectURL(fileObject.previewUrl); // Clean up preview object URL
+        }
+        this.state.selectedFiles = this.state.selectedFiles.filter(f => f !== fileObject);
+        this.trigger('files-selected', { files: this.state.selectedFiles.map(f => f.file) });
+
+        // If the component itself holds the input files for direct form submission,
+        // we need to update the DataTransfer object of the hidden input. This is tricky.
+        // A common pattern is to have the parent component manage the list of files to be uploaded.
+        // For simplicity, this component just manages the visual list and validation.
+        // The parent form's <input type="file"> still holds the actual files for submission.
+        // To clear the input:
+        if (this.fileInputRef.el) {
+            this.fileInputRef.el.value = ""; // This clears the input, user would need to re-select
+        }
+    }
+
+     _onDragOver(event) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+          this.state.isDragging = true;
+     }
+
+     _onDragLeave(event) {
+          if (!this.dropAreaRef.el.contains(event.relatedTarget)) {
+             this.state.isDragging = false;
+          }
+     }
+
+     _onDrop(event) {
+          event.preventDefault();
+          this.state.isDragging = false;
+          const files = event.dataTransfer.files;
+          if (files.length > 0) {
+               this._handleFileSelection(files);
+               if (this.fileInputRef.el) { // Try to assign to the input for form submission
+                   this.fileInputRef.el.files = files;
+               }
+          }
+     }
+
+    _onFileChange(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            this._handleFileSelection(files);
+        }
+        // Don't clear event.target.value here if parent form relies on this input directly.
+        // If this component were uploading via AJAX, then clearing it is fine.
+    }
+
+     _formatFileSize(bytes) {
+         if (bytes === 0) return '0 Bytes';
+         const k = 1024;
+         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+         const i = Math.floor(Math.log(bytes) / Math.log(k));
+         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+     }
+}
+
+FileUploaderComponent.template = "influence_gen_portal.FileUploaderComponentTemplate";
+FileUploaderComponent.props = {
+    acceptedFileTypes: { type: String, optional: true },
+    maxFileSize: { type: Number, optional: true }, // in bytes
+    fieldName: { type: String, optional: true, default: "files" }, // Name for the input field
+    multiple: { type: Boolean, optional: true, default: false },
+    label: { type: String, optional: true, default: _t("Upload File(s)") },
+    id: { type: String, optional: true, default: "fileUploader" }, // Unique ID for label targeting
+};
+
+FileUploaderComponent.services = ["notification"];

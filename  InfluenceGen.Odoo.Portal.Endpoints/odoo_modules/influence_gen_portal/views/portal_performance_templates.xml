@@ -1,84 +1,95 @@
 <odoo>
     <data>
-        <template id="portal_performance_dashboard" name="Influencer Performance Dashboard">
+        <template id="portal_performance_dashboard" name="Influencer Performance">
             <t t-call="portal.portal_layout">
-                <t t-set="breadcrumbs" t-value="[
-                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
-                    {'url': '/my/performance', 'text': _t('My Performance')}
-                ]"/>
-                 <t t-call="portal.portal_search_panel">
-                     <t t-set="title">
-                        <h1 class="mb-0"><t t-esc="_t('My Performance')"/></h1>
-                    </t>
-                </t>
+                 <t t-set="breadcrumbs_searchbar" t-value="True"/>
+                 <t t-call="portal.portal_common">
+                      <t t-call="portal.portal_header">
+                           <t t-set="title"><t t-esc="_('My Performance')"/></t>
+                      </t>
+                     <div class="o_portal_my_doc_container">
+                         <h2><t t-esc="_('Your Campaign Performance')"/></h2>
+                         <p><t t-esc="_('Review the performance data for your completed and active campaigns.')"/></p>
 
-                <div class="container mt-4">
-                    <div t-if="not performance_data" class="alert alert-info" role="alert">
-                        <t t-esc="_t('No performance data available yet. Complete campaigns to see your metrics here.')"/>
-                    </div>
+                         <t t-call="influence_gen_portal.portal_flash_messages"/>
 
-                    <t t-foreach="performance_data or []" t-as="campaign_perf">
-                        <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-light">
-                                <h4 class="mb-0"><t t-esc="campaign_perf.campaign_name"/></h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h5><t t-esc="_t('Overall Campaign Metrics (If Available)')"/></h5>
-                                        <ul class="list-unstyled">
-                                            <li t-if="campaign_perf.total_reach is not None"><strong><t t-esc="_t('Total Reach:')"/></strong> <t t-esc="campaign_perf.total_reach"/></li>
-                                            <li t-if="campaign_perf.total_engagement is not None"><strong><t t-esc="_t('Total Engagement:')"/></strong> <t t-esc="campaign_perf.total_engagement"/></li>
-                                            <li t-if="campaign_perf.total_clicks is not None"><strong><t t-esc="_t('Total Clicks:')"/></strong> <t t-esc="campaign_perf.total_clicks"/></li>
-                                            <li t-if="campaign_perf.total_views is not None"><strong><t t-esc="_t('Total Views:')"/></strong> <t t-esc="campaign_perf.total_views"/></li>
-                                            <li t-if="campaign_perf.total_conversions is not None"><strong><t t-esc="_t('Total Conversions:')"/></strong> <t t-esc="campaign_perf.total_conversions"/></li>
-                                        </ul>
-                                         <p t-if="not campaign_perf.total_reach and not campaign_perf.total_engagement" class="text-muted"><t t-esc="_t('Overall campaign metrics are not yet available or not tracked for this campaign type.')"/></p>
+                          <t t-if="performance_data and performance_data.get('campaign_performance')">
+                               <t t-foreach="performance_data.get('campaign_performance')" t-as="campaign_perf">
+                                    <div class="card mb-4 shadow-sm">
+                                         <div class="card-header bg-light">
+                                              <h3 class="card-title h5 mb-0"><t t-esc="campaign_perf.campaign_name"/></h3>
+                                              <p class="card-subtitle text-muted small"><t t-esc="_('Brand:')"/> <t t-esc="campaign_perf.brand_name"/> - <t t-esc="_('Status:')"/> <span t-attf-class="badge bg-#{campaign_perf.campaign_status == 'completed' and 'success' or campaign_perf.campaign_status == 'active' and 'primary' or 'secondary'}"><t t-esc="campaign_perf.campaign_status_display"/></span></p>
+                                         </div>
+                                        <div class="card-body">
+                                             <div class="row">
+                                                 <div class="col-md-6 mb-3 mb-md-0">
+                                                      <h4><t t-esc="_('Submitted Content Overview')"/></h4>
+                                                      <t t-if="campaign_perf.submitted_content">
+                                                           <ul class="list-group list-group-flush">
+                                                                <t t-foreach="campaign_perf.submitted_content" t-as="content">
+                                                                     <li class="list-group-item px-0">
+                                                                          <t t-if="content.post_url">
+                                                                               <a t-att-href="content.post_url" target="_blank" rel="noopener noreferrer"><i class="fa fa-external-link me-1"></i><t t-esc="content.post_url_short or _('View Post')"/></a>
+                                                                          </t>
+                                                                           <t t-elif="content.files_count or content.ai_images_count">
+                                                                               <t t-esc="_('Media Submitted:')"/>
+                                                                               <t t-if="content.files_count"><span class="badge bg-secondary ms-1"><t t-esc="content.files_count"/> <t t-esc="_('file(s)')"/></span></t>
+                                                                               <t t-if="content.ai_images_count"><span class="badge bg-info ms-1"><t t-esc="content.ai_images_count"/> <t t-esc="_('AI image(s)')"/></span></t>
+                                                                           </t>
+                                                                           <t t-else="">
+                                                                               <t t-esc="_('Content details N/A')"/>
+                                                                           </t>
+                                                                          <span t-attf-class="badge ms-2 bg-#{content.status == 'approved' and 'success' or content.status == 'pending' and 'warning' or 'secondary'}">
+                                                                               <t t-esc="content.status_display"/>
+                                                                          </span>
+                                                                     </li>
+                                                                </t>
+                                                           </ul>
+                                                      </t>
+                                                       <t t-else="">
+                                                            <p class="text-muted"><t t-esc="_('No content submitted or tracked for this campaign yet.')"/></p>
+                                                       </t>
+                                                 </div>
+                                                 <div class="col-md-6">
+                                                      <h4><t t-esc="_('Performance Metrics')"/></h4>
+                                                      <t t-if="campaign_perf.metrics">
+                                                           <dl class="row">
+                                                                <dt class="col-sm-5"><t t-esc="_('Total Reach:')"/></dt>
+                                                                <dd class="col-sm-7"><t t-esc="campaign_perf.metrics.reach or 0" t-options='{"widget": "integer"}'/></dd>
+
+                                                                <dt class="col-sm-5"><t t-esc="_('Total Engagement:')"/></dt>
+                                                                <dd class="col-sm-7"><t t-esc="campaign_perf.metrics.engagement or 0" t-options='{"widget": "integer"}'/></dd>
+
+                                                                <dt class="col-sm-5"><t t-esc="_('Clicks:')"/></dt>
+                                                                <dd class="col-sm-7"><t t-esc="campaign_perf.metrics.clicks or 0" t-options='{"widget": "integer"}'/></dd>
+
+                                                                <dt class="col-sm-5"><t t-esc="_('Conversions:')"/></dt>
+                                                                <dd class="col-sm-7"><t t-esc="campaign_perf.metrics.conversions or 0" t-options='{"widget": "integer"}'/></dd>
+
+                                                                <dt class="col-sm-5"><t t-esc="_('Engagement Rate:')"/></dt>
+                                                                <dd class="col-sm-7"><t t-esc="campaign_perf.metrics.engagement_rate or '0.00'" t-options='{"widget": "float", "decimal_point": ".", "thousands_sep": ",", "digits": [None, 2]}'/>%</dd>
+                                                                 <!-- Add other metrics as defined by business layer -->
+                                                           </dl>
+                                                           <!-- Optionally use OWL components for charts/graphs -->
+                                                           <!-- <div t-attf-id="campaign_chart_#{campaign_perf.campaign_id}" class="mt-3" style="height: 200px;"></div> -->
+                                                      </t>
+                                                      <t t-else="">
+                                                           <p class="text-muted"><t t-esc="_('Performance data not yet available for this campaign.')"/></p>
+                                                      </t>
+                                                 </div>
+                                             </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <h5><t t-esc="_t('Your Submitted Content')"/></h5>
-                                        <t t-if="campaign_perf.submissions">
-                                            <ul class="list-group">
-                                                <t t-foreach="campaign_perf.submissions" t-as="submission">
-                                                    <li class="list-group-item">
-                                                        <a t-if="submission.post_url" t-att-href="submission.post_url" target="_blank" rel="noopener noreferrer">
-                                                            <t t-esc="submission.post_url_short or _t('View Post')"/> <i class="fa fa-external-link"/>
-                                                        </a>
-                                                        <span t-if="not submission.post_url and submission.content_preview_url">
-                                                             <a t-att-href="submission.content_preview_url" target="_blank" rel="noopener noreferrer">
-                                                                <t t-esc="_t('View Submitted Media')"/> <i class="fa fa-external-link"/>
-                                                            </a>
-                                                        </span>
-                                                        <span t-if="not submission.post_url and not submission.content_preview_url"><t t-esc="_t('Content Submitted (No direct link)')"/></span>
-                                                        <br/>
-                                                        <small class="text-muted"><t t-esc="_t('Submitted on %s', submission.submission_date)"/></small>
-                                                        <div t-if="submission.metrics" class="mt-1">
-                                                            <small>
-                                                                <span t-if="submission.metrics.reach" class="me-2"><i class="fa fa-users"/> <t t-esc="submission.metrics.reach"/> <t t-esc="_t('Reach')"/></span>
-                                                                <span t-if="submission.metrics.engagement" class="me-2"><i class="fa fa-heart"/> <t t-esc="submission.metrics.engagement"/> <t t-esc="_t('Engagement')"/></span>
-                                                                <span t-if="submission.metrics.clicks"><i class="fa fa-mouse-pointer"/> <t t-esc="submission.metrics.clicks"/> <t t-esc="_t('Clicks')"/></span>
-                                                            </small>
-                                                        </div>
-                                                    </li>
-                                                </t>
-                                            </ul>
-                                        </t>
-                                        <t t-else="">
-                                            <p class="text-muted"><t t-esc="_t('No content submissions found for you in this campaign, or metrics are not yet processed.')"/></p>
-                                        </t>
-                                    </div>
-                                </div>
-                                <!-- Placeholder for charts if OWL components are used -->
-                                <div t-if="campaign_perf.charts_data" class="mt-3">
-                                    <div t-attf-id="performance_chart_#{campaign_perf.campaign_id}">
-                                        <!-- OWL component for charts would be mounted here -->
-                                        <p class="text-center text-muted"><em <t t-esc="_t('Chart placeholder for %s', campaign_perf.campaign_name)"/></em></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </t>
-                </div>
+                               </t>
+                          </t>
+                          <t t-else="">
+                               <div class="alert alert-info mt-4" role="alert">
+                                    <t t-esc="_('No completed or active campaigns with performance data available at the moment.')"/>
+                               </div>
+                          </t>
+
+                     </div>
+                 </t>
             </t>
         </template>
     </data>

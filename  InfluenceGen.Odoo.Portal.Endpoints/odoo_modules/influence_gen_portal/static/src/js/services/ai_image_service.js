@@ -1,64 +1,75 @@
-odoo.define('influence_gen_portal.services.aiImage', function (require) {
-    'usestrict';
+/** @odoo-module */
 
-    const portalService = require('influence_gen_portal.services.portal');
+import { Service } from "@web/core/webclient/service";
+// No direct useService here, it's a class to be instantiated by the registry
+// However, its methods will use the portalService which in turn uses core services.
 
-    const aiImageService = {
-        /**
-         * Initiates AI image generation.
-         * @param {Object} params - Parameters for generation (prompt, negativePrompt, modelId, etc.)
-         * @returns {Promise<Object>} Promise resolving to {request_id, status}
-         */
-        async initiateGeneration(params) {
-            return portalService.rpc('/my/ai/generate', params, 'POST');
-        },
+class AiImageService extends Service {
+     // The portalService dependency is injected by the service registry
+     get portalService() {
+         return this.env.services["influence_gen_portal.services.portal"];
+     }
 
-        /**
-         * Checks the status of an ongoing AI image generation request.
-         * @param {string} requestId - The ID of the generation request.
-         * @returns {Promise<Object>} Promise resolving to {request_id, status, images?, error_message?}
-         */
-        async checkGenerationStatus(requestId) {
-            return portalService.rpc('/my/ai/generate/status', { request_id: requestId }, 'GET');
-        },
+    /**
+     * Initiates an AI image generation request.
+     * @param {Object} params - Generation parameters (prompt, negativePrompt, model_id, etc.).
+     * @returns {Promise<{request_id: string, status: string}>} - Promise resolving with the request ID and initial status.
+     * @throws {Error} - Throws an error if the initiation fails (e.g., validation error from backend).
+     */
+    async initiateGeneration(params) {
+        return this.portalService.rpc('/my/ai/generate', params);
+    }
 
-        /**
-         * Fetches available AI models.
-         * @returns {Promise<Array>} Promise resolving to an array of model objects.
-         */
-        async getAvailableModels() {
-            // This route needs to be implemented in portal_ai_image_controller.py
-            return portalService.rpc('/my/ai/models', {}, 'GET');
-        },
+    /**
+     * Checks the status of an AI image generation request.
+     * @param {string} requestId - The unique ID of the generation request.
+     * @returns {Promise<{request_id: string, status: string, images?: Array<Object>, error_message?: string}>} - Promise resolving with the status details.
+     * @throws {Error} - Throws an error if the status check fails.
+     */
+    async checkGenerationStatus(requestId) {
+        return this.portalService.rpc('/my/ai/generate/status', { request_id: requestId });
+    }
 
-        /**
-         * Fetches the current user's saved prompts.
-         * @returns {Promise<Array>} Promise resolving to an array of prompt strings or objects.
-         */
-        async getSavedPrompts() {
-            // This route needs to be implemented in portal_ai_image_controller.py or a dedicated prompt controller
-            return portalService.rpc('/my/ai/prompts/saved', {}, 'GET');
-        },
+     /**
+      * Fetches the list of available AI models.
+      * @returns {Promise<Array<{id: any, name: string}>>} - Promise resolving with a list of available models.
+      * @throws {Error}
+      */
+     async getAvailableModels() {
+         return this.portalService.rpc('/my/ai/models', {});
+     }
 
-        /**
-         * Saves a prompt for the current user.
-         * @param {string} promptText - The prompt text to save.
-         * @returns {Promise<void>}
-         */
-        async saveUserPrompt(promptText) {
-            // This route needs to be implemented
-            return portalService.rpc('/my/ai/prompts/save', { prompt: promptText }, 'POST');
-        },
-        
-        /**
-         * Fetches admin-defined template prompts.
-         * @returns {Promise<Array>} Promise resolving to an array of template prompt strings or objects.
-         */
-        async getTemplatePrompts() {
-            // This route needs to be implemented
-            return portalService.rpc('/my/ai/prompts/templates', {}, 'GET');
-        }
-    };
+     /**
+      * Fetches the user's saved prompts.
+      * @returns {Promise<Array<{id: any, prompt_text: string}>>} - Promise resolving with a list of saved prompts.
+      * @throws {Error}
+      */
+     async getSavedPrompts() {
+         return this.portalService.rpc('/my/ai/prompts/saved', {});
+     }
 
-    return aiImageService;
-});
+     /**
+      * Saves a user's prompt.
+      * @param {string} promptText - The prompt text to save.
+      * @returns {Promise<void>}
+      * @throws {Error}
+      */
+     async saveUserPrompt(promptText) {
+         return this.portalService.rpc('/my/ai/prompts/save', { prompt: promptText });
+     }
+}
+
+// Register the service
+export const aiImageService = {
+    dependencies: ["influence_gen_portal.services.portal"], // Declare dependency
+    start(env, { portalService }) { // Dependency is injected here
+        const serviceInstance = new AiImageService(env);
+        // Manually assign dependencies if not using setup() for services (older style)
+        // serviceInstance.portalService = portalService;
+        return serviceInstance;
+    }
+};
+
+// Alternative registration for Odoo's core service manager
+// import { registry } from "@web/core/registry";
+// registry.category("services").add("influence_gen_portal.services.aiImage", aiImageService);
