@@ -1,28 +1,33 @@
 <odoo>
     <data>
+        <!-- Snippet for "Skip to Main Content" link -->
         <template id="snippet_skip_to_content" name="Skip to Main Content Link">
-            <a href="#o_portal_main_content" class="sr-only sr-only-focusable o_portal_skip_to_content_link">
-                <t t-esc="_t('Skip to main content')"/>
+            <a href="#main_content" class="visually-hidden-focusable o_portal_skip_to_content">
+                <t t-esc="_('Skip to main content')"/>
             </a>
+            <!--
+                The class 'visually-hidden-focusable' is typically provided by Bootstrap/Odoo's CSS.
+                It makes the link invisible until it receives keyboard focus.
+                Ensure 'accessibility.scss' or Odoo's base CSS defines this class correctly.
+            -->
         </template>
 
-        <!-- Example of an ARIA live region for dynamic announcements by JS -->
-        <template id="snippet_aria_live_region" name="ARIA Live Region">
-            <div class="sr-only" id="ig_portal_aria_live_region" aria-live="polite" aria-atomic="true">
-                <!-- Content will be injected by JavaScript for screen reader announcements -->
-            </div>
-        </template>
+        <!--
+            ARIA Landmark Roles:
+            Odoo's `portal.portal_layout` and standard HTML5 elements (<header>, <nav>, <main>, <footer>)
+            often provide sufficient landmark roles.
+            If custom components create major page regions, ensure they have appropriate roles
+            (e.g., role="region" with aria-labelledby, role="search", role="complementary").
+            These are usually applied directly in the component's QWeb template rather than as a generic snippet.
+        -->
 
-        <!-- Add this to portal_layout just after body tag -->
-        <template id="portal_layout_accessibility_enhancements" inherit_id="portal.portal_layout" priority="5">
-             <xpath expr="//body" position="inside">
-                <t t-call="influence_gen_portal.snippet_skip_to_content"/>
-                <t t-call="influence_gen_portal.snippet_aria_live_region"/>
-             </xpath>
-             <xpath expr="//div[@id='wrapwrap']/main" position="attributes">
-                 <attribute name="id">o_portal_main_content</attribute> <!-- Target for skip link -->
-                 <attribute name="tabindex">-1</attribute> <!-- Make it focusable for skip link -->
-             </xpath>
+        <!--
+            Utility snippet for visually hidden text (for screen reader context).
+            This can be used to provide additional context for controls that are clear visually
+            but might need more explanation for screen reader users.
+        -->
+        <template id="snippet_sr_only_text" name="Screen Reader Only Text">
+            <span class="visually-hidden"><t t-esc="text_content"/></span>
         </template>
 
     </data>

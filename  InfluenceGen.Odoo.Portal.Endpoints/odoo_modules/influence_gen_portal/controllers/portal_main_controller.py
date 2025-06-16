@@ -1,284 +1,231 @@
+# -*- coding: utf-8 -*-
+import logging
 from odoo import http, _
 from odoo.http import request
-from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
-from odoo.exceptions import AccessError, MissingError, UserError
-import werkzeug
+from odoo.addons.portal.controllers.portal import CustomerPortal
+from odoo.exceptions import UserError, AccessError
+from werkzeug.exceptions import Forbidden, NotFound
 
-class InfluenceGenPortalMain(http.Controller):
-    """
-    Controller for the main influencer portal pages.
-    Handles dashboard, profile, payments, AI generator access, performance, and consent.
-    """
+_logger = logging.getLogger(__name__)
 
-    def _get_influencer_profile(self):
-        """Helper to get the current user's influencer profile."""
+class InfluenceGenPortalMain(CustomerPortal):
+
+    def _prepare_portal_layout_values(self):
+        values = super(InfluenceGenPortalMain, self)._prepare_portal_layout_values()
         user = request.env.user
-        influencer_profile = request.env['influence_gen.influencer_profile'].sudo().search([('user_id', '=', user.id)], limit=1)
+        influencer_profile = user.influencer_profile_id if hasattr(user, 'influencer_profile_id') else False
+        values['influencer_profile'] = influencer_profile
+        values['page_name'] = values.get('page_name', 'home') # Default page_name
+        return values
+
+    def _get_influencer_profile_or_raise(self):
+        user = request.env.user
+        influencer_profile = user.influencer_profile_id if hasattr(user, 'influencer_profile_id') else False
         if not influencer_profile:
-            # This case should ideally be handled by a global onboarding check/redirect
-            # or the user shouldn't be able to access portal pages without a profile.
-            # For now, redirect to a generic error or home.
-            # Consider a dedicated "profile not found" page.
-            raise werkzeug.exceptions.NotFound(_("Influencer profile not found for the current user."))
+            raise Forbidden(_("Your influencer profile could not be loaded. Please contact support or complete onboarding."))
         return influencer_profile
 
-    @http.route(['/my/dashboard'], type='http', auth="user", website=True)
+    @http.route(['/my', '/my/dashboard'], type='http', auth='user', website=True)
     def influencer_dashboard(self, **kw):
         """
-        Renders the influencer's main dashboard.
-        Fetches summary data: active campaigns, pending tasks, notifications, AI quota.
+        Influencer Dashboard page.
+        Fetches summary data for the logged-in influencer.
         """
         try:
-            influencer = self._get_influencer_profile()
-            qcontext = {
-                'influencer': influencer,
-                'page_name': 'dashboard',
-            }
-            # Fetch summary data from business services
-            # Example:
-            # qcontext['active_campaigns_count'] = request.env['influence_gen.campaign_service'].get_active_campaigns_count(influencer.id)
-            # qcontext['pending_tasks'] = request.env['influence_gen.onboarding_service'].get_pending_tasks(influencer.id)
-            # qcontext['recent_notifications'] = request.env['mail.message'].sudo().search([
-            #     ('model', '=', 'influence_gen.influencer_profile'),
-            #     ('res_id', '=', influencer.id),
-            #     ('message_type', '!=', 'notification') # Adjust as needed for notification types
-            # ], limit=5, order='date desc')
-            # qcontext['ai_quota'] = request.env['influence_gen.ai_usage_quota_service'].get_user_quota_status(influencer.user_id.id)
-
-            # Placeholder data for now
-            qcontext['active_campaigns_count'] = 0
-            qcontext['pending_tasks'] = [] # e.g., [{'name': _("Complete KYC"), 'url': '/my/kyc/submit'}]
-            qcontext['recent_notifications'] = []
-            qcontext['ai_quota'] = {'used': 0, 'total': 100} # Example
-
-            return request.render("influence_gen_portal.portal_dashboard", qcontext)
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/') # Or an error page
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service'] # Main business service name
+            dashboard_data = business_service.sudo(influencer_profile.user_id.id).get_influencer_dashboard_summary(influencer_profile.id)
+        except Forbidden as e:
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Access Denied"), 'message': str(e)})
         except Exception as e:
-            # Log the error
-            # request.env['ir.logging'].sudo().create({'name': 'Portal Dashboard Error', 'type': 'server', 'level': 'ERROR', 'message': str(e)})
-            qcontext = {'error_message': _("An unexpected error occurred. Please try again later.")}
-            return request.render("influence_gen_portal.portal_error_page", qcontext)
+            _logger.error("Error fetching dashboard data for user %s: %s", request.env.user.login, e)
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Dashboard Load Error"), 'message': _("Could not load dashboard data. Please try again later.")})
 
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'dashboard_data': dashboard_data,
+            'page_name': 'dashboard',
+        })
+        return request.render("influence_gen_portal.portal_dashboard", values)
 
-    @http.route(['/my/profile'], type='http', auth="user", website=True)
+    @http.route(['/my/profile'], type='http', auth='user', website=True)
     def influencer_profile(self, **kw):
         """
-        Renders the influencer's profile page.
-        Fetches profile details, KYC status, bank accounts.
+        Influencer Profile page.
+        Displays profile details, KYC status, social media, bank accounts.
         """
         try:
-            influencer = self._get_influencer_profile()
-            # bank_accounts = request.env['influence_gen.bank_account'].sudo().search([('influencer_profile_id', '=', influencer.id)])
-            # social_profiles = request.env['influence_gen.social_media_profile'].sudo().search([('influencer_profile_id', '=', influencer.id)])
-
-            qcontext = {
-                'influencer': influencer,
-                # 'bank_accounts': bank_accounts,
-                # 'social_profiles': social_profiles,
-                'page_name': 'profile',
-                'error': {},
-                'success_message': kw.get('success_message'),
-                'error_message': kw.get('error_message'),
-            }
-            return request.render("influence_gen_portal.portal_profile_main", qcontext)
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service']
+            profile_details = business_service.sudo(influencer_profile.user_id.id).get_influencer_full_profile(influencer_profile.id)
+        except Forbidden as e:
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Access Denied"), 'message': str(e)})
         except Exception as e:
-            qcontext = {'error_message': _("An unexpected error occurred while loading your profile.")}
-            return request.render("influence_gen_portal.portal_error_page", qcontext)
+            _logger.error("Error fetching profile data for user %s: %s", request.env.user.login, e)
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Profile Load Error"), 'message': _("Could not load profile data. Please try again later.")})
 
-    @http.route(['/my/profile/update'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'profile_details': profile_details,
+            'page_name': 'profile',
+        })
+        return request.render("influence_gen_portal.portal_profile_main", values)
+
+    @http.route(['/my/profile/update'], type='http', auth='user', methods=['POST'], website=True, csrf=True)
     def update_influencer_profile(self, **post):
         """
-        Handles POST requests to update non-sensitive influencer profile fields.
+        Handles POST request to update influencer profile details.
         """
         try:
-            influencer = self._get_influencer_profile()
-            # Call business service to update profile
-            # Example: result = request.env['influence_gen.influencer_profile_service'].update_profile(influencer.id, post)
-            # if not result.get('success'):
-            #     return request.redirect('/my/profile?error_message=' + result.get('message', _("Update failed.")))
-
-            # Simplified update for now
-            allowed_fields = ['fullName', 'phone', 'residentialAddress'] # Define what can be updated here
-            update_vals = {key: val for key, val in post.items() if key in allowed_fields}
-            
-            # Example: areas of influence might be M2M, handled differently
-            # if 'areasOfInfluence' in post:
-            #    handle m2m update via service
-
-            if update_vals:
-                influencer.sudo().write(update_vals) # Use sudo() if portal user doesn't have direct write access
-
-            return request.redirect('/my/profile?success_message=' + _("Profile updated successfully!"))
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service']
+            business_service.sudo(influencer_profile.user_id.id).update_influencer_profile_details(influencer_profile.id, post)
+            request.session['flash_message'] = {'type': 'success', 'message': _("Profile updated successfully.")}
+        except UserError as e:
+            request.session['flash_message'] = {'type': 'danger', 'message': str(e)}
+        except Forbidden as e:
+            request.session['flash_message'] = {'type': 'danger', 'message': str(e)}
         except Exception as e:
-            # Log error
-            return request.redirect('/my/profile?error_message=' + _("An error occurred during profile update."))
+            _logger.error("Error updating profile for user %s: %s", request.env.user.login, e)
+            request.session['flash_message'] = {'type': 'danger', 'message': _("An error occurred while updating your profile.")}
+        return request.redirect("/my/profile")
 
-
-    @http.route(['/my/payments'], type='http', auth="user", website=True)
+    @http.route(['/my/payments'], type='http', auth='user', website=True)
     def influencer_payment_info(self, **kw):
         """
-        Renders the influencer's payment information page.
-        Fetches bank account details, payment history.
+        Influencer Payments page.
+        Displays bank account details, payment history.
         """
         try:
-            influencer = self._get_influencer_profile()
-            # payment_records = request.env['influence_gen.payment_record'].sudo().search([('influencer_profile_id', '=', influencer.id)], order='create_date desc')
-            # bank_accounts = request.env['influence_gen.bank_account'].sudo().search([('influencer_profile_id', '=', influencer.id)])
-            
-            qcontext = {
-                'influencer': influencer,
-                # 'payment_records': payment_records,
-                # 'bank_accounts': bank_accounts,
-                'page_name': 'payments',
-                'success_message': kw.get('success_message'),
-                'error_message': kw.get('error_message'),
-            }
-            return request.render("influence_gen_portal.portal_payment_info_tab_content", qcontext) # Assuming this is rendered inside profile page or a dedicated page
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service']
+            payment_data = business_service.sudo(influencer_profile.user_id.id).get_influencer_payment_data(influencer_profile.id)
+        except Forbidden as e:
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Access Denied"), 'message': str(e)})
         except Exception as e:
-            qcontext = {'error_message': _("An unexpected error occurred while loading payment information.")}
-            return request.render("influence_gen_portal.portal_error_page", qcontext)
+            _logger.error("Error fetching payment data for user %s: %s", request.env.user.login, e)
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Payment Info Load Error"), 'message': _("Could not load payment information. Please try again later.")})
 
-    @http.route(['/my/payments/update'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'payment_data': payment_data,
+            'page_name': 'payments',
+        })
+        return request.render("influence_gen_portal.portal_payment_info", values)
+
+    @http.route(['/my/payments/update'], type='http', auth='user', methods=['POST'], website=True, csrf=True)
     def update_influencer_payment_info(self, **post):
         """
-        Handles POST requests to add/update bank account details.
+        Handles POST request to update influencer payment details (bank accounts).
         """
         try:
-            influencer = self._get_influencer_profile()
-            # Call business service to add/update bank account
-            # Example: result = request.env['influence_gen.payment_service'].add_or_update_bank_account(influencer.id, post)
-            # if not result.get('success'):
-            #     return request.redirect('/my/payments?error_message=' + result.get('message', _("Update failed.")))
-
-            # Simplified: assuming it's an update to one account or adding a new one
-            # Actual logic for multiple accounts, primary, verification would be in business service
-            return request.redirect('/my/payments?success_message=' + _("Payment information updated. Verification may be required."))
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service']
+            business_service.sudo(influencer_profile.user_id.id).update_influencer_bank_account(influencer_profile.id, post)
+            request.session['flash_message'] = {'type': 'success', 'message': _("Payment information updated successfully.")}
+        except UserError as e:
+            request.session['flash_message'] = {'type': 'danger', 'message': str(e)}
+        except Forbidden as e:
+            request.session['flash_message'] = {'type': 'danger', 'message': str(e)}
         except Exception as e:
-            # Log error
-            return request.redirect('/my/payments?error_message=' + _("An error occurred during payment information update."))
+            _logger.error("Error updating payment info for user %s: %s", request.env.user.login, e)
+            request.session['flash_message'] = {'type': 'danger', 'message': _("An error occurred while updating your payment information.")}
+        return request.redirect("/my/payments")
 
-
-    @http.route(['/my/ai-image-generator'], type='http', auth="user", website=True)
+    @http.route(['/my/ai-image-generator'], type='http', auth='user', website=True)
     def influencer_ai_image_generator(self, **kw):
         """
-        Renders the AI Image Generator page.
-        Fetches user's quota, models, saved prompts.
+        AI Image Generator page.
+        Displays the interface for generating images.
         """
         try:
-            influencer = self._get_influencer_profile()
-            # ai_quota = request.env['influence_gen.ai_usage_quota_service'].get_user_quota_status(influencer.user_id.id)
-            # available_models = request.env['influence_gen.ai_image_service'].get_available_models() # This might be a general service call
-            # saved_prompts = request.env['influence_gen.ai_image_service'].get_user_saved_prompts(influencer.id)
-            
-            qcontext = {
-                'influencer': influencer,
-                # 'ai_quota': ai_quota,
-                # 'available_models': available_models,
-                # 'saved_prompts': saved_prompts,
-                'page_name': 'ai_image_generator',
-            }
-             # Placeholder data for now
-            qcontext['ai_quota'] = {'used': 0, 'total': 100} 
-            qcontext['default_params'] = {} # Load from config or business service
-            qcontext['param_ranges'] = {}   # Load from config or business service
-
-            return request.render("influence_gen_portal.portal_ai_image_generator_page", qcontext)
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            ai_image_service = request.env['influence_gen.ai.image.service']
+            ai_props = ai_image_service.sudo(influencer_profile.user_id.id).get_ai_image_generator_props(influencer_profile.id)
+        except Forbidden as e:
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Access Denied"), 'message': str(e)})
         except Exception as e:
-            qcontext = {'error_message': _("An unexpected error occurred while loading the AI Image Generator.")}
-            return request.render("influence_gen_portal.portal_error_page", qcontext)
+            _logger.error("Error fetching AI image generator data for user %s: %s", request.env.user.login, e)
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("AI Tool Load Error"), 'message': _("Could not load AI image generator. Please try again later.")})
 
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'ai_props': ai_props,
+            'page_name': 'ai_image_generator',
+        })
+        return request.render("influence_gen_portal.portal_ai_image_generator_page", values)
 
-    @http.route(['/my/performance'], type='http', auth="user", website=True)
+    @http.route(['/my/performance'], type='http', auth='user', website=True)
     def influencer_performance_dashboard(self, **kw):
         """
-        Renders the influencer's performance dashboard.
-        Fetches performance data for campaigns.
+        Influencer Performance Dashboard page.
+        Displays performance metrics for completed campaigns.
         """
         try:
-            influencer = self._get_influencer_profile()
-            # performance_data = request.env['influence_gen.performance_service'].get_influencer_performance_summary(influencer.id)
-            
-            qcontext = {
-                'influencer': influencer,
-                # 'performance_data': performance_data, # List of campaign performances
-                'page_name': 'performance',
-            }
-            # Placeholder data for now
-            qcontext['performance_data'] = [] # List of dicts, e.g., [{'campaign_name': 'X', 'reach': 1000, ...}]
-            
-            return request.render("influence_gen_portal.portal_performance_dashboard", qcontext)
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service']
+            performance_data = business_service.sudo(influencer_profile.user_id.id).get_influencer_performance_data(influencer_profile.id)
+        except Forbidden as e:
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Access Denied"), 'message': str(e)})
         except Exception as e:
-            qcontext = {'error_message': _("An unexpected error occurred while loading your performance data.")}
-            return request.render("influence_gen_portal.portal_error_page", qcontext)
+            _logger.error("Error fetching performance data for user %s: %s", request.env.user.login, e)
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Performance Load Error"), 'message': _("Could not load performance data. Please try again later.")})
 
-    @http.route(['/my/consent'], type='http', auth="user", website=True)
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'performance_data': performance_data,
+            'page_name': 'performance',
+        })
+        return request.render("influence_gen_portal.portal_performance_dashboard", values)
+
+    @http.route(['/my/consent'], type='http', auth='user', website=True)
     def influencer_consent_management(self, **kw):
         """
-        Renders the influencer's consent management page.
-        Fetches consent history and checks for new versions requiring acceptance.
+        Influencer Consent Management page.
+        Displays consent history and allows accepting new terms.
         """
         try:
-            influencer = self._get_influencer_profile()
-            # consent_history = request.env['influence_gen.terms_consent_service'].get_consent_history(influencer.id)
-            # pending_consents = request.env['influence_gen.terms_consent_service'].get_pending_consents(influencer.id)
-
-            qcontext = {
-                'influencer': influencer,
-                # 'consent_history': consent_history,
-                # 'pending_consents': pending_consents, # e.g. {'tos': 'v2.0', 'privacy': 'v1.5'}
-                'page_name': 'consent',
-                'success_message': kw.get('success_message'),
-                'error_message': kw.get('error_message'),
-            }
-            # Placeholder data for now
-            qcontext['consent_history'] = [] # List of dicts e.g. {'tos_version': '1.0', 'consent_date': ...}
-            qcontext['pending_consents'] = {} # e.g. {'tos_version': '2.0', 'privacy_policy_version': '1.1'}
-            
-            return request.render("influence_gen_portal.portal_consent_management_tab_content", qcontext) # Assuming this is rendered inside profile page or a dedicated page
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            business_service = request.env['influence_gen.business.service']
+            consent_data = business_service.sudo(influencer_profile.user_id.id).get_influencer_consent_data(influencer_profile.id)
+        except Forbidden as e:
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Access Denied"), 'message': str(e)})
         except Exception as e:
-            qcontext = {'error_message': _("An unexpected error occurred while loading consent information.")}
-            return request.render("influence_gen_portal.portal_error_page", qcontext)
+            _logger.error("Error fetching consent data for user %s: %s", request.env.user.login, e)
+            return request.render("influence_gen_portal.portal_error_page", {'title': _("Consent Load Error"), 'message': _("Could not load consent information. Please try again later.")})
 
-    @http.route(['/my/consent/accept'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'consent_data': consent_data,
+            'page_name': 'consent',
+        })
+        return request.render("influence_gen_portal.portal_consent_management", values)
+
+    @http.route(['/my/consent/accept'], type='http', auth='user', methods=['POST'], website=True, csrf=True)
     def influencer_accept_terms(self, **post):
         """
-        Handles POST requests to accept new Terms of Service / Privacy Policy.
+        Handles POST request to record influencer's consent to terms/policy.
         """
         try:
-            influencer = self._get_influencer_profile()
-            tos_version = post.get('tos_version')
-            privacy_policy_version = post.get('privacy_policy_version')
+            influencer_profile = self._get_influencer_profile_or_raise()
+            if not post.get('accept_terms'):
+                request.session['flash_message'] = {'type': 'warning', 'message': _("You must accept the terms to continue.")}
+                return request.redirect("/my/consent")
 
-            if not tos_version or not privacy_policy_version: # Basic check
-                return request.redirect('/my/consent?error_message=' + _("Required versions not provided."))
-
-            # result = request.env['influence_gen.terms_consent_service'].record_consent(
-            #     influencer.id, 
-            #     tos_version, 
-            #     privacy_policy_version
-            # )
-            # if not result.get('success'):
-            #     return request.redirect('/my/consent?error_message=' + result.get('message', _("Failed to record consent.")))
-            
-            # Simplified for now
-            return request.redirect('/my/dashboard?success_message=' + _("Terms accepted successfully!"))
-        except werkzeug.exceptions.NotFound:
-            return request.redirect('/')
+            business_service = request.env['influence_gen.business.service']
+            business_service.sudo(influencer_profile.user_id.id).record_influencer_consent(
+                influencer_profile.id,
+                post.get('tos_version'),
+                post.get('privacy_policy_version')
+            )
+            request.session['flash_message'] = {'type': 'success', 'message': _("Terms accepted successfully.")}
+        except UserError as e:
+            request.session['flash_message'] = {'type': 'danger', 'message': str(e)}
+        except Forbidden as e:
+            request.session['flash_message'] = {'type': 'danger', 'message': str(e)}
         except Exception as e:
-            # Log error
-            return request.redirect('/my/consent?error_message=' + _("An error occurred while accepting terms."))
+            _logger.error("Error recording consent for user %s: %s", request.env.user.login, e)
+            request.session['flash_message'] = {'type': 'danger', 'message': _("An error occurred while recording your consent.")}
+
+        redirect_url = post.get('redirect', '/my/dashboard')
+        return request.redirect(redirect_url)

@@ -1,59 +1,95 @@
 <odoo>
     <data>
+        <!-- Generic Portal Error Page Template -->
         <template id="portal_error_page" name="InfluenceGen Portal Error Page">
-            <t t-call="influence_gen_portal.influence_gen_portal_layout"> <!-- Or portal.portal_layout -->
-                <t t-set="page_name_display" t-value="error_title or _t('Error')"/>
-                <div class="container mt-5 mb-5">
-                    <div class="alert alert-danger" role="alert">
-                        <h4 class="alert-heading"><t t-esc="error_title or _t('An Error Occurred')"/></h4>
-                        <p><t t-esc="error_message or _t('We encountered an unexpected issue. Please try again later or contact support if the problem persists.')"/></p>
-                        <hr/>
-                        <p class="mb-0">
-                            <t t-if="suggestions">
-                                <strong><t t-esc="_t('Suggestions:')"/></strong>
-                                <ul>
-                                    <t t-foreach="suggestions" t-as="suggestion">
-                                        <li><t t-esc="suggestion"/></li>
-                                    </t>
-                                </ul>
-                            </t>
-                            <a href="/my/dashboard" class="btn btn-primary"><i class="fa fa-home"/> <t t-esc="_t('Go to Dashboard')"/></a>
-                            <!-- Add a link to contact support or help page -->
-                            <!-- <a href="/help" class="btn btn-secondary"><i class="fa fa-question-circle"/> <t t-esc="_t('Help Center')"/></a> -->
-                        </p>
-                    </div>
+            <t t-call="website.layout"> <!-- Use website.layout for public-facing error structure if needed -->
+                 <div id="wrap">
+                      <div class="container my-5">
+                           <div class="row justify-content-center">
+                                <div class="col-md-8 text-center">
+                                     <div class="alert alert-danger p-4" role="alert">
+                                          <h1 class="alert-heading">
+                                               <i class="fa fa-exclamation-triangle me-2"></i>
+                                               <t t-esc="title or _('An Error Occurred')"/>
+                                          </h1>
+                                          <p class="lead">
+                                               <t t-esc="message or _('We seem to have encountered a problem. Please try again later.')"/>
+                                          </p>
+                                          <hr/>
+                                          <t t-if="suggestions">
+                                               <p><strong><t t-esc="_('Here are some suggestions:')"/></strong></p>
+                                               <ul class="list-unstyled">
+                                                    <t t-foreach="suggestions" t-as="suggestion">
+                                                         <li><t t-esc="suggestion"/></li>
+                                                    </t>
+                                               </ul>
+                                          </t>
+                                          <p class="mb-0">
+                                               <t t-esc="_('If the problem persists, please')"/>
+                                               <!-- Replace with actual contact link -->
+                                               <a href="/contactus" class="alert-link"> <t t-esc="_('contact our support team')"/>.</a>
+                                          </p>
+                                     </div>
+                                     <div class="mt-4">
+                                          <a t-att-href="user_id and '/my/dashboard' or '/web/login'" class="btn btn-primary">
+                                               <t t-if="user_id"><t t-esc="_('Go to Dashboard')"/></t>
+                                               <t t-else=""><t t-esc="_('Go to Login')"/></t>
+                                          </a>
+                                          <a href="/" class="btn btn-secondary"><t t-esc="_('Back to Homepage')"/></a>
+                                     </div>
+                                </div>
+                           </div>
+                      </div>
+                 </div>
+            </t>
+        </template>
+
+        <!-- Override Odoo's default error pages for consistent portal styling -->
+        <!-- 403 Forbidden -->
+        <template id="portal_403" name="Portal 403 Forbidden" inherit_id="website.403">
+            <xpath expr="//div[hasclass('oe_structure')]" position="replace">
+                <div class="oe_structure">
+                    <t t-call="influence_gen_portal.portal_error_page">
+                        <t t-set="title"><t t-esc="_('Access Denied (403)')"/></t>
+                        <t t-set="message"><t t-esc="_('Sorry, you are not authorized to access this page. This could be due to insufficient permissions or if the resource is restricted.')"/></t>
+                        <t t-set="suggestions" t-value="[_('Ensure you are logged in with the correct account.'), _('If you believe this is an error, contact support.')]"/>
+                    </t>
                 </div>
-            </t>
-        </template>
-
-        <!-- Custom 403 Forbidden Page for Portal -->
-        <template id="portal_403_error" name="InfluenceGen Portal 403 Error" inherit_id="website.403">
-            <xpath expr="//div[hasclass('container')]" position="replace">
-                <t t-call="influence_gen_portal.portal_error_page">
-                    <t t-set="error_title" t-value="_t('Access Denied (403)')"/>
-                    <t t-set="error_message" t-value="_t('You do not have sufficient permissions to access this page. Please ensure you are logged in with the correct account or contact support if you believe this is an error.')"/>
-                </t>
             </xpath>
         </template>
 
-        <!-- Custom 404 Not Found Page for Portal -->
-        <template id="portal_404_error" name="InfluenceGen Portal 404 Error" inherit_id="website.404">
-             <xpath expr="//div[hasclass('container')]" position="replace">
-                <t t-call="influence_gen_portal.portal_error_page">
-                    <t t-set="error_title" t-value="_t('Page Not Found (404)')"/>
-                    <t t-set="error_message" t-value="_t('The page you are looking for does not exist or may have been moved. Please check the URL or navigate using the main menu.')"/>
-                </t>
+        <!-- 404 Not Found -->
+        <template id="portal_404" name="Portal 404 Not Found" inherit_id="website.404">
+            <xpath expr="//div[hasclass('oe_structure')]" position="replace">
+                <div class="oe_structure">
+                     <t t-call="influence_gen_portal.portal_error_page">
+                        <t t-set="title"><t t-esc="_('Page Not Found (404)')"/></t>
+                        <t t-set="message"><t t-esc="_('Oops! The page you are looking for does not exist. It might have been moved, renamed, or is temporarily unavailable.')"/></t>
+                        <t t-set="suggestions" t-value="[_('Check the URL for typos.'), _('Navigate using the main menu.')]"/>
+                    </t>
+                </div>
             </xpath>
         </template>
 
-        <!-- Custom 500 Internal Server Error Page for Portal (More user friendly than default) -->
-        <!-- Odoo's default 500 handling might be tricky to override completely this way for all cases,
-             but this provides a template if controllers explicitly render it. -->
-        <template id="portal_500_error" name="InfluenceGen Portal 500 Error">
-            <t t-call="influence_gen_portal.portal_error_page">
-                <t t-set="error_title" t-value="_t('Internal Server Error (500)')"/>
-                <t t-set="error_message" t-value="_t('We are experiencing some technical difficulties. Our team has been notified. Please try again in a few moments.')"/>
-            </t>
+        <!-- 500 Internal Server Error -->
+        <template id="portal_500" name="Portal 500 Server Error" inherit_id="website.http_error">
+            <!-- This template is often called for generic errors, so ensure it works with passed 'exception_message' etc. -->
+            <xpath expr="//div[hasclass('oe_structure')]" position="replace">
+                <div class="oe_structure">
+                    <t t-call="influence_gen_portal.portal_error_page">
+                        <t t-set="title"><t t-esc="_('Internal Server Error (500)')"/></t>
+                        <t t-set="message"><t t-esc="exception_message or _('An unexpected error occurred on our server. We have been notified and are working to fix it.')"/></t>
+                        <t t-set="suggestions" t-value="[_('Please try refreshing the page in a few moments.')]"/>
+                        <!-- Optionally, display technical details if debug mode is on -->
+                        <t t-if="debug">
+                             <div class="mt-3">
+                                  <h5><t t-esc="_('Technical Details (Debug Mode):')"/></h5>
+                                  <pre class="text-start p-2 bg-light border rounded small" style="max-height: 200px; overflow-y: auto;"><t t-esc="exception_traceback or exception_message"/></pre>
+                             </div>
+                        </t>
+                    </t>
+                </div>
+            </xpath>
         </template>
 
     </data>

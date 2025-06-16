@@ -1,166 +1,144 @@
 /** @odoo-module **/
 
-import { Component, useState, onWillStart, onMounted, useRef } from "@odoo/owl";
+import { Component, useState, useRef } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
-import { registry } from "@web/core/registry";
-
-const portalService = registry.category("services").get("influence_gen_portal.portal_service", { optional: true }) || {
-    // Fallback if service not fully loaded or in test env
-    async rpc(route, params) { console.warn('portal_service.rpc fallback used'); return ajax.rpc(route, params); },
-    notify(message, type = 'info', sticky = false) { console.warn(`portal_service.notify fallback: ${type} - ${message}`); }
-};
-
 
 export class AbstractFormComponent extends Component {
-    static template = "influence_gen_portal.AbstractFormComponentTemplate"; // To be defined in XML
+    static template = "influence_gen_portal.AbstractFormComponentTemplate";
     static props = {
-        submitUrl: { type: String, optional: false },
-        initialData: { type: Object, optional: true, default: {} },
-        validationRules: { type: Object, optional: true, default: {} }, // e.g., { fieldName: [{ type: 'required' }, { type: 'email' }, {type: 'minLength', value: 5}] }
+        submitUrl: { type: String },
+        initialData: { type: Object, optional: true, default: () => ({}) },
+        validationRules: { type: Object, optional: true, default: () => ({}) }, // e.g., {fieldName: [{type: 'required', message: '...'}, {type: 'email', message: '...'}]}
         successRedirectUrl: { type: String, optional: true },
-        successMessage: { type: String, optional: true, default: _t("Form submitted successfully!") },
-        errorMessage: { type: String, optional: true, default: _t("An error occurred. Please try again.") },
-        slots: { type: Object, optional: true },
-        formRef: { type: Object, optional: true }, // ref to pass to the form element
+        successMessage: { type: String, optional: true, default: () => _t("Form submitted successfully.") },
+        slots: {
+            default: {}, // For form fields
+        },
     };
 
     setup() {
+        this.rpcService = useService("rpc"); // Odoo's core RPC service
+        this.notificationService = useService("notification");
+        this.router = useService("router"); // Odoo's router service for navigation
+
         this.state = useState({
             formData: { ...this.props.initialData },
             formErrors: {}, // { fieldName: "Error message" }
             isSubmitting: false,
-            globalError: "",
+            globalError: null,
         });
 
-        if (this.props.formRef) {
-            this.form = useRef(this.props.formRef.name);
-        } else {
-            this.form = useRef("abstractForm");
-        }
-
-
-        onWillStart(async () => {
-            // Initialization logic if needed
-        });
-
-        onMounted(() => {
-            // Post-render logic, e.g., focusing first field
-        });
+        this.formRef = useRef("formElement"); // If form is the root of the template
     }
 
     _onInputChange(event) {
-        const { name, value, type, checked } = event.target;
-        this.state.formData[name] = type === 'checkbox' ? checked : value;
-        if (this.state.formErrors[name]) {
-            delete this.state.formErrors[name]; // Clear error on input change
+        const { name, value, type, checked, files } = event.target;
+        let newValue;
+        if (type === 'checkbox') {
+            newValue = checked;
+        } else if (type === 'file') {
+            newValue = this.props.multipleFiles ? files : files[0]; // Handle single/multiple files if needed by this abstract component
+        } else {
+            newValue = value;
         }
-        this.state.globalError = ""; // Clear global error on input change
-        // Optionally, trigger field validation on blur or change
-        // this._validateField(name, this.state.formData[name]);
+
+        this.state.formData[name] = newValue;
+        if (this.state.formErrors[name]) {
+            this.state.formErrors[name] = null; // Clear error on input change
+        }
+        // Optional: validate on change
+        // this._validateField(name, newValue);
     }
 
     _validateField(fieldName, value) {
-        const rules = this.props.validationRules[fieldName] || [];
+        const rules = this.props.validationRules[fieldName];
+        if (!rules) return true;
+
         for (const rule of rules) {
-            if (rule.type === 'required' && !value && value !== false) { // Ensure boolean false is not considered empty for checkboxes
+            if (rule.type === 'required' && (!value || (typeof value === 'string' && value.trim() === ''))) {
                 this.state.formErrors[fieldName] = rule.message || _t("This field is required.");
                 return false;
             }
-            if (rule.type === 'email') {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (value && !emailRegex.test(value)) {
-                    this.state.formErrors[fieldName] = rule.message || _t("Invalid email address.");
-                    return false;
-                }
+            if (rule.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                this.state.formErrors[fieldName] = rule.message || _t("Invalid email format.");
+                return false;
             }
             if (rule.type === 'minLength' && value && value.length < rule.value) {
                 this.state.formErrors[fieldName] = rule.message || _t("Must be at least %s characters.", rule.value);
                 return false;
             }
-            if (rule.type === 'maxLength' && value && value.length > rule.value) {
-                this.state.formErrors[fieldName] = rule.message || _t("Cannot exceed %s characters.", rule.value);
-                return false;
-            }
-            if (rule.type === 'pattern' && value && !new RegExp(rule.value).test(value)) {
-                 this.state.formErrors[fieldName] = rule.message || _t("Invalid format.");
-                 return false;
-            }
-            if (rule.type === 'custom' && typeof rule.validator === 'function') {
-                const customError = rule.validator(value, this.state.formData);
-                if (customError) {
-                    this.state.formErrors[fieldName] = customError;
-                    return false;
-                }
-            }
+            // Add more validation rules as needed: regex, custom function, etc.
         }
-        delete this.state.formErrors[fieldName];
+        this.state.formErrors[fieldName] = null; // Clear error if all rules pass
         return true;
     }
 
     _validateForm() {
-        this.state.formErrors = {}; // Reset errors
         let isValid = true;
+        this.state.formErrors = {}; // Reset errors
         for (const fieldName in this.props.validationRules) {
             if (!this._validateField(fieldName, this.state.formData[fieldName])) {
                 isValid = false;
             }
+        }
+        // HTML5 validation check (basic, use validationRules for better UX)
+        if (this.formRef.el && !this.formRef.el.checkValidity()) {
+            isValid = false;
+            // Optionally iterate and populate formErrors based on native validity
+            // This is complex as native messages are not easily customizable via JS here.
         }
         return isValid;
     }
 
     async _onSubmit(event) {
         event.preventDefault();
-        this.state.isSubmitting = true;
-        this.state.globalError = "";
-        this.state.formErrors = {};
+        if (this.state.isSubmitting) return;
 
         if (!this._validateForm()) {
-            this.state.isSubmitting = false;
-            // Optionally focus the first invalid field
-            const firstErrorField = Object.keys(this.state.formErrors)[0];
-            if (firstErrorField && this.form.el) {
-                const fieldElement = this.form.el.querySelector(`[name="${firstErrorField}"]`);
-                if (fieldElement) fieldElement.focus();
+            this.state.globalError = _t("Please correct the errors in the form.");
+            // Focus on the first invalid field (optional enhancement)
+            const firstErrorField = Object.keys(this.state.formErrors).find(key => this.state.formErrors[key]);
+            if (firstErrorField && this.formRef.el && this.formRef.el.elements[firstErrorField]) {
+                 this.formRef.el.elements[firstErrorField].focus();
             }
             return;
         }
 
+        this.state.isSubmitting = true;
+        this.state.globalError = null;
+
         try {
-            // Odoo's RPC service automatically handles CSRF if controller has csrf=True
-            const result = await portalService.rpc(this.props.submitUrl, this.state.formData, 'POST'); // Assuming POST, adjust if needed
+            // Use Odoo's rpcService which handles CSRF for POST to @http.route type='http' or type='json'
+            // For file uploads, this abstract component might need to be more specialized or use a dedicated file uploader.
+            // Assuming form data is serializable for a typical JSON/HTTP POST.
+            const result = await this.rpcService(this.props.submitUrl, this.state.formData);
 
-            if (result && result.error) { // Server-side validation errors or operational errors
-                if (result.fields_errors) { // Odoo-style field errors
-                    for (const err of result.fields_errors) {
-                         this.state.formErrors[err.field_name] = err.message;
-                    }
-                } else {
-                    this.state.globalError = result.error.message || result.error.data?.message || this.props.errorMessage;
+            // Assuming the backend returns a success message or specific data
+            // If the controller handles redirection, this part might not be needed.
+            if (result && result.error) { // Backend returned a business error in JSON
+                this.state.globalError = result.error;
+                if (result.errors) { // Field specific errors
+                    this.state.formErrors = result.errors;
                 }
-                portalService.notify(this.state.globalError || _t("Please correct the errors below."), 'danger');
-
-            } else if (result && result.redirect_url) { // Server explicitly asks for redirect
-                 window.location.href = result.redirect_url;
-            }
-            else { // Success
-                portalService.notify(this.props.successMessage, 'success');
-                this.env.bus.trigger('form-submitted', { component: this, response: result });
-
+            } else {
+                this.notificationService.add(this.props.successMessage, { type: "success" });
                 if (this.props.successRedirectUrl) {
-                    window.location.href = this.props.successRedirectUrl;
-                } else if (result && result.message) { // Display server success message if no redirect
-                    this.state.globalError = ""; // Clear errors
+                    this.router.navigate(this.props.successRedirectUrl);
                 }
+                this.trigger('form-submitted', { response: result });
                 // Optionally reset form: this.state.formData = { ...this.props.initialData };
             }
         } catch (error) {
-            console.error("Form submission error:", error);
-            this.state.globalError = error.data?.message || error.message || this.props.errorMessage;
-            portalService.notify(this.state.globalError, 'danger');
+            _logger.error("Abstract Form Submission Error:", error);
+            const errorMessage = error.message?.data?.message || error.message || _t("An unexpected error occurred.");
+            this.state.globalError = errorMessage;
+            this.notificationService.add(errorMessage, { type: "danger" });
+            if (error.message?.data?.errors) {
+                this.state.formErrors = error.message.data.errors;
+            }
         } finally {
             this.state.isSubmitting = false;
         }
     }
 }
-
-registry.category("public_components").add("influence_gen_portal.AbstractFormComponent", AbstractFormComponent);

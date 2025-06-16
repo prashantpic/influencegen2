@@ -1,77 +1,75 @@
 <odoo>
     <data>
-        <!-- Inherit portal layout to add InfluenceGen specifics -->
+        <!--
+            Main Portal Layout for InfluenceGen
+            Inherits from Odoo's default portal layout and customizes it.
+            Menu items are defined in data/ir_ui_menu_data.xml and rendered by Odoo.
+            This template focuses on asset injection, skip links, and flash message display.
+        -->
         <template id="portal_layout" name="InfluenceGen Portal Layout" inherit_id="portal.portal_layout">
-            <xpath expr="//nav[hasclass('o_portal_navbar')]/div[hasclass('collapse')]/ul[hasclass('o_portal_submenu')]" position="inside">
-                <!-- Ensure menu items are loaded from ir_ui_menu_data.xml via parent="portal.portal_my_home" -->
-                <!-- The actual menu items will be rendered by Odoo based on ir.ui.menu records -->
-                <!-- This template can be used to add specific classes or wrappers if needed,
-                     or to ensure custom assets are loaded if not handled by assets.xml -->
-            </xpath>
-
-            <!-- Example: Add a custom footer element if needed -->
             <!--
-            <xpath expr="//footer" position="inside">
-                <div class="container mt-3">
-                    <p class="text-center text-muted small">
-                        <t t-esc="_t('InfluenceGen Platform &copy; %s', datetime.datetime.now().year)"/>
-                    </p>
-                </div>
-            </xpath>
+                Assets (CSS/JS) are typically included via the 'assets' key in __manifest__.py
+                and then defined in a separate 'assets.xml' file inheriting 'web.assets_frontend'.
+                The default portal.portal_layout already includes 'web.assets_frontend'.
+                No explicit <link> or <script> tags for main bundles are usually needed here.
             -->
-        </template>
 
-        <!-- A more specific layout for InfluenceGen portal pages if further customization is needed beyond portal.portal_layout -->
-        <template id="influence_gen_portal_layout" name="InfluenceGen Main Portal Page Layout">
-            <t t-call="portal.portal_layout">
-                <t t-set="additional_title"><t t-esc="page_name"/></t>
-                 <t t-set="body_class" t-valuef="influence-gen-portal portal-page-{{page_name}}"/>
-                <div id="wrap" class="oe_structure oe_empty influence_gen_portal_wrap">
-                    <section class="s_title parallax s_parallax_is_fixed bg-black-50 pt24 pb24" data-vcss="001" data-scroll-background-ratio="0">
-                        <span class="s_parallax_bg oe_img_bg oe_custom_bg" style="background-image: none;"/>
-                        <div class="container">
-                            <h1><t t-esc="page_name_display or page_name"/></h1>
-                        </div>
-                    </section>
-                    <div class="container o_portal_wrap">
-                        <div class="row">
-                            <div class="col-12 o_portal_content">
-                                <t t-raw="0"/> <!-- Page content will be inserted here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </t>
-        </template>
+            <!-- Add accessibility "Skip to Main Content" link -->
+            <xpath expr="//header" position="before">
+                 <t t-call="influence_gen_portal.snippet_skip_to_content"/>
+            </xpath>
+
+            <!-- Ensure the main content area has an ID for the skip link -->
+            <xpath expr="//main[hasclass('o_portal_wrap')]" position="attributes">
+                 <attribute name="id">main_content</attribute>
+            </xpath>
+            <!-- If no main.o_portal_wrap, find a suitable main content wrapper -->
+             <xpath expr="//div[@id='wrapwrap']/main" position="attributes">
+                  <attribute name="id" t-if="not xmlenv.Find('.//main[@id=\'main_content\']')">main_content</attribute>
+             </xpath>
 
 
-        <!-- Template to display success/error messages commonly -->
-        <template id="portal_alert_messages">
-            <t t-if="success_message">
-                <div class="alert alert-success alert-dismissible fade show" role="alert" aria-live="polite">
-                    <t t-esc="success_message"/>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
+            <!-- Centralized Flash Message Display Area -->
+            <!-- This ensures flash messages are consistently displayed across all portal pages -->
+            <xpath expr="//div[@id='wrap']" position="before">
+                 <div id="portal_notification_area" class="container o_portal_notification_area">
+                      <t t-call="influence_gen_portal.portal_flash_messages"/>
+                 </div>
+            </xpath>
+
+            <!-- Custom Portal Header Content (Optional) -->
+            <!-- <xpath expr="//header//nav[hasclass('o_main_navbar')]" position="inside"> -->
+                <!-- Example: Add a specific portal branding element if Odoo's default isn't enough -->
+                <!-- <span class="navbar-text ms-3">InfluenceGen Portal</span> -->
+            <!-- </xpath> -->
+
+            <!-- Custom Portal Footer Content (Optional) -->
+            <!-- <xpath expr="//footer" position="inside"> -->
+                <!-- <div class="container text-center py-3">
+                    <p class="mb-0 small text-muted">© <t t-esc="datetime.datetime.now().year"/> InfluenceGen. All rights reserved. | <a href="/terms">Terms</a> | <a href="/privacy">Privacy</a></p>
+                </div> -->
+            <!-- </xpath> -->
+        </template>
+
+        <!-- Flash Message Rendering Snippet -->
+        <template id="portal_flash_messages" name="Portal Flash Messages">
+            <t t-if="request.session.get('flash_message')">
+                <div t-attf-class="alert alert-dismissible fade show alert-#{request.session['flash_message']['type'] or 'info'}" role="alert">
+                    <t t-esc="request.session['flash_message']['message']"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_('Close')"></button>
                 </div>
-            </t>
-            <t t-if="error_message">
-                <div class="alert alert-danger alert-dismissible fade show" role="alert" aria-live="assertive">
-                    <t t-esc="error_message"/>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
-                </div>
-            </t>
-            <t t-if="warning_message">
-                <div class="alert alert-warning alert-dismissible fade show" role="alert" aria-live="polite">
-                    <t t-esc="warning_message"/>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
-                </div>
-            </t>
-             <t t-if="info_message">
-                <div class="alert alert-info alert-dismissible fade show" role="alert" aria-live="polite">
-                    <t t-esc="info_message"/>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
-                </div>
+                <!-- Clear the flash message after displaying it -->
+                <t t-set="request.session['flash_message']" t-value="None"/>
             </t>
         </template>
+
+        <!--
+            Odoo's portal.portal_my_home template by default lists menu items.
+            Our menu items are defined in ir_ui_menu_data.xml and parented to portal.portal_my_home.
+            If specific customization of the "My Account" page content (not just the dropdown) is needed,
+            it can be done by inheriting portal.portal_my_home.
+            However, for this SDS, /my usually redirects to /my/dashboard, handled by a controller.
+        -->
 
     </data>
 </odoo>

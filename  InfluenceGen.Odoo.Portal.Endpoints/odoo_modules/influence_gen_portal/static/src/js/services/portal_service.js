@@ -1,89 +1,89 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { rpcService } from "@web/core/network/rpc_service";
-import { notificationService } from "@web/core/notifications/notification_service";
+import { RPCError } from "@web/core/network/rpc_service"; // For error type checking
 import { _t } from "@web/core/l10n/translation";
 
-// This is a simplified way to make services available globally if needed by non-OWL JS,
-// or to be consumed by OWL components via `this.env.services`.
-// For OWL components, it's better to add them to the service registry.
-
 const portalService = {
-    /**
-     * Makes an RPC call to an Odoo backend controller.
-     * @param {string} route The backend route.
-     * @param {Object} params Parameters for the call.
-     * @param {string} method HTTP method (usually 'call' for Odoo RPC, or 'POST'/'GET' for http type routes).
-     * @returns {Promise<any>}
-     */
-    async rpc(route, params = {}, method = 'call') {
-        // Assuming rpcService is set up in the environment.
-        // If this service is used outside OWL, direct import and use of ajax.rpc might be needed.
-        // However, Odoo 16+ encourages use of services.
-        // This is a placeholder for how rpcService would be accessed if this was an OWL service.
-        // For a simple JS object service, you might need to instantiate rpcService or use legacy ajax.rpc
-        
-        // Using a direct reference to ajax if rpcService is not easily available in this context
-        // This pattern is more common for legacy JS or utilities outside component context
-        const { jsonrpc } = require('web.ajax'); // Legacy way
-        if (method && method.toLowerCase() === 'post' && route.startsWith('/my/')) { // Assuming JSON controller
-             return jsonrpc(route, params); // Odoo 18, type='json' routes are direct JSON-RPC
-        }
-        // For type='http' routes, especially if they return HTML or redirects,
-        // it's usually handled by form submissions or window.location, not direct RPC here.
-        // This RPC is mostly for JSON endpoints.
-        return jsonrpc(route, params);
-    },
+    dependencies: ["rpc", "notification", "router"], // Declare dependencies on core Odoo services
 
-    /**
-     * Displays a UI notification.
-     * @param {string} message The message to display.
-     * @param {string} type 'info', 'success', 'warning', 'danger'.
-     * @param {boolean} sticky Whether the notification should be sticky.
-     */
-    notify(message, type = 'info', sticky = false, title = '') {
-        // Similar to RPC, accessing notificationService.
-        // For non-OWL JS, this might need direct access to Odoo's notification mechanisms.
-        const notification = registry.category("services").get("notification");
-        const options = {
-            type: type,
-            sticky: sticky,
-            title: title || (type === 'success' ? _t("Success") : type === 'danger' ? _t("Error") : type === 'warning' ? _t("Warning") : _t("Information"))
+    start(env, { rpc, notification, router }) {
+        /**
+         * Wrapper for Odoo's core RPC service, tailored for portal interactions.
+         * @param {string} route - The Odoo route (e.g., controller path).
+         * @param {Object} params - Parameters for the RPC call. For POST, these are the body. For GET, they form the query string.
+         * @param {Object} [options={}] - Additional options for the RPC call.
+         * @param {string} [options.method='POST'] - HTTP method, typically 'POST' for JSON RPCs. 'GET' can be used for fetching.
+         * @returns {Promise<any>}
+         */
+        async function portalRpc(route, params = {}, options = {}) {
+            const method = options.method || 'call'; // 'call' is generic for odoo rpc service, translates to POST for json routes
+            try {
+                // Odoo's rpc service automatically handles CSRF for POST type json/http routes.
+                // It also stringifies JSON body for POST and constructs query for GET.
+                const result = await rpc(route, params, options); // Pass options if any (like silent: true)
+                return result;
+            } catch (error) {
+                _logger.error(`Portal RPC Error to ${route}:`, error);
+                let userMessage = _t("An error occurred while processing your request.");
+                if (error instanceof RPCError) { // Check if it's an Odoo specific RPCError
+                    if (error.data && error.data.message) { // Odoo UserError or specific error message
+                        userMessage = error.data.message;
+                    } else if (error.message) { // Generic RPC error message
+                        userMessage = error.message;
+                    }
+                } else if (error.message) { // Standard JS error
+                    userMessage = error.message;
+                }
+                // Optionally, display a notification here for all RPC errors, or let caller handle
+                // notify(userMessage, 'danger');
+                throw { // Re-throw a structured error for components to handle
+                    type: 'rpc_error',
+                    message: userMessage,
+                    originalError: error,
+                };
+            }
+        }
+
+        /**
+         * Displays a UI notification.
+         * @param {string} message - The message to display.
+         * @param {Object} [options={}] - Options for the notification.
+         * @param {string} [options.type='info'] - Type: 'info', 'success', 'warning', 'danger'.
+         * @param {boolean} [options.sticky=false] - If true, notification requires manual dismissal.
+         * @param {string} [options.title] - Optional title for the notification.
+         * @param {Function} [options.onClose] - Callback when notification is closed.
+         */
+        function notify(message, options = {}) {
+            notification.add(message, {
+                type: options.type || 'info',
+                sticky: options.sticky || false,
+                title: options.title,
+                onClose: options.onClose,
+                className: options.className, // Custom class for styling
+            });
+        }
+
+        /**
+         * Navigates to a different portal route.
+         * @param {string} route - The portal route to navigate to (e.g., '/my/dashboard').
+         * @param {Object} [options={}] - Navigation options.
+         */
+        function navigate(route, options = {}) {
+            router.navigate(route, options);
+        }
+
+        return {
+            rpc: portalRpc,
+            notify,
+            navigate,
+            // Expose env for components that might need it (e.g., for _t directly if not using hooks)
+            // Note: Components should prefer useService or hooks to access env.
+            // getEnv: () => env,
         };
-        notification.add(message, options);
-    }
+    },
 };
 
-// Registering the service so it can be used in OWL components via this.env.services.portal
-registry.category("services").add("influence_gen_portal.portal_service", {
-    dependencies: ["rpc", "notification"],
-    start(env, { rpc, notification }) {
-        return {
-            async rpc(route, params = {}, httpMethod = 'POST') {
-                 // For JSON controllers (type='json')
-                if (route.startsWith('/my/ai/')) { // Example
-                    return rpc(route, params);
-                }
-                // For other custom calls, or if you have specific http type routes that return JSON
-                // This might need more specific handling based on Odoo version and route type
-                // Typically, for 'http' routes that render templates, you don't call them via JS RPC
-                // but navigate or submit forms to them.
-                console.warn(`Attempting RPC to non-standard JSON route: ${route}. Ensure it's a JSON endpoint.`);
-                return rpc(route, params); // Fallback to Odoo's default RPC
-            },
-            notify(message, type = 'info', sticky = false, title = '') {
-                 const options = {
-                    type: type,
-                    sticky: sticky,
-                    title: title || (type === 'success' ? _t("Success") : type === 'danger' ? _t("Error") : type === 'warning' ? _t("Warning") : _t("Information"))
-                };
-                notification.add(message, options);
-            }
-        };
-    }
-});
+registry.category("services").add("influence_gen_portal.portal_service", portalService);
 
-
-// Exporting for potential use in non-OWL JS if absolutely necessary, but prefer service registry.
-export default portalService;
+export default portalService; // For potential direct import if needed, though registry is preferred.

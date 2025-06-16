@@ -1,28 +1,75 @@
 <odoo>
     <data>
-        <template id="snippet_help_tooltip" name="Help Tooltip Snippet">
-            <span class="ms-1 o_portal_help_tooltip"
+        <!--
+            QWeb Templates for In-App Guidance
+            These snippets can be called or used within other portal templates
+            to provide contextual help or placeholders for tours.
+        -->
+
+        <!-- Snippet for a Help Tooltip Icon -->
+        <template id="snippet_help_tooltip" name="Help Tooltip Icon">
+            <!--
+                Usage: <t t-call="influence_gen_portal.snippet_help_tooltip">
+                           <t t-set="help_text">This is some helpful information about this field or section.</t>
+                           <t t-set="tooltip_placement" t-value="'top'"/> (Optional: top, bottom, left, right)
+                       </t>
+            -->
+            <span class="o_portal_help_tooltip ms-1"
                   tabindex="0"
                   role="button"
-                  data-bs-toggle="popover"
-                  data-bs-trigger="hover focus"
-                  t-att-title="_t('Help')"
-                  t-att-data-bs-content="help_text">
-                <i class="fa fa-question-circle text-muted" t-att-aria-label="_t('Help: %s', help_text)"/>
+                  data-bs-toggle="tooltip"
+                  t-att-data-bs-placement="tooltip_placement or 'top'"
+                  t-att-title="help_text"
+                  t-att-aria-label="_('More information: %s') % help_text">
+                 <i class="fa fa-question-circle text-muted" aria-hidden="true"></i>
             </span>
+            <!--
+                Requires Bootstrap's JavaScript for tooltips to be active.
+                Ensure tooltips are initialized in a global JS file if not handled by Odoo core.
+                Example JS init:
+                $(function () {
+                    $('[data-bs-toggle="tooltip"]').tooltip()
+                })
+            -->
         </template>
 
-        <!-- Placeholder for a tour step.
-             Actual tour library (e.g., Shepherd.js, Intro.js) would target these.
-             Example: <span class="o_portal_tour_step" data-step="1" t-att-data-intro="_t('This is your dashboard summary.')"></span>
+        <!-- Placeholder for JavaScript-driven Tour Steps -->
+        <!--
+            This snippet can be placed near elements that should be part of a guided tour.
+            A JavaScript tour library (e.g., Shepherd.js, Intro.js) would then pick these up.
+            The library would need to be included in the portal assets.
         -->
-        <template id="snippet_tour_step_placeholder" name="Tour Step Placeholder">
-            <span class="o_portal_tour_step"
-                  t-att-data-step="tour_step_number"
-                  t-att-data-title="tour_step_title"
-                  t-att-data-intro="tour_step_intro">
-                <!-- This element itself might be visually empty or wrap an existing element -->
-            </span>
+        <template id="snippet_tour_step" name="Guided Tour Step Placeholder">
+            <!--
+                Usage: <t t-call="influence_gen_portal.snippet_tour_step">
+                           <t t-set="tour_step_id">dashboardWelcome</t>
+                           <t t-set="tour_title">Welcome to Your Dashboard!</t>
+                           <t t-set="tour_text">This is where you can find an overview of your activities, campaigns, and profile status.</t>
+                           <t t-set="tour_attach_to_element">'#dashboard_summary_widget .card-title'</t> (CSS selector)
+                           <t t-set="tour_attach_to_position">'bottom'</t> (e.g., top, bottom, left, right)
+                       </t>
+            -->
+            <div class="o_portal_tour_step_placeholder d-none"
+                 t-att-data-tour-step-id="tour_step_id"
+                 t-att-data-tour-title="tour_title"
+                 t-att-data-tour-text="tour_text"
+                 t-att-data-tour-attach-to-element="tour_attach_to_element or None"
+                 t-att-data-tour-attach-to-position="tour_attach_to_position or 'bottom'">
+                <!-- This element itself is hidden. JS will use its data attributes. -->
+            </div>
+        </template>
+
+        <!-- Example of an Inline Help Block -->
+        <template id="snippet_inline_help" name="Inline Help Block">
+            <!--
+                Usage: <t t-call="influence_gen_portal.snippet_inline_help">
+                           <t t-set="help_message">Make sure your username matches your social media handle exactly.</t>
+                       </t>
+            -->
+            <div class="form-text text-muted o_portal_inline_help">
+                <i class="fa fa-info-circle me-1" aria-hidden="true"></i>
+                <t t-esc="help_message"/>
+            </div>
         </template>
 
     </data>
