@@ -1,0 +1,32 @@
+```yaml
+# Environment specific variables for 'dev'
+# These variables should be managed securely, especially vaulted ones.
+
+# Odoo Database Variables (used by odoo_setup role)
+# odoo_db_host: {{ lookup('aws_secret', 'arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:influencegen/dev/odoo/db_host-YYYYYY', region='us-east-1') }} # Example: get from secrets manager if not using Terraform output
+# odoo_db_port: 5432 # Example: get from secrets manager or Terraform output
+# odoo_db_user: {{ lookup('aws_secret', 'arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:influencegen/dev/odoo/db_user-YYYYYY', region='us-east-1') }} # Example: get from secrets manager
+odoo_db_user: "dev_odoo_user" # Placeholder, should be vaulted
+odoo_db_password: "VAULT(your_vault_string_here)" # Placeholder, SHOULD BE VAULTED
+odoo_admin_password: "VAULT(your_vault_string_here)" # Placeholder, SHOULD BE VAULTED
+
+# N8N Database and Encryption Key Variables (used by n8n_setup role)
+# n8n_db_type: "postgres"
+# n8n_db_host: {{ lookup('aws_secret', 'arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:influencegen/dev/n8n/db_host-YYYYYY', region='us-east-1') }} # Example: get from secrets manager if not using Terraform output
+# n8n_db_port: 5432 # Example: get from secrets manager or Terraform output
+# n8n_db_name: "influencegendev"
+# n8n_db_user: {{ lookup('aws_secret', 'arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:influencegen/dev/n8n/db_user-YYYYYY', region='us-east-1') }} # Example: get from secrets manager
+n8n_db_user: "dev_n8n_user" # Placeholder, should be vaulted
+n8n_db_password: "VAULT(your_vault_string_here)" # Placeholder, SHOULD BE VAULTED
+n8n_encryption_key: "VAULT(your_vault_string_here)" # Placeholder, SHOULD BE VAULTED, CRITICAL
+
+# N8N Public URL (for webhook configuration)
+n8n_webhook_url: "http://dev.n8n.influencegen.com:5678" # Example URL, replace
+
+# AI Server Variables (if needed, e.g., API keys)
+# ai_service_api_key: "VAULT(your_vault_string_here)" # Placeholder
+
+# Note: Database host/port/name can be passed as --extra-vars from Terraform output script
+# or retrieved using dynamic inventory + lookup plugins. Example:
+# {{ terraform_output('db_endpoint', state_file='../terraform/environments/dev/terraform.tfstate') }}
+```

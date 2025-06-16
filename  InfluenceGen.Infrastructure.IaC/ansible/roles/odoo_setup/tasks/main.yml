@@ -1,0 +1,135 @@
+```yaml
+---
+- name: Install Odoo 18 system dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-dev
+      - python3-pip
+      - python3-venv
+      - build-essential
+      - libpq-dev
+      - libjpeg-dev
+      - libxml2-dev
+      - libxslt1-dev
+      - zlib1g-dev
+      - libsasl2-dev
+      - libldap2-dev
+      - libssl-dev
+      - nodejs # For less/scss compilation
+      - npm
+      - libfreetype6-dev
+      - liblcms2-dev
+      - libwebp-dev
+      - libharfbuzz-dev
+      - libfribidi-dev
+      - libffi-dev
+      - wkhtmltopdf # For PDF generation
+    state: present
+
+- name: Ensure wkhtmltopdf is executable and in PATH
+  ansible.builtin.file:
+    path: /usr/local/bin/wkhtmltopdf
+    src: /usr/bin/wkhtmltopdf
+    state: link
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version >= '22.04'
+  # wkhtmltopdf might be in different locations or require specific versions/patches
+  # for Ubuntu 22.04+. This is a basic link, verify compatibility or use a specific binary.
+
+- name: Create odoo system user
+  ansible.builtin.user:
+    name: "{{ odoo_user }}"
+    home: "/opt/{{ odoo_user }}"
+    shell: /bin/bash
+    system: yes
+
+- name: Create directories for Odoo source, addons, logs, and data
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
+    mode: '0755'
+  loop:
+    - "{{ odoo_install_dir }}"
+    - "{{ odoo_addons_path }}"
+    - "{{ odoo_log_dir }}"
+    - "{{ odoo_data_dir }}"
+
+- name: Clone Odoo 18 source code
+  ansible.builtin.git:
+    repo: "{{ odoo_git_repo }}"
+    dest: "{{ odoo_install_dir }}"
+    version: "{{ odoo_git_branch }}" # Use specific branch or tag for stability
+    force: yes # Use 'yes' cautiously, might discard local changes if not managed
+
+- name: Set ownership for Odoo source directory
+  ansible.builtin.file:
+    path: "{{ odoo_install_dir }}"
+    owner: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
+    recurse: yes
+
+- name: Create Python virtual environment for Odoo
+  ansible.builtin.command: "python3 -m venv {{ odoo_install_dir }}/venv"
+  args:
+    chdir: "{{ odoo_install_dir }}"
+    creates: "{{ odoo_install_dir }}/venv/bin/activate"
+  become: yes
+  become_user: "{{ odoo_user }}"
+
+- name: Install Python dependencies for Odoo
+  ansible.builtin.pip:
+    requirements: "{{ odoo_install_dir }}/requirements.txt"
+    virtualenv: "{{ odoo_install_dir }}/venv"
+  become: yes
+  become_user: "{{ odoo_user }}"
+
+- name: Deploy InfluenceGen custom addons
+  ansible.builtin.copy:
+    src: ../../influence_gen_addons/ # Assuming addons are structured relative to ansible root or copied beforehand
+    dest: "{{ odoo_addons_path }}"
+    owner: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
+    mode: '0755'
+
+# Note: Custom addons might have their own Python/system dependencies.
+# These should be handled before or after cloning/copying addons.
+
+- name: Deploy odoo.conf configuration file
+  ansible.builtin.template:
+    src: odoo.conf.j2
+    dest: "{{ odoo_config_path }}"
+    owner: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
+    mode: '0640' # Secure config file
+  vars:
+    odoo_db_host_var: "{{ odoo_db_host | default('False') }}" # Use default false for connection params if not required
+    odoo_db_port_var: "{{ odoo_db_port | default('5432') }}"
+    odoo_db_user_var: "{{ odoo_db_user }}" # These should be vaulted
+    odoo_db_password_var: "{{ odoo_db_password }}" # These should be vaulted
+    odoo_admin_passwd_var: "{{ odoo_admin_password }}" # This should be vaulted
+    odoo_addons_path_var: "{{ odoo_addons_path }},{{ odoo_install_dir }}/addons" # Combine custom and default addons
+    odoo_log_file_var: "{{ odoo_log_dir }}/odoo.log"
+    odoo_data_dir_var: "{{ odoo_data_dir }}"
+
+- name: Set up Odoo as a systemd service
+  ansible.builtin.template:
+    src: odoo.service.j2
+    dest: /etc/systemd/system/odoo.service
+    owner: root
+    group: root
+    mode: '0644'
+  vars:
+    odoo_user_var: "{{ odoo_user }}"
+    odoo_install_dir_var: "{{ odoo_install_dir }}"
+    odoo_config_path_var: "{{ odoo_config_path }}"
+    odoo_log_file_var: "{{ odoo_log_dir }}/odoo.log" # Reference log path again for service file
+  notify: reload systemd and restart odoo
+
+- name: Ensure Odoo service is enabled and running
+  ansible.builtin.systemd:
+    name: odoo
+    state: started
+    enabled: yes
+    daemon_reload: yes # Ensure systemd picks up new service file
+```

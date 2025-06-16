@@ -1,0 +1,150 @@
+```yaml
+---
+- name: Install NVIDIA drivers and CUDA (Requires specific AMI or detailed tasks)
+  ansible.builtin.debug:
+    msg: "Assuming NVIDIA drivers and CUDA are pre-installed on the AMI or will be installed by a separate role/script."
+    # Note: Installing NVIDIA/CUDA via Ansible can be complex and specific to the OS/CUDA version.
+    # Using a pre-built Deep Learning AMI or a dedicated role/script is often preferred.
+    # Example tasks (placeholders):
+    # - name: Add NVIDIA repository
+    #   ansible.builtin.apt_repository: ...
+    # - name: Install CUDA toolkit
+    #   ansible.builtin.apt: ...
+    # - name: Install NVIDIA drivers
+    #   ansible.builtin.apt: ...
+
+- name: Ensure docker role is included or tasks are present (if not using dependency)
+  ansible.builtin.debug:
+    msg: "Assuming docker is installed via 'docker' role or other tasks"
+  # include_role:
+  #   name: docker # Uncomment if using dependency (if deploying via Docker)
+
+- name: Install Python3 and pip
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+    state: present
+
+- name: Install Python libraries for AI serving (PyTorch, diffusers, etc.)
+  # Note: Ensure these are compatible with the installed CUDA version.
+  # Use --extra-index-url for specific PyTorch CUDA builds.
+  ansible.builtin.pip:
+    name:
+      - torch
+      - torchvision
+      - torchaudio
+      - diffusers
+      - transformers
+      - accelerate
+      - fastapi
+      - uvicorn[standard]
+      # Add other required libraries for Flux LoRA models
+    extra_index_urls:
+      - "https://download.pytorch.org/whl/cu{{ cuda_major_minor }}" # Example index for CUDA builds, adjust CUDA version
+    state: present
+
+# Optional: Mount and prepare EBS volume for models
+- name: Ensure model volume device exists
+  ansible.builtin.wait_for:
+    path: "{{ ai_model_volume_device }}"
+    state: present
+    timeout: 60
+    msg: "Model volume device {{ ai_model_volume_device }} not found"
+
+- name: Create filesystem on model volume (if not already formatted)
+  community.general.filesystem:
+    fstype: ext4
+    dev: "{{ ai_model_volume_device }}"
+  ignore_errors: yes # Ignore if partition is already formatted
+
+- name: Create directory for models
+  ansible.builtin.file:
+    path: "{{ ai_model_mount_point }}"
+    state: directory
+    mode: '0755'
+
+- name: Mount model volume
+  ansible.posix.mount:
+    path: "{{ ai_model_mount_point }}"
+    src: "{{ ai_model_volume_device }}"
+    fstype: ext4
+    state: mounted
+  # Note: Add entry to /etc/fstab for persistence across reboots
+
+- name: Clone or copy AI model serving application code
+  ansible.builtin.git:
+    repo: "{{ ai_app_git_repo }}" # Assuming application code is in a Git repo
+    dest: "{{ ai_app_install_dir }}"
+    version: "{{ ai_app_git_branch }}" # Specific branch/tag
+    force: yes # Use 'yes' cautiously
+
+# Optional: Download models if not using pre-filled volume
+# - name: Download model files (large, consider alternative methods)
+#   ansible.builtin.get_url:
+#     url: "{{ item.url }}"
+#     dest: "{{ ai_model_mount_point }}/{{ item.dest }}"
+#     mode: '0644'
+#   loop: "{{ ai_models_to_download }}" # List of model URLs and destinations
+#   # Consider using AWS S3 sync or other methods for large model downloads
+
+- name: Deploy AI serving app configuration (e.g., env file, config.yml)
+  ansible.builtin.template:
+    src: ai_server_config.j2 # Example template
+    dest: "{{ ai_app_install_dir }}/config.yml" # Or .env file path
+    owner: root # Or specific app user
+    group: root
+    mode: '0644'
+  vars:
+    ai_model_path_var: "{{ ai_model_mount_point }}"
+    ai_listen_port_var: "{{ ai_app_listen_port }}"
+    # Add other config variables, e.g., API keys (vaulted)
+
+# Decide deployment method: Systemd service or Docker container
+# Option 1: Systemd service (if running directly on host)
+- name: Set up AI server as a systemd service
+  ansible.builtin.template:
+    src: ai_server.service.j2 # Example template
+    dest: /etc/systemd/system/ai-server.service
+    owner: root
+    group: root
+    mode: '0644'
+  vars:
+    ai_app_install_dir_var: "{{ ai_app_install_dir }}"
+    ai_app_listen_port_var: "{{ ai_app_listen_port }}"
+    # Pass environment variables or config file path to service
+  notify: reload systemd and restart ai_server
+
+- name: Ensure AI server systemd service is enabled and running
+  ansible.builtin.systemd:
+    name: ai-server
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+# Option 2: Docker container (if running via Docker)
+# - name: Deploy AI server docker-compose.yml
+#   ansible.builtin.template:
+#     src: ai_server_docker-compose.yml.j2 # Example template
+#     dest: "{{ ai_app_install_dir }}/docker-compose.yml"
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   vars:
+#     ai_model_mount_point_var: "{{ ai_model_mount_point }}"
+#     ai_app_listen_port_var: "{{ ai_app_listen_port }}"
+#     ai_app_git_repo_var: "{{ ai_app_git_repo }}" # Maybe needed to specify image
+#     # Add other config variables as container env vars
+#
+# - name: Start AI server services with docker-compose
+#   community.docker.docker_compose:
+#     project_src: "{{ ai_app_install_dir }}"
+#     state: present
+#     pull: yes # Pull latest image on deploy
+#   environment:
+#     MODEL_PATH: "{{ ai_model_mount_point }}" # Example env var for model path
+#     LISTEN_PORT: "{{ ai_app_listen_port }}"
+#     # Add other container specific environment variables here
+#   # Note: Ensure container has access to GPU (e.g., via nvidia-container-toolkit)
+#   # Requires specific docker-compose configuration (runtime: nvidia, deploy: resources: ...)
+```

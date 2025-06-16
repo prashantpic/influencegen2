@@ -1,0 +1,75 @@
+```yaml
+---
+- name: Ensure docker role is included or tasks are present (if not using dependency)
+  ansible.builtin.debug:
+    msg: "Assuming docker is installed via 'docker' role or other tasks"
+  # include_role:
+  #   name: docker # Uncomment if using dependency
+
+- name: Create N8N data directory
+  ansible.builtin.file:
+    path: "{{ n8n_data_dir }}"
+    state: directory
+    owner: root # Docker containers often run as root or specific user; check n8n container user
+    group: root
+    mode: '0755'
+
+- name: Deploy N8N docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ n8n_install_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  vars:
+    n8n_db_type_var: "{{ n8n_db_type }}"
+    n8n_db_host_var: "{{ n8n_db_host | default('') }}"
+    n8n_db_port_var: "{{ n8n_db_port | default('') }}"
+    n8n_db_name_var: "{{ n8n_db_name | default('') }}"
+    n8n_db_user_var: "{{ n8n_db_user | default('') }}" # Vaulted
+    n8n_db_password_var: "{{ n8n_db_password | default('') }}" # Vaulted
+    n8n_encryption_key_var: "{{ n8n_encryption_key }}" # Vaulted
+    n8n_webhook_url_var: "{{ n8n_webhook_url | default('') }}" # Public URL of N8N
+    n8n_data_dir_var: "{{ n8n_data_dir }}"
+
+- name: Start N8N services with docker-compose
+  community.docker.docker_compose:
+    project_src: "{{ n8n_install_dir }}"
+    state: present
+    pull: yes # Pull latest image on deploy
+  environment:
+    # Pass environment variables needed by docker-compose for image configuration
+    N8N_DATA_FOLDER: "{{ n8n_data_dir }}"
+    DB_TYPE: "{{ n8n_db_type }}"
+    DB_POSTGRESDB_HOST: "{{ n8n_db_host | default('') }}"
+    DB_POSTGRESDB_PORT: "{{ n8n_db_port | default('') }}"
+    DB_POSTGRESDB_DATABASE: "{{ n8n_db_name | default('') }}"
+    DB_POSTGRESDB_USER: "{{ n8n_db_user | default('') }}" # Vaulted
+    DB_POSTGRESDB_PASSWORD: "{{ n8n_db_password | default('') }}" # Vaulted
+    N8N_ENCRYPTION_KEY: "{{ n8n_encryption_key }}" # Vaulted
+    WEBHOOK_URL: "{{ n8n_webhook_url | default('') }}"
+    # Add other N8N specific environment variables here
+    GENERIC_TIMEZONE: "UTC"
+    NODE_FUNCTION_ALLOW_EXTERNAL: "n8n-nodes-base,n8n-nodes-meta" # Adjust as needed
+    # EXECUTIONS_PROCESS: "own" # Or "main" or "queue"
+    # QUEUE_HEALTH_CHECK_ACTIVE: "true" # If using queues
+    # QUEUE_BULL_REDIS_HOST: "..." # If using Redis queue
+    # ... many more N8N options ...
+
+# Optional: Set up systemd service for docker-compose (if not using daemon mode which docker compose usually handles)
+# - name: Set up systemd service for N8N docker-compose
+#   ansible.builtin.template:
+#     src: n8n.service.j2
+#     dest: /etc/systemd/system/n8n.service
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   notify: reload systemd and restart n8n
+#
+# - name: Ensure N8N service is enabled and running
+#   ansible.builtin.systemd:
+#     name: n8n
+#     state: started
+#     enabled: yes
+#     daemon_reload: yes
+```
