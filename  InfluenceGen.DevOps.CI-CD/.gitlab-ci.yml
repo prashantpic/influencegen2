@@ -1,0 +1,245 @@
+```yaml
+# This file is the entry point for all CI/CD automation within GitLab.
+# It structures the flow of how code is validated, built, tested, and deployed
+# across different environments for the InfluenceGen project.
+
+stages:
+  - validate # Linting, static analysis, configuration validation
+  - build    # Compile/package Odoo modules, N8N workflows, build Docker images
+  - test     # Run unit tests, integration tests
+  - quality_scan # Run security scans (SAST, DAST), dependency checks
+  - deploy_dev   # Deploy to the development environment
+  - deploy_staging # Deploy to the staging/UAT environment
+  - deploy_prod    # Deploy to the production environment
+  - deploy_training_materials # Deploy training materials (REQ-DTS-001)
+
+# Global variables
+variables:
+  DOCKER_DRIVER: overlay2
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # ODOO_VERSION and N8N_VERSION should be set in GitLab CI/CD project variables
+  # e.g., ODOO_VERSION: "18.0"
+  # e.g., N8N_VERSION: "latest"
+
+# Default settings for all jobs
+default:
+  image: ${CI_REGISTRY_IMAGE}/odoo-build-env:latest # Default image from dockerfiles/odoo-build-env.Dockerfile
+  interruptible: true
+  tags: # Specify runner tags if applicable, e.g., if using specific runners
+    - docker # Assumes a GitLab runner with Docker executor
+
+# Cache for Python pip packages
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip
+    - venv/ # If using a virtual environment within jobs
+
+# Include reusable pipeline templates
+include:
+  - local: 'pipeline_templates/build_jobs.yml'
+  - local: 'pipeline_templates/test_jobs.yml'
+  - local: 'pipeline_templates/quality_jobs.yml'
+  - local: 'pipeline_templates/deploy_jobs.yml'
+
+# Workflow rules: Define when pipelines run
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"' # Run for merge requests
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS' # Avoid duplicate pipelines for MRs that also have a branch push
+      when: never
+    - if: '$CI_COMMIT_BRANCH' # Run for pushes to any branch
+    - if: '$CI_COMMIT_TAG'   # Run for pushes of tags
+
+# --- Validate Stage ---
+lint_odoo_modules:
+  extends: .run_linting_template
+  stage: validate
+  variables:
+    LINT_TARGET_PATH: "./odoo-repo-checkout" # Path to Odoo modules, assuming they are checked out here
+    LINT_REPORTS_DIR: "lint_reports/odoo"
+  # Add rules if this should only run when Odoo code changes, e.g., using `changes:`
+
+lint_n8n_scripts: # Example if N8N workflows have custom JS scripts that need linting
+  extends: .run_linting_template
+  stage: validate
+  variables:
+    LINT_TARGET_PATH: "./n8n-repo-checkout/custom_scripts" # Path to N8N custom scripts
+    LINT_REPORTS_DIR: "lint_reports/n8n"
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes: # Example: run only if files in n8n-repo-checkout/custom_scripts change
+        - n8n-repo-checkout/custom_scripts/**/*
+  allow_failure: true # Typically allow linting to fail initially
+
+# --- Build Stage ---
+build_odoo_addons:
+  extends: .build_odoo_modules_template
+  variables:
+    ODOO_MODULES_SOURCE_DIR: "$CI_PROJECT_DIR/odoo-repo-checkout" # Assuming Odoo code is checked out to a subdir
+    ODOO_OUTPUT_ARTIFACT_NAME: "odoo_addons.zip"
+
+build_n8n_package:
+  extends: .build_n8n_workflows_template
+  variables:
+    N8N_WORKFLOWS_SOURCE_DIR: "$CI_PROJECT_DIR/n8n-repo-checkout" # Assuming N8N workflows are in a subdir
+    N8N_OUTPUT_ARTIFACT_NAME: "n8n_workflows.zip"
+
+# Example: Build a custom Docker image if tests require a specific environment not covered by odoo-build-env
+# build_custom_test_image:
+#   extends: .build_docker_image_template
+#   variables:
+#     DOCKERFILE_PATH_PARAM: "dockerfiles/my-custom-test-env.Dockerfile"
+#     IMAGE_NAME_PARAM: "my-custom-test-env"
+#     IMAGE_TAG_PARAM: "$CI_COMMIT_SHA"
+#     REGISTRY_URL_PARAM: "$CI_REGISTRY_IMAGE" # Push to GitLab project registry
+
+# --- Test Stage ---
+unit_test_odoo:
+  extends: .run_unit_tests_template
+  variables:
+    # ODOO_MODULES_TO_TEST: "influence_gen_portal,influence_gen_campaign" # Set in GitLab CI/CD variables or detected
+    # ODOO_DB_NAME: "test_${CI_COMMIT_REF_SLUG}_${CI_JOB_ID}" # Dynamic test DB name
+    TEST_REPORTS_OUTPUT_DIR: "unit_test_reports"
+  needs:
+    - build_odoo_addons # Depends on the Odoo addons artifact
+
+integration_test_services:
+  extends: .run_integration_tests_template
+  variables:
+    # TEST_ENVIRONMENT_URL: $DEV_ENVIRONMENT_URL # Needs to be set, potentially from deploy_dev_odoo output or fixed
+    TEST_SUITE_PATH: "tests/integration" # Path to integration tests
+    INTEGRATION_TEST_REPORTS_DIR: "integration_test_reports"
+  needs:
+    - deploy_dev_odoo # Example: Run integration tests after deployment to dev
+    - deploy_dev_n8n
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "merge_request_event"'
+      # Only run integration tests on develop, main, or MRs to avoid running on every feature branch push before dev deployment
+
+# --- Quality Scan Stage ---
+security_scan_code:
+  extends: .run_security_scans_template
+  variables:
+    # Configure specific tool variables here, e.g., for Trivy, SonarQube
+    # TRIVY_SEVERITY: "HIGH,CRITICAL"
+    SCAN_TARGET_DIR: "." # Scan the entire project or specific subdirectories
+  # Add rules if needed, e.g., run only on MRs or specific branches
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+# --- Deploy Dev Stage ---
+deploy_dev_odoo:
+  extends: .deploy_to_dev_template
+  variables:
+    APP_NAME: "odoo"
+    DEPLOY_SCRIPT: "scripts/deploy/to_dev.sh odoo" # Pass app type to script
+    # DEV_ODOO_SERVER_SSH_HOST, etc., are expected as GitLab CI/CD variables
+  environment:
+    name: development/odoo-$CI_COMMIT_REF_SLUG
+    url: http://dev-odoo-$CI_COMMIT_REF_SLUG.influencegen.com # Example URL
+  needs:
+    - build_odoo_addons
+  rules:
+    - if: '$CI_COMMIT_BRANCH && $ENABLE_AUTO_DEPLOY_TO_DEV == "true"' # Deploy feature branches if var is true
+      # To avoid deploying every commit, consider adding `when: manual` or specific branch rules
+    - if: '$CI_COMMIT_BRANCH == "develop"' # Always deploy develop branch to its dev env
+
+deploy_dev_n8n:
+  extends: .deploy_to_dev_template
+  variables:
+    APP_NAME: "n8n"
+    DEPLOY_SCRIPT: "scripts/deploy/to_dev.sh n8n" # Pass app type to script
+    # DEV_N8N_INSTANCE_URL, etc., are expected as GitLab CI/CD variables
+  environment:
+    name: development/n8n-$CI_COMMIT_REF_SLUG
+    url: http://dev-n8n-$CI_COMMIT_REF_SLUG.influencegen.com # Example URL
+  needs:
+    - build_n8n_package
+  rules:
+    - if: '$CI_COMMIT_BRANCH && $ENABLE_AUTO_DEPLOY_TO_DEV == "true"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+# --- Deploy Staging Stage ---
+deploy_staging_odoo:
+  extends: .deploy_to_staging_template
+  variables:
+    APP_NAME: "odoo"
+    DEPLOY_SCRIPT: "scripts/deploy/to_staging.sh odoo"
+  environment:
+    name: staging/odoo
+    url: http://staging-odoo.influencegen.com # Example Staging Odoo URL
+  needs:
+    - build_odoo_addons
+    - unit_test_odoo # Ensure tests pass before staging
+    - integration_test_services # Ensure integration tests pass if run against dev
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"' # Deploy to staging from develop branch
+      when: manual # Default to manual approval for staging if REQUIRE_MANUAL_APPROVAL_FOR_STAGING is true
+      # when: '$REQUIRE_MANUAL_APPROVAL_FOR_STAGING == "true" ? "manual" : "on_success"' # More dynamic way
+      allow_failure: false
+
+deploy_staging_n8n:
+  extends: .deploy_to_staging_template
+  variables:
+    APP_NAME: "n8n"
+    DEPLOY_SCRIPT: "scripts/deploy/to_staging.sh n8n"
+  environment:
+    name: staging/n8n
+    url: http://staging-n8n.influencegen.com # Example Staging N8N URL
+  needs:
+    - build_n8n_package
+    # Add test dependencies if N8N has specific tests
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: manual
+      allow_failure: false
+
+# --- Deploy Production Stage ---
+# REQ-OP-CM-004: Production deployments require manual approval and change management checks.
+deploy_prod_odoo:
+  extends: .deploy_to_production_template
+  variables:
+    APP_NAME: "odoo"
+    DEPLOY_SCRIPT: "scripts/deploy/to_production.sh odoo"
+    # CHANGE_REQUEST_ID: This variable must be provided when running the manual job.
+  environment:
+    name: production/odoo
+    url: http://odoo.influencegen.com # Example Production Odoo URL
+  needs:
+    - deploy_staging_odoo # Ensure staging deployment was successful
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_TAG' # Deploy to production from main branch or tags
+      when: manual
+      allow_failure: false
+
+deploy_prod_n8n:
+  extends: .deploy_to_production_template
+  variables:
+    APP_NAME: "n8n"
+    DEPLOY_SCRIPT: "scripts/deploy/to_production.sh n8n"
+    # CHANGE_REQUEST_ID: This variable must be provided when running the manual job.
+  environment:
+    name: production/n8n
+    url: http://n8n.influencegen.com # Example Production N8N URL
+  needs:
+    - deploy_staging_n8n
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_TAG'
+      when: manual
+      allow_failure: false
+
+# --- Deploy Training Materials Stage ---
+# REQ-DTS-001: Deployment of training materials.
+deploy_training_docs:
+  extends: .deploy_training_materials_template
+  variables:
+    # TRAINING_MATERIALS_ARTIFACT_PATH: "./training_materials_build_output/docs.zip" # Path to built training materials artifact
+    # TRAINING_PORTAL_TARGET_TYPE: "S3" # Or "WEBSERVER_SSH", set as CI/CD variable
+    # Other S3/SSH specific variables (TRAINING_S3_BUCKET_URL, etc.) should be set as CI/CD variables.
+  needs: [] # Add dependency if there's a specific build job for training materials
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_TAG' # Deploy on push to main or tag
+      when: on_success # Or manual if preferred
+```
