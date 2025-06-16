@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-UIUX-003, REQ-UIUX-015, REQ-PAC-014: Admin Navigation Structure -->
+    <!-- Root Menu -->
+    <menuitem
+        id="menu_influence_gen_admin_root"
+        name="InfluenceGen Admin"
+        web_icon="influence_gen_admin,static/description/icon.png"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"
+        sequence="1"/>
+
+    <!-- Dashboard -->
+    <menuitem
+        id="menu_influence_gen_dashboard"
+        name="Dashboard"
+        parent="menu_influence_gen_admin_root"
+        action="action_admin_dashboard"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <!-- Influencer Management -->
+    <menuitem
+        id="menu_influence_gen_influencer_management"
+        name="Influencer Management"
+        parent="menu_influence_gen_admin_root"
+        sequence="20"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_influencer_profiles_admin"
+        name="Influencers"
+        parent="menu_influence_gen_influencer_management"
+        action="action_influencer_profile_admin"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_kyc_submissions_admin"
+        name="KYC Submissions"
+        parent="menu_influence_gen_influencer_management"
+        action="action_kyc_data_admin"
+        sequence="20"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <!-- Campaign Management -->
+    <menuitem
+        id="menu_influence_gen_campaign_management"
+        name="Campaign Management"
+        parent="menu_influence_gen_admin_root"
+        sequence="30"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_campaigns_admin"
+        name="Campaigns"
+        parent="menu_influence_gen_campaign_management"
+        action="action_campaign_admin"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_campaign_applications_admin"
+        name="Applications"
+        parent="menu_influence_gen_campaign_management"
+        action="action_campaign_application_admin"
+        sequence="20"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_content_submissions_admin"
+        name="Content Submissions"
+        parent="menu_influence_gen_campaign_management"
+        action="action_content_submission_admin"
+        sequence="30"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <!-- AI Services -->
+    <menuitem
+        id="menu_influence_gen_ai_services"
+        name="AI Services"
+        parent="menu_influence_gen_admin_root"
+        sequence="40"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_ai_models_admin"
+        name="AI Models"
+        parent="menu_influence_gen_ai_services"
+        action="action_ai_model_admin"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_ai_prompt_templates_admin"
+        name="Prompt Templates"
+        parent="menu_influence_gen_ai_services"
+        action="action_ai_prompt_template_admin"
+        sequence="20"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_ai_moderation_rules_admin"
+        name="Moderation Rules"
+        parent="menu_influence_gen_ai_services"
+        action="action_ai_moderation_rule_admin"
+        sequence="30"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_ai_usage_logs_admin"
+        name="Usage Logs"
+        parent="menu_influence_gen_ai_services"
+        action="action_ai_usage_log_admin"
+        sequence="40"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <!-- Financials -->
+    <menuitem
+        id="menu_influence_gen_financials"
+        name="Financials"
+        parent="menu_influence_gen_admin_root"
+        sequence="50"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_payment_records_admin"
+        name="Payments"
+        parent="menu_influence_gen_financials"
+        action="action_payment_record_admin"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <!-- Platform Oversight -->
+    <menuitem
+        id="menu_influence_gen_platform_oversight"
+        name="Platform Oversight"
+        parent="menu_influence_gen_admin_root"
+        sequence="60"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_audit_trail_admin"
+        name="Audit Trail"
+        parent="menu_influence_gen_platform_oversight"
+        action="action_audit_log_admin"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+    
+    <!-- Placeholder for Operational/System Health Dashboards - actions to be defined if distinct from main dashboard -->
+    <!--
+    <menuitem
+        id="menu_system_health_dashboard_admin"
+        name="System Health"
+        parent="menu_influence_gen_platform_oversight"
+        action="action_system_health_dashboard" 
+        sequence="20"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+    -->
+
+    <!-- Configuration -->
+    <!-- Standard Odoo Settings Menu (will include our app's settings) -->
+    <menuitem
+        id="menu_influence_gen_config_root"
+        name="Configuration"
+        parent="menu_influence_gen_admin_root"
+        sequence="100"
+        groups="base.group_system"/> <!-- System Admin for main config menu -->
+
+    <menuitem
+        id="menu_influence_gen_config_settings"
+        name="InfluenceGen Settings"
+        parent="menu_influence_gen_config_root"
+        action="action_influence_gen_config_settings"
+        sequence="10"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_influence_gen_config_terms"
+        name="Terms &amp; Policies"
+        parent="menu_influence_gen_config_root"
+        action="action_terms_version_admin"
+        sequence="20"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_influence_gen_config_data_retention"
+        name="Data Retention"
+        parent="menu_influence_gen_config_root"
+        action="action_data_retention_policy_admin"
+        sequence="30"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_influence_gen_config_legal_holds"
+        name="Legal Holds"
+        parent="menu_influence_gen_config_root"
+        action="action_legal_hold_admin"
+        sequence="40"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_influence_gen_config_alert_rules"
+        name="Alert Rules"
+        parent="menu_influence_gen_config_root"
+        action="action_alert_rule_admin"
+        sequence="50"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+    <menuitem
+        id="menu_influence_gen_config_maintenance_windows"
+        name="Maintenance Windows"
+        parent="menu_influence_gen_config_root"
+        action="action_maintenance_window_admin"
+        sequence="60"
+        groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+
+</odoo>

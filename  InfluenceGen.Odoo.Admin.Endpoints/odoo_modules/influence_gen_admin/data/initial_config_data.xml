@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1"> <!-- noupdate="1" to load only on module install/update -->
+
+    <!-- REQ-PAC-001: Default Configuration Loading -->
+    <!--
+        The ir.model.category and res.groups are typically defined and loaded
+        via security/influence_gen_security.xml.
+        If they MUST be loaded via this data file as per SDS 2.7.1, uncomment below.
+        However, it's more standard to have them in security.xml.
+    -->
+    <!--
+    <record id="module_category_influencegen_admin_data" model="ir.model.category">
+        <field name="name">InfluenceGen Platform (from Data)</field>
+        <field name="description">Category for InfluenceGen Platform specific models (loaded from data file).</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="group_influence_gen_platform_admin_data" model="res.groups">
+        <field name="name">InfluenceGen / Platform Administrator (from Data)</field>
+        <field name="category_id" ref="module_category_influencegen_admin_data"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Administrator group for the InfluenceGen platform (loaded from data file).</field>
+    </record>
+    -->
+
+    <!-- REQ-PAC-003: Default Password Policy Parameters -->
+    <record id="default_password_min_length" model="ir.config_parameter">
+        <field name="key">influence_gen.password_min_length</field>
+        <field name="value">8</field>
+    </record>
+    <record id="default_password_require_uppercase" model="ir.config_parameter">
+        <field name="key">influence_gen.password_require_uppercase</field>
+        <field name="value">True</field>
+    </record>
+     <record id="default_password_require_lowercase" model="ir.config_parameter">
+        <field name="key">influence_gen.password_require_lowercase</field>
+        <field name="value">True</field>
+    </record>
+    <record id="default_password_require_numeric" model="ir.config_parameter">
+        <field name="key">influence_gen.password_require_numeric</field>
+        <field name="value">True</field>
+    </record>
+    <record id="default_password_require_special" model="ir.config_parameter">
+        <field name="key">influence_gen.password_require_special</field>
+        <field name="value">False</field> <!-- Example default -->
+    </record>
+
+    <!-- REQ-PAC-007: Default KYC Configuration -->
+    <record id="default_kyc_accepted_id_types" model="ir.config_parameter">
+        <field name="key">influence_gen.kyc_accepted_id_types</field>
+        <field name="value">Passport,Driver's License,National ID</field>
+    </record>
+
+    <!-- REQ-AIGS-002: Default AI Quota -->
+     <record id="default_ai_quota_per_user" model="ir.config_parameter">
+        <field name="key">influence_gen.ai_default_quota_per_user</field>
+        <field name="value">100</field>
+    </record>
+
+
+    <!-- REQ-PAC-010: Example Mail Template Placeholders (if specific admin-triggered notifications needed) -->
+    <!--
+        Actual mail templates should be defined more comprehensively if needed.
+        These are just illustrative of how they *could* be initiated via data.xml.
+        Typically, they are created directly or managed within the mail module UI.
+    -->
+    <!--
+    <record id="mail_template_kyc_rejected_admin_default" model="mail.template">
+        <field name="name">Default Admin: KYC Rejected Notification</field>
+        <field name="model_id" ref="influence_gen_services.model_influence_gen_kyc_data"/>
+        <field name="subject">KYC Submission Update: {{ object.influencer_profile_id.fullName }}</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear Administrator,</p>
+            <p>The KYC submission for influencer <strong>{{ object.influencer_profile_id.fullName }}</strong>
+               has been marked as 'Rejected'.</p>
+            <p>Reason: {{ object.notes }}</p>
+            <p>Thank you.</p>
+        ]]></field>
+        <field name="report_name">KYC Rejected Notification</field>
+        <field name="user_signature" eval="False"/>
+        <field name="auto_delete" eval="True"/>
+    </record>
+    -->
+
+</odoo>
