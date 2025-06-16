@@ -1,0 +1,59 @@
+<odoo>
+    <data>
+        <!-- Inherit User Form View to add InfluenceGen Profile Info -->
+        <record id="view_users_form_inherit_influence_gen" model="ir.ui.view">
+            <field name="name">res.users.form.inherit.influence.gen</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="InfluenceGen Profile" name="influence_gen_profile_page"
+                          attrs="{'invisible': [('is_influencer', '=', False)]}">
+                          <!-- Assuming 'is_influencer' is a field on res.users indicating if they have an influencer profile -->
+                          <!-- Or, directly check if influencer_profile_id exists if that's the link -->
+                        <group>
+                            <field name="influencer_profile_id" readonly="1" options="{'no_create': True, 'no_open': False}"/>
+                            <!-- Add more fields from influence_gen.influencer_profile if needed, using related fields on res.users -->
+                            <!-- Example:
+                            <field name="influencer_kyc_status" readonly="1"/>
+                            -->
+                        </group>
+                        <!-- Add quick links or indicators as needed -->
+                        <!-- 
+                        <group string="Quick Info">
+                             <field name="influencer_active_campaigns_count" readonly="1"/>
+                        </group>
+                        -->
+                    </page>
+                </xpath>
+                <!-- Add a field on res.users to determine if the page should be visible -->
+                 <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="is_influencer" invisible="1"/>
+                    <field name="influencer_profile_id" invisible="1"/>
+                    <!--
+                    <field name="influencer_kyc_status" invisible="1"/>
+                    <field name="influencer_active_campaigns_count" invisible="1"/>
+                    -->
+                 </xpath>
+            </field>
+        </record>
+
+        <!-- Inherit User Tree View (Optional: to show influencer status) -->
+        <record id="view_users_tree_inherit_influence_gen" model="ir.ui.view">
+            <field name="name">res.users.tree.inherit.influence.gen</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='login_date']" position="after">
+                    <field name="is_influencer" optional="show"/>
+                    <!-- Or a more descriptive field like influencer_status -->
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Ensure InfluenceGen Platform Administrator group is clearly visible -->
+        <!-- No specific view inheritance needed for res.groups typically, as long as it's accessible. -->
+        <!-- The group is defined in security/influence_gen_admin_groups.xml -->
+
+    </data>
+</odoo>

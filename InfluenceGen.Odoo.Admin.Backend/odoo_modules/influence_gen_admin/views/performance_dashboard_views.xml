@@ -1,0 +1,57 @@
+<odoo>
+    <data>
+        <record id="view_influence_gen_performance_dashboard" model="ir.ui.view">
+            <field name="name">influence.gen.performance.dashboard</field>
+            <field name="model">influence_gen.campaign.performance.mv</field> <!-- Or a custom model/transient model for dashboard data -->
+            <field name="arch" type="xml">
+                <dashboard>
+                    <!-- This is a placeholder. Odoo dashboards can be built using graph, pivot, list views -->
+                    <!-- or custom QWeb templates with data fetched via controllers. -->
+                    <!-- Example using a graph view on CampaignPerformanceMV (if it exists and is queryable this way) -->
+                     <view type="graph" ref="influence_gen_services.view_campaign_performance_mv_graph"/>
+                     <view type="pivot" ref="influence_gen_services.view_campaign_performance_mv_pivot"/>
+
+                    <!-- Example for custom content or KPIs if not using direct model views -->
+                    <group col="2">
+                        <group>
+                            <div class="o_box">
+                                <h3>Overall Campaign Performance</h3>
+                                <!-- Placeholder for charts/KPIs -->
+                                <p>Chart: Campaign Statuses (Pie Chart)</p>
+                                <p>KPI: Total Active Campaigns</p>
+                                <p>KPI: Total Budget vs Actual Spend (if tracked)</p>
+                            </div>
+                        </group>
+                        <group>
+                            <div class="o_box">
+                                <h3>Influencer Contributions</h3>
+                                <!-- Placeholder for charts/KPIs -->
+                                <p>Chart: Top Influencers by Approved Submissions (Bar Chart)</p>
+                                <p>KPI: Average Applications per Campaign</p>
+                            </div>
+                        </group>
+                    </group>
+                    <group>
+                        <!-- Add more complex visualizations or data tables as needed -->
+                        <!-- If using controller: -->
+                        <!-- <widget name="influence_gen_custom_widget" action="get_performance_data_action"/> -->
+                    </group>
+                </dashboard>
+            </field>
+        </record>
+
+        <record id="action_influence_gen_performance_dashboard" model="ir.actions.act_window">
+            <field name="name">Performance Dashboard</field>
+            <field name="res_model">influence_gen.campaign.performance.mv</field> <!-- Or your custom dashboard model -->
+            <field name="view_mode">dashboard</field>
+            <field name="view_id" ref="view_influence_gen_performance_dashboard"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Performance Dashboard
+                </p><p>
+                    Overview of campaign performance and key platform metrics.
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,97 @@
+<odoo>
+    <data>
+        <!-- Audit Log List View -->
+        <record id="view_influence_gen_audit_log_tree_admin" model="ir.ui.view">
+            <field name="name">influence.gen.audit.log.tree.admin</field>
+            <field name="model">influence_gen.audit_log</field>
+            <field name="arch" type="xml">
+                <tree string="Audit Logs" create="false" edit="false" delete="false">
+                    <field name="timestamp" widget="datetime"/>
+                    <field name="actor_user_id"/>
+                    <field name="event_type"/>
+                    <field name="action"/>
+                    <field name="target_entity"/>
+                    <field name="target_id_display" string="Target Record"/> <!-- Assuming target_id_display is a related/computed field for better display -->
+                    <field name="ip_address" optional="show"/>
+                    <field name="details_short" string="Details (Short)" optional="hide"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Audit Log Form View (Read-Only) -->
+        <record id="view_influence_gen_audit_log_form_admin" model="ir.ui.view">
+            <field name="name">influence.gen.audit.log.form.admin</field>
+            <field name="model">influence_gen.audit_log</field>
+            <field name="arch" type="xml">
+                <form string="Audit Log Entry" create="false" edit="false" delete="false">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="timestamp" readonly="1"/>
+                                <field name="actor_user_id" readonly="1"/>
+                                <field name="event_type" readonly="1"/>
+                                <field name="action" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="target_entity" readonly="1"/>
+                                <field name="target_id" readonly="1"/>
+                                <field name="target_id_display" string="Target Record" readonly="1"/>
+                                <field name="ip_address" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Details">
+                            <field name="details" nolabel="1" readonly="1" widget="ace" options="{'mode': 'json', 'readonly': true}"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Audit Log Search View -->
+        <record id="view_influence_gen_audit_log_search_admin" model="ir.ui.view">
+            <field name="name">influence.gen.audit.log.search.admin</field>
+            <field name="model">influence_gen.audit_log</field>
+            <field name="arch" type="xml">
+                <search string="Search Audit Logs">
+                    <field name="actor_user_id"/>
+                    <field name="event_type"/>
+                    <field name="action"/>
+                    <field name="target_entity"/>
+                    <field name="target_id_search" string="Target ID"/> <!-- A char field for searching target_id -->
+                    <field name="ip_address"/>
+                    <field name="details" string="Details Content"/>
+                    <filter string="Today" name="today" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')), ('timestamp', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="This Week" name="this_week"
+                            domain="[('timestamp', '&gt;=', (context_today() - relativedelta(weeks=1, weekday=0)).strftime('%Y-%m-%d 00:00:00')),
+                                     ('timestamp', '&lt;=', (context_today() + relativedelta(weekday=6)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="This Month" name="this_month"
+                            domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-01 00:00:00')),
+                                     ('timestamp', '&lt;=', (context_today() + relativedelta(months=1, day=1, days=-1)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Event Type" name="group_by_event_type" context="{'group_by': 'event_type'}"/>
+                        <filter string="Action" name="group_by_action" context="{'group_by': 'action'}"/>
+                        <filter string="Actor User" name="group_by_actor" context="{'group_by': 'actor_user_id'}"/>
+                        <filter string="Target Entity" name="group_by_target_entity" context="{'group_by': 'target_entity'}"/>
+                        <filter string="Date (Day)" name="group_by_date" context="{'group_by': 'timestamp:day'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Audit Log Action Window -->
+        <record id="action_influence_gen_audit_log_viewer" model="ir.actions.act_window">
+            <field name="name">Audit Logs</field>
+            <field name="res_model">influence_gen.audit_log</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_influence_gen_audit_log_search_admin"/>
+            <field name="context">{'search_default_order_by_timestamp_desc': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No audit logs found.
+                </p><p>
+                    System actions and changes are logged here for review.
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

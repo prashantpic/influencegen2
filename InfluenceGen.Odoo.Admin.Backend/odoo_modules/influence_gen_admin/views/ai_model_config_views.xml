@@ -1,0 +1,61 @@
+<odoo>
+    <data>
+        <!-- AI Model Config List View -->
+        <record id="view_influence_gen_ai_model_config_tree" model="ir.ui.view">
+            <field name="name">influence.gen.ai.model.config.tree</field>
+            <field name="model">influence_gen.ai_model_config</field>
+            <field name="arch" type="xml">
+                <tree string="AI Model Configurations">
+                    <field name="name"/>
+                    <field name="model_type"/>
+                    <field name="is_active"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- AI Model Config Form View -->
+        <record id="view_influence_gen_ai_model_config_form" model="ir.ui.view">
+            <field name="name">influence.gen.ai.model.config.form</field>
+            <field name="model">influence_gen.ai_model_config</field>
+            <field name="arch" type="xml">
+                <form string="AI Model Configuration">
+                    <sheet>
+                        <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
+                                attrs="{'invisible': [('is_active', '=', True)]}"/>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="model_type"/>
+                                <field name="is_active" widget="boolean_toggle"/>
+                            </group>
+                            <group>
+                                <field name="trigger_keywords" placeholder="keyword1, keyword2"/>
+                                <field name="api_endpoint_info" placeholder="e.g., n8n_workflow_id_modelX"/>
+                            </group>
+                        </group>
+                        <group string="Description">
+                            <field name="description" nolabel="1"/>
+                        </group>
+                        <group string="Default Parameters (JSON)">
+                            <field name="default_params_json" nolabel="1" placeholder='{"sampler": "euler_a", "scheduler": "karras"}'/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- AI Model Config Action Window -->
+        <record id="action_influence_gen_ai_model_config" model="ir.actions.act_window">
+            <field name="name">AI Model Configurations</field>
+            <field name="res_model">influence_gen.ai_model_config</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new AI Model Configuration
+                </p><p>
+                    Manage the AI models available for image generation, like Flux LoRAs or Stable Diffusion models.
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

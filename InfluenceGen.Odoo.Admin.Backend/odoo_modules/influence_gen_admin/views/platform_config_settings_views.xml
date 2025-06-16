@@ -1,0 +1,294 @@
+<odoo>
+    <data>
+        <record id="influence_gen_config_settings_view_form" model="ir.ui.view">
+            <field name="name">influence.gen.config.settings.view.form</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[hasclass('settings')]" position="inside">
+                    <div class="app_settings_block" data-string="InfluenceGen" string="InfluenceGen Platform" data-key="influence_gen_admin" groups="influence_gen_admin.group_influence_gen_platform_admin">
+                        <!-- Security & Access -->
+                        <h2>Security Policies</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <field name="influence_gen_mfa_admin_mandatory"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_mfa_admin_mandatory"/>
+                                    <div class="text-muted">
+                                        Enforce Multi-Factor Authentication for Platform Administrators.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_password_min_length"/>
+                                    <field name="influence_gen_password_min_length" class="oe_inline"/>
+                                    <div class="text-muted">
+                                        Minimum length for user passwords.
+                                    </div>
+                                    <label for="influence_gen_password_complexity_regex" class="mt-2"/>
+                                    <field name="influence_gen_password_complexity_regex" class="oe_inline"/>
+                                    <div class="text-muted">
+                                        Regex for password complexity requirements (e.g., requires uppercase, lowercase, digit, special char).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Services -->
+                        <h2>AI Services Configuration</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_ai_quota_default_images_per_month"/>
+                                    <field name="influence_gen_ai_quota_default_images_per_month" class="oe_inline"/>
+                                    <div class="text-muted">
+                                        Default monthly AI image generation quota for users.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                 <div class="o_setting_left_pane"/>
+                                 <div class="o_setting_right_pane">
+                                    <label for="influence_gen_ai_default_resolution"/>
+                                    <field name="influence_gen_ai_default_resolution" class="oe_inline" placeholder="e.g., 1024x1024"/>
+                                    <div class="text-muted">
+                                        Default AI image resolution.
+                                    </div>
+                                    <label for="influence_gen_ai_default_aspect_ratio" class="mt-2"/>
+                                    <field name="influence_gen_ai_default_aspect_ratio" class="oe_inline" placeholder="e.g., 16:9"/>
+                                    <div class="text-muted">
+                                        Default AI image aspect ratio.
+                                    </div>
+                                    <label for="influence_gen_ai_default_cfg_scale" class="mt-2"/>
+                                    <field name="influence_gen_ai_default_cfg_scale" class="oe_inline"/>
+                                    <div class="text-muted">
+                                        Default AI CFG Scale.
+                                    </div>
+                                    <label for="influence_gen_ai_default_inference_steps" class="mt-2"/>
+                                    <field name="influence_gen_ai_default_inference_steps" class="oe_inline"/>
+                                    <div class="text-muted">
+                                        Default AI Inference Steps.
+                                    </div>
+                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- KYC Configuration -->
+                        <h2>KYC Configuration</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_kyc_accepted_doc_types"/>
+                                    <field name="influence_gen_kyc_accepted_doc_types" placeholder="Passport,Driver's License"/>
+                                    <div class="text-muted">
+                                        Comma-separated list of accepted ID document types.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_kyc_social_verify_method"/>
+                                    <field name="influence_gen_kyc_social_verify_method" widget="radio"/>
+                                    <div class="text-muted">
+                                        Default method for social media account verification.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Retention -->
+                        <h2>Data Retention Policies (Days)</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <label for="influence_gen_retention_pii_days" class="o_light_label"/>
+                                <field name="influence_gen_retention_pii_days"/>
+                                <div class="text-muted">Inactive influencer PII.</div>
+
+                                <label for="influence_gen_retention_kyc_docs_days" class="o_light_label mt-2"/>
+                                <field name="influence_gen_retention_kyc_docs_days"/>
+                                <div class="text-muted">KYC documents.</div>
+
+                                <label for="influence_gen_retention_campaign_data_days" class="o_light_label mt-2"/>
+                                <field name="influence_gen_retention_campaign_data_days"/>
+                                <div class="text-muted">Campaign data.</div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <label for="influence_gen_retention_generated_images_personal_days" class="o_light_label"/>
+                                <field name="influence_gen_retention_generated_images_personal_days"/>
+                                <div class="text-muted">Personal AI images.</div>
+
+                                <label for="influence_gen_retention_audit_logs_days" class="o_light_label mt-2"/>
+                                <field name="influence_gen_retention_audit_logs_days"/>
+                                <div class="text-muted">Audit logs.</div>
+
+                                <label for="influence_gen_retention_operational_logs_days" class="o_light_label mt-2"/>
+                                <field name="influence_gen_retention_operational_logs_days"/>
+                                <div class="text-muted">Operational logs.</div>
+                            </div>
+                        </div>
+
+                        <!-- Content Moderation -->
+                        <h2>Content Moderation</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_content_moderation_ai_prompt_denylist"/>
+                                    <field name="influence_gen_content_moderation_ai_prompt_denylist" placeholder="keyword1,phrase two,keyword3"/>
+                                    <div class="text-muted">
+                                        Comma-separated keywords/phrases for AI prompt denylist.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_content_moderation_api_key"/>
+                                    <field name="influence_gen_content_moderation_api_key" password="True"/>
+                                     <label for="influence_gen_content_moderation_api_endpoint" class="mt-2"/>
+                                    <field name="influence_gen_content_moderation_api_endpoint"/>
+                                    <div class="text-muted">
+                                        API credentials for third-party content moderation service.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Configuration -->
+                        <h2>Email Configuration</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <div class="text-muted">
+                                        System email settings are managed under General Settings / Discuss or via specific Mail Servers configuration.
+                                        This section shows current settings from the default company.
+                                    </div>
+                                    <label for="influence_gen_smtp_host" class="mt-2"/>
+                                    <field name="influence_gen_smtp_host"/>
+                                    <label for="influence_gen_smtp_port" class="mt-2"/>
+                                    <field name="influence_gen_smtp_port"/>
+                                    <label for="influence_gen_smtp_user" class="mt-2"/>
+                                    <field name="influence_gen_smtp_user"/>
+                                    <label for="influence_gen_smtp_password" class="mt-2"/>
+                                    <field name="influence_gen_smtp_password" password="True"/>
+                                    <label for="influence_gen_smtp_encryption" class="mt-2"/>
+                                    <field name="influence_gen_smtp_encryption"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Logging & Monitoring -->
+                        <h2>Logging & Monitoring</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_log_level_odoo_default"/>
+                                    <field name="influence_gen_log_level_odoo_default"/>
+                                    <label for="influence_gen_log_level_n8n_default" class="mt-2"/>
+                                    <field name="influence_gen_log_level_n8n_default"/>
+                                    <div class="text-muted">
+                                        Default logging levels for different system components.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                 <div class="o_setting_left_pane"/>
+                                 <div class="o_setting_right_pane">
+                                    <label for="influence_gen_alert_critical_email_to"/>
+                                    <field name="influence_gen_alert_critical_email_to" placeholder="admin1@example.com,admin2@example.com"/>
+                                    <div class="text-muted">
+                                        Email recipient(s) for critical system alerts.
+                                    </div>
+                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- API Configuration -->
+                        <h2>API Configuration</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_api_rate_limit_callback"/>
+                                    <field name="influence_gen_api_rate_limit_callback" placeholder="e.g., 100/minute"/>
+                                    <div class="text-muted">
+                                        Default rate limit for callback APIs.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Configuration -->
+                        <h2>Payment Configuration</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_payment_default_journal_id"/>
+                                    <field name="influence_gen_payment_default_journal_id"
+                                           domain="[('type', 'in', ('bank', 'cash'))]"/>
+                                    <div class="text-muted">
+                                        Default journal for recording influencer payouts.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_payment_default_expense_account_id"/>
+                                    <field name="influence_gen_payment_default_expense_account_id"/>
+                                    <div class="text-muted">
+                                        Default expense account for influencer payouts.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Secrets Management -->
+                        <h2>Secrets Management</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_secrets_management_type"/>
+                                    <field name="influence_gen_secrets_management_type" widget="radio"/>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-6 o_setting_box"
+                                 attrs="{'invisible': [('influence_gen_secrets_management_type', '!=', 'vault')]}">
+                                <div class="o_setting_left_pane"/>
+                                <div class="o_setting_right_pane">
+                                    <label for="influence_gen_secrets_vault_url"/>
+                                    <field name="influence_gen_secrets_vault_url"/>
+                                    <label for="influence_gen_secrets_vault_token_path" class="mt-2"/>
+                                    <field name="influence_gen_secrets_vault_token_path"/>
+                                    <div class="text-muted">
+                                        Configuration for external secrets vault.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="influence_gen_config_action" model="ir.actions.act_window">
+            <field name="name">InfluenceGen Settings</field>
+            <field name="res_model">res.config.settings</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+            <field name="context">{'module' : 'influence_gen_admin', 'bin_size': False}</field>
+        </record>
+    </data>
+</odoo>

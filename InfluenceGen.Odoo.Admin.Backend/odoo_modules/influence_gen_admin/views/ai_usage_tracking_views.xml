@@ -1,0 +1,95 @@
+<odoo>
+    <data>
+        <!-- AI Image Generation Request List View (for Admin Tracking) -->
+        <record id="view_influence_gen_ai_image_generation_request_tree_admin" model="ir.ui.view">
+            <field name="name">influence.gen.ai.image.generation.request.tree.admin</field>
+            <field name="model">influence_gen.ai_image_generation_request</field>
+            <field name="arch" type="xml">
+                <tree string="AI Usage Tracking">
+                    <field name="create_date" string="Request Date"/>
+                    <field name="user_id"/>
+                    <field name="influencer_profile_id" optional="hide"/>
+                    <field name="campaign_id" optional="show"/>
+                    <field name="model_id"/>
+                    <field name="status"/>
+                    <field name="prompt" string="Prompt (Shortened)" widget="char" width="200px"/>
+                    <field name="intended_use"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- AI Image Generation Request Graph View -->
+        <record id="view_influence_gen_ai_image_generation_request_graph_admin" model="ir.ui.view">
+            <field name="name">influence.gen.ai.image.generation.request.graph.admin</field>
+            <field name="model">influence_gen.ai_image_generation_request</field>
+            <field name="arch" type="xml">
+                <graph string="AI Usage Analysis" type="bar">
+                    <field name="user_id" type="row"/>
+                    <field name="create_date" interval="month" type="col"/>
+                    <field name="id" type="measure" operator="count"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- AI Image Generation Request Pivot View -->
+        <record id="view_influence_gen_ai_image_generation_request_pivot_admin" model="ir.ui.view">
+            <field name="name">influence.gen.ai.image.generation.request.pivot.admin</field>
+            <field name="model">influence_gen.ai_image_generation_request</field>
+            <field name="arch" type="xml">
+                <pivot string="AI Usage Analysis" display_quantity="true">
+                    <field name="user_id" type="row"/>
+                    <field name="model_id" type="col"/>
+                    <field name="campaign_id" type="col"/>
+                    <field name="create_date" interval="month" type="col"/>
+                    <field name="id" type="measure" operator="count"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- AI Image Generation Request Search View -->
+        <record id="view_influence_gen_ai_image_generation_request_search_admin" model="ir.ui.view">
+            <field name="name">influence.gen.ai.image.generation.request.search.admin</field>
+            <field name="model">influence_gen.ai_image_generation_request</field>
+            <field name="arch" type="xml">
+                <search string="Search AI Usage">
+                    <field name="user_id"/>
+                    <field name="influencer_profile_id"/>
+                    <field name="campaign_id"/>
+                    <field name="model_id"/>
+                    <field name="status"/>
+                    <field name="intended_use"/>
+                    <field name="prompt"/>
+                    <filter string="My Requests" name="my_requests" domain="[('user_id', '=', uid)]"/>
+                    <filter string="Completed" name="completed" domain="[('status', '=', 'completed')]"/>
+                    <filter string="Failed" name="failed" domain="[('status', '=', 'failed')]"/>
+                    <filter string="Campaign Use" name="campaign_use" domain="[('intended_use', '=', 'campaign')]"/>
+                    <filter string="Personal Use" name="personal_use" domain="[('intended_use', '=', 'personal')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="User" name="group_by_user" context="{'group_by': 'user_id'}"/>
+                        <filter string="AI Model" name="group_by_model" context="{'group_by': 'model_id'}"/>
+                        <filter string="Campaign" name="group_by_campaign" context="{'group_by': 'campaign_id'}"/>
+                        <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                        <filter string="Intended Use" name="group_by_intended_use" context="{'group_by': 'intended_use'}"/>
+                        <filter string="Request Date (Month)" name="group_by_date" context="{'group_by': 'create_date:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- AI Usage Tracking Action Window -->
+        <record id="action_influence_gen_ai_usage_tracking" model="ir.actions.act_window">
+            <field name="name">AI Usage Tracking</field>
+            <field name="res_model">influence_gen.ai_image_generation_request</field>
+            <field name="view_mode">tree,graph,pivot</field>
+            <field name="search_view_id" ref="view_influence_gen_ai_image_generation_request_search_admin"/>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No AI usage data found.
+                </p><p>
+                    Monitor AI image generation requests and usage patterns.
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

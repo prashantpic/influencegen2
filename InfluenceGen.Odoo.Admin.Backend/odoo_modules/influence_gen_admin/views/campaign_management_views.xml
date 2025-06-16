@@ -1,0 +1,252 @@
+<odoo>
+    <data>
+        <!-- Campaign List View -->
+        <record id="view_influence_gen_campaign_tree_admin" model="ir.ui.view">
+            <field name="name">influence.gen.campaign.tree.admin</field>
+            <field name="model">influence_gen.campaign</field>
+            <field name="arch" type="xml">
+                <tree string="Campaigns">
+                    <field name="name"/>
+                    <field name="brand_client"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="status"/>
+                    <field name="budget" sum="Total Budget"/>
+                    <field name="currency_id" invisible="1"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Campaign Form View -->
+        <record id="view_influence_gen_campaign_form_admin" model="ir.ui.view">
+            <field name="name">influence.gen.campaign.form.admin</field>
+            <field name="model">influence_gen.campaign</field>
+            <field name="arch" type="xml">
+                <form string="Campaign">
+                    <header>
+                         <button name="action_publish" string="Publish" type="object" class="oe_highlight"
+                                attrs="{'invisible': [('status', '!=', 'draft')]}"/>
+                         <button name="action_open_for_applications" string="Open for Applications" type="object" class="oe_highlight"
+                                attrs="{'invisible': [('status', '!=', 'published')]}"/>
+                         <button name="action_close_for_applications" string="Close Applications" type="object"
+                                attrs="{'invisible': [('status', '!=', 'open_for_applications')]}"/>
+                         <button name="action_start_execution" string="Start Execution" type="object"
+                                attrs="{'invisible': [('status', 'not in', ['published', 'closed_for_applications'])]}"/>
+                         <button name="action_complete" string="Mark as Completed" type="object"
+                                attrs="{'invisible': [('status', '!=', 'in_execution')]}"/>
+                         <button name="action_archive" string="Archive" type="object"
+                                attrs="{'invisible': [('status', 'not in', ['completed', 'draft', 'cancelled'])]}"/>
+                         <button name="action_cancel" string="Cancel" type="object"
+                                confirm="Are you sure you want to cancel this campaign?"
+                                attrs="{'invisible': [('status', 'in', ['completed', 'cancelled', 'archived'])]}"/>
+                        <field name="status" widget="statusbar" statusbar_visible="draft,published,open_for_applications,closed_for_applications,in_execution,completed,cancelled"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Campaign Name..."/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="brand_client"/>
+                                <field name="start_date"/>
+                                <field name="end_date"/>
+                                <field name="submission_deadline"/>
+                            </group>
+                            <group>
+                                <field name="budget"/>
+                                <field name="currency_id" options="{'no_create': True}"/>
+                                <field name="compensation_model"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Details" name="details">
+                                <group>
+                                    <field name="description" nolabel="1" placeholder="Detailed campaign description..."/>
+                                </group>
+                                <group string="Goals &amp; KPIs">
+                                    <field name="goals" nolabel="1" placeholder="Campaign goals and Key Performance Indicators..."/>
+                                </group>
+                            </page>
+                            <page string="Targeting &amp; Content" name="targeting_content">
+                                <group string="Target Influencer Criteria">
+                                    <field name="target_criteria" nolabel="1" widget="ace" options="{'mode': 'json'}" placeholder='{"niche": "fashion", "min_followers": 10000, "audience_location": ["US", "CA"]}'/>
+                                </group>
+                                <group string="Content Requirements">
+                                    <field name="content_requirements" nolabel="1" placeholder="Specific requirements for content creation..."/>
+                                </group>
+                                <group string="Usage Rights">
+                                    <field name="usage_rights" nolabel="1" placeholder="Details on usage rights for submitted content..."/>
+                                </group>
+                            </page>
+                            <page string="Applications" name="applications">
+                                <field name="campaign_application_ids" nolabel="1">
+                                    <tree>
+                                        <field name="influencer_profile_id"/>
+                                        <field name="submitted_at"/>
+                                        <field name="status"/>
+                                         <button name="action_approve_application_admin" string="Approve" type="object" icon="fa-check"
+                                                attrs="{'invisible': [('status', '!=', 'submitted')]}"/>
+                                         <button name="action_reject_application_admin" string="Reject" type="object" icon="fa-times"
+                                                attrs="{'invisible': [('status', '!=', 'submitted')]}"/>
+                                    </tree>
+                                    <form>
+                                        <group>
+                                            <field name="influencer_profile_id" readonly="1"/>
+                                            <field name="campaign_id" readonly="1"/>
+                                            <field name="proposal"/>
+                                            <field name="status"/>
+                                        </group>
+                                        <header>
+                                            <button name="action_approve_application_admin" string="Approve Application" type="object" class="oe_highlight"
+                                                    attrs="{'invisible': [('status', '!=', 'submitted')]}"/>
+                                            <button name="action_reject_application_admin" string="Reject Application" type="object"
+                                                    attrs="{'invisible': [('status', '!=', 'submitted')]}"/>
+                                        </header>
+                                    </form>
+                                </field>
+                            </page>
+                            <page string="Submissions" name="submissions">
+                                <field name="content_submission_ids" nolabel="1" context="{'default_campaign_id': active_id}">
+                                    <tree>
+                                        <field name="campaign_application_id" column_invisible="1"/>
+                                        <field name="influencer_profile_id" related="campaign_application_id.influencer_profile_id"/>
+                                        <field name="submission_date"/>
+                                        <field name="content_url" widget="url"/>
+                                        <field name="review_status"/>
+                                        <field name="version"/>
+                                         <button name="action_approve_content_admin" string="Approve" type="object" icon="fa-check"
+                                                attrs="{'invisible': [('review_status', 'not in', ['pending_review', 'revision_submitted'])]}"/>
+                                         <button name="action_request_revision_admin" string="Request Revision" type="object" icon="fa-pencil"
+                                                attrs="{'invisible': [('review_status', 'not in', ['pending_review', 'revision_submitted'])]}"/>
+                                         <button name="action_reject_content_admin" string="Reject" type="object" icon="fa-times"
+                                                attrs="{'invisible': [('review_status', 'not in', ['pending_review', 'revision_submitted'])]}"/>
+                                    </tree>
+                                    <form>
+                                        <sheet>
+                                            <group>
+                                                <field name="campaign_application_id" options="{'no_create': True}" context="{'default_campaign_id': parent.id}"/>
+                                                <field name="influencer_profile_id" related="campaign_application_id.influencer_profile_id" readonly="1"/>
+                                                <field name="campaign_id" related="campaign_application_id.campaign_id" readonly="1"/>
+                                            </group>
+                                            <group>
+                                                <field name="content_url" widget="url" placeholder="https://..."/>
+                                                <field name="file_type"/>
+                                                <field name="submission_date"/>
+                                                <field name="review_status"/>
+                                                <field name="version"/>
+                                            </group>
+                                            <group string="Preview (if image/video)">
+                                                <field name="content_preview_admin" widget="image" options="{'size': [0, 300]}" attrs="{'invisible': [('file_type', 'not in', ['image/jpeg', 'image/png', 'image/gif'])]}"/>
+                                                <!-- Add video player if file_type indicates video -->
+                                            </group>
+                                            <group string="Feedback">
+                                                <field name="feedback" nolabel="1"/>
+                                            </group>
+                                        </sheet>
+                                         <header>
+                                            <button name="action_approve_content_admin" string="Approve Content" type="object" class="oe_highlight"
+                                                    attrs="{'invisible': [('review_status', 'not in', ['pending_review', 'revision_submitted'])]}"/>
+                                            <button name="action_request_revision_admin" string="Request Revision" type="object"
+                                                    attrs="{'invisible': [('review_status', 'not in', ['pending_review', 'revision_submitted'])]}"/>
+                                            <button name="action_reject_content_admin" string="Reject Content" type="object"
+                                                    attrs="{'invisible': [('review_status', 'not in', ['pending_review', 'revision_submitted'])]}"/>
+                                        </header>
+                                    </form>
+                                </field>
+                            </page>
+                             <page string="Performance Metrics" name="performance_metrics">
+                                <group>
+                                    <field name="actual_performance_metrics" widget="ace" options="{'mode': 'json'}" placeholder='{"total_reach": 100000, "engagement_rate": 0.05}'/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Campaign Kanban View -->
+        <record id="view_influence_gen_campaign_kanban_admin" model="ir.ui.view">
+            <field name="name">influence.gen.campaign.kanban.admin</field>
+            <field name="model">influence_gen.campaign</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="status" class="o_kanban_small_column">
+                    <field name="name"/>
+                    <field name="brand_client"/>
+                    <field name="end_date"/>
+                    <field name="status"/>
+                    <field name="currency_id"/>
+                    <field name="budget"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div t-attf-class="oe_kanban_global_click">
+                                <div class="o_kanban_card_header">
+                                    <div class="o_kanban_card_header_title">
+                                        <div class="o_primary"><field name="name"/></div>
+                                        <div class="o_secondary"><field name="brand_client"/></div>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_content">
+                                    <div>End Date: <field name="end_date" widget="date"/></div>
+                                    <div>Budget: <field name="budget" widget="monetary" options="{'currency_field': 'currency_id'}"/></div>
+                                </div>
+                                <div class="o_kanban_card_footer">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="status" widget="badge" decoration-success="status == 'completed'" decoration-info="status in ('in_execution', 'open_for_applications')" decoration-warning="status == 'published'"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Campaign Search View -->
+        <record id="view_influence_gen_campaign_search_admin" model="ir.ui.view">
+            <field name="name">influence.gen.campaign.search.admin</field>
+            <field name="model">influence_gen.campaign</field>
+            <field name="arch" type="xml">
+                <search string="Search Campaigns">
+                    <field name="name"/>
+                    <field name="brand_client"/>
+                    <field name="status"/>
+                    <filter string="Draft" name="draft" domain="[('status', '=', 'draft')]"/>
+                    <filter string="Published" name="published" domain="[('status', '=', 'published')]"/>
+                    <filter string="Open for Applications" name="open_for_applications" domain="[('status', '=', 'open_for_applications')]"/>
+                    <filter string="In Execution" name="in_execution" domain="[('status', '=', 'in_execution')]"/>
+                    <filter string="Completed" name="completed" domain="[('status', '=', 'completed')]"/>
+                    <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                        <filter string="Brand/Client" name="group_by_brand" context="{'group_by': 'brand_client'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Campaign Action Window -->
+        <record id="action_influence_gen_campaign_admin" model="ir.actions.act_window">
+            <field name="name">Campaigns</field>
+            <field name="res_model">influence_gen.campaign</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="search_view_id" ref="view_influence_gen_campaign_search_admin"/>
+            <field name="context">{'search_default_active': 1}</field> <!-- Assuming active=True by default -->
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new Campaign
+                </p><p>
+                    Manage marketing campaigns from creation to completion.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>
