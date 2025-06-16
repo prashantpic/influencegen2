@@ -1,0 +1,17 @@
+<odoo>
+    <data noupdate="1">
+        <record id="module_category_influence_gen_administration" model="ir.module.category">
+            <field name="name">InfluenceGen</field>
+            <field name="description">Manages all aspects of the InfluenceGen Platform.</field>
+            <field name="sequence">25</field>
+        </record>
+
+        <record id="group_influence_gen_platform_admin" model="res.groups">
+            <field name="name">InfluenceGen Platform Administrator</field>
+            <field name="category_id" ref="module_category_influence_gen_administration"/>
+            <field name="comment">Full access to manage and configure the InfluenceGen platform.</field>
+            <!-- Implied groups can be added if admins should inherit other base permissions -->
+            <!-- <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/> -->
+        </record>
+    </data>
+</odoo>
