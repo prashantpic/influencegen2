@@ -1,0 +1,38 @@
+{
+  "reportName": "InfluenceGen Test Execution Report",
+  "categories": [
+    {
+      "name": "Critical UI Failures",
+      "messageRegex": ".*TimeoutError.*|.*ElementNotFound.*",
+      "matchedStatuses": ["failed", "broken"]
+    },
+    {
+      "name": "API Validation Errors",
+      "messageRegex": ".*(400 Bad Request|401 Unauthorized|API schema validation failed).*",
+      "matchedStatuses": ["failed"]
+    },
+    {
+      "name": "Known Issues",
+      "matchedStatuses": ["failed", "broken"],
+      "traceRegex": ".*KnownIssueTicket-.*"
+    },
+    {
+      "name": "Accessibility Violations (Critical)",
+      "messageRegex": ".*critical accessibility violation.*",
+      "matchedStatuses": ["failed"]
+    }
+  ],
+  "environment": [
+    // These environment properties are typically set by the CI/CD system or Allure command-line
+    // when generating the report from allure-results. This file is more for conceptual categorization.
+    // Example properties that might be passed to Allure:
+    // {"name": "Target Environment", "value": "Staging"},
+    // {"name": "Browser", "value": "Chromium"},
+    // {"name": "Build Version", "value": "1.2.3"},
+    // {"name": "Operating System", "value": "Linux"}
+  ]
+}
+// Note: This file is a conceptual representation of Allure report customization.
+// Actual configuration is often managed via Allure command-line arguments,
+// CI/CD plugin settings, or specific framework integrations (e.g., allure-pytest environment properties).
+// Categories defined here help in classifying test failures in the Allure report.

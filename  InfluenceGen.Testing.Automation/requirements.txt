@@ -1,0 +1,9 @@
+pytest==8.2.2
+pytest-html
+pytest-cov
+pytest-xdist
+selenium==4.22.0
+requests
+python-dotenv
+allure-pytest
+# odoo-client-lib # Optional: For external Odoo interactions if tests are not run within Odoo context.

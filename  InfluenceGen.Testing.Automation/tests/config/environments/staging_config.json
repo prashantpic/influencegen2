@@ -1,0 +1,15 @@
+{
+  "odoo_app_url": "STAGING_ODOO_APP_URL_PLACEHOLDER",
+  "odoo_api_base_url": "STAGING_ODOO_API_BASE_URL_PLACEHOLDER",
+  "n8n_webhook_base_url": "STAGING_N8N_WEBHOOK_URL_PLACEHOLDER",
+  "default_influencer_username_placeholder": "STAGING_INFLUENCER_USERNAME_ENV_VAR",
+  "default_influencer_password_placeholder": "STAGING_INFLUENCER_PASSWORD_ENV_VAR",
+  "default_admin_username_placeholder": "STAGING_ADMIN_USERNAME_ENV_VAR",
+  "default_admin_password_placeholder": "STAGING_ADMIN_PASSWORD_ENV_VAR",
+  "zap_target_url_placeholder": "STAGING_ODOO_APP_URL_PLACEHOLDER",
+  "k6_base_url_placeholder": "STAGING_ODOO_APP_URL_PLACEHOLDER"
+}
+// Note: _PLACEHOLDER values are intended to be replaced by actual environment variable names.
+// The test framework (e.g., in common_fixtures.py) will resolve these against actual environment variables at runtime.
+// Sensitive credentials themselves MUST NOT be stored here; they should be in environment variables or a secure vault.
+// Similar files like dev_config.json and prod_config.json (for production environment, use with extreme caution) would exist for other environments.

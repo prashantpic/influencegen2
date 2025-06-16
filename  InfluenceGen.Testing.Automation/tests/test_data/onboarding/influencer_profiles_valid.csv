@@ -1,0 +1,9 @@
+test_case_id,full_name,email_suffix,phone_number,password,kyc_doc_file,kyc_doc_type,social_platform,social_handle
+TC001_ValidFull,Alice Wonderland,alice_wonder,1234567890,SecurePass123!,documents/dummy_passport.pdf,passport,Instagram,alice_insta_valid
+TC002_ValidMin,Bob TheBuilder,bob_builder,0987654321,AnotherPass@456,documents/dummy_id.png,national_id,TikTok,bob_tiktok_builds
+TC003_ValidOther,Charlie Chaplin,charlie_chap,5551234567,PassCharlie!789,documents/dummy_license.jpeg,driver_license,YouTube,charliecomedy
+TC004_ValidLongName,Penelope Featherington Whistledown,penny_whistle,1122334455,LadyWhistleD0wn,documents/dummy_doc.pdf,other,Blog,lady_whistle_notes
+TC005_ValidSpecialCharEmail,Eve O'Malley,eve.omalley,6677889900,EvePass1$$,documents/dummy_passport_eve.pdf,passport,Twitter,eve_tweets_tech
+# kyc_doc_file: Path relative to a base test data directory, e.g., 'tests/test_data/documents/'. These files need to be created as dummy files.
+# email_suffix: To be combined with a domain like '@example.com' or '@influencegen-test.com' by the test script.
+# A corresponding 'influencer_profiles_invalid.csv' should also be created for negative test cases.
