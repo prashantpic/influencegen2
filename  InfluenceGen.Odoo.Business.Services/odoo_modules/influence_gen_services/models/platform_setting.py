@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
@@ -7,106 +6,98 @@ class InfluenceGenPlatformSetting(models.Model):
     _name = 'influence_gen.platform_setting'
     _description = "InfluenceGen Platform Setting"
 
-    key = fields.Char(
-        string="Setting Key",
-        required=True,
-        index=True,
-        unique=True,
-        copy=False,
-        help="Unique identifier for the setting, e.g., 'influence_gen.default_tos_version'."
-    )
-    value_text = fields.Text(string="Setting Value", help="The actual value of the setting, stored as text.")
+    key = fields.Char(string="Setting Key", required=True, index=True, unique=True, copy=False)
+    value_text = fields.Text(string="Setting Value")
     value_type = fields.Selection([
         ('string', 'String'),
         ('integer', 'Integer'),
         ('float', 'Float'),
         ('boolean', 'Boolean'),
         ('json', 'JSON')
-    ], string="Value Type", required=True, default='string', help="The data type of the setting's value.")
-    description = fields.Text(string="Description", help="Explanation of what this setting controls.")
-    module = fields.Char(string="Module", help="Technical name of the module that defines or primarily uses this setting.")
+    ], string="Value Type", required=True, default='string')
+    description = fields.Text(string="Description")
+    module = fields.Char(string="Module", help="Technical name of the module that defines this setting.")
+
+    _sql_constraints = [
+        ('key_uniq', 'unique(key)', 'Setting key must be unique!')
+    ]
 
     @api.model
     def get_param(cls, key, default=None):
-        """Retrieves a setting value, casting it to its value_type."""
         setting = cls.search([('key', '=', key)], limit=1)
         if not setting:
             return default
-
-        value_str = setting.value_text
+        
+        value_text = setting.value_text
         value_type = setting.value_type
 
         try:
             if value_type == 'string':
-                return value_str
+                return value_text
             elif value_type == 'integer':
-                return int(value_str)
+                return int(value_text) if value_text else default # Handle empty string for int
             elif value_type == 'float':
-                return float(value_str)
+                return float(value_text) if value_text else default # Handle empty string for float
             elif value_type == 'boolean':
-                return value_str.lower() in ['true', '1', 'yes']
+                # Consider 'false', '0', '' as False too
+                return value_text.lower() in ('true', '1', 'yes') if value_text else False
             elif value_type == 'json':
-                return json.loads(value_str)
-            else: # Should not happen if value_type is enforced
-                return value_str # Fallback to string
-        except (ValueError, TypeError, json.JSONDecodeError):
-            # Log an error or warning if casting fails
-            # For now, return default on casting error to prevent system failure
-            _logger = cls.env['ir.logging']._logger # Get Odoo logger
-            _logger.warning(f"Failed to cast platform setting '{key}' with value '{value_str}' to type '{value_type}'. Returning default.")
+                return json.loads(value_text) if value_text else default
+            else:
+                return value_text # Default to string if type unknown
+        except (ValueError, TypeError, json.JSONDecodeError) as e:
+            #_logger.warning(f"Could not cast platform setting '{key}' with value '{value_text}' to type '{value_type}': {e}")
             return default
 
     @api.model
     def set_param(cls, key, value, value_type, description=None, module=None):
-        """Creates or updates a setting. Value should be of the type specified by value_type."""
-        if value_type not in dict(cls._fields['value_type'].selection):
-            raise ValidationError(_("Invalid value_type: %s", value_type))
-
-        value_text_to_store = ""
-        try:
-            if value_type == 'string':
-                value_text_to_store = str(value)
-            elif value_type == 'integer':
-                value_text_to_store = str(int(value))
-            elif value_type == 'float':
-                value_text_to_store = str(float(value))
-            elif value_type == 'boolean':
-                value_text_to_store = 'True' if bool(value) else 'False'
-            elif value_type == 'json':
-                value_text_to_store = json.dumps(value)
-        except (ValueError, TypeError):
-            raise ValidationError(_("Invalid value for type %s: %s", value_type, value))
+        if not key or not value_type:
+            raise ValidationError(_("Key and Value Type are required to set a platform setting."))
 
         setting = cls.search([('key', '=', key)], limit=1)
+        
+        value_str = ""
+        if value_type == 'json':
+            try:
+                value_str = json.dumps(value)
+            except TypeError:
+                raise ValidationError(_("Invalid JSON value for key '%s'.", key))
+        elif value_type == 'boolean':
+            value_str = 'True' if value else 'False'
+        else:
+            value_str = str(value)
+
         vals = {
-            'value_text': value_text_to_store,
-            'value_type': value_type, # Ensure value_type is also updated if it changed
+            'key': key,
+            'value_text': value_str,
+            'value_type': value_type,
         }
         if description is not None: # Allow clearing description
             vals['description'] = description
         if module:
             vals['module'] = module
-        
+
         old_value = None
         if setting:
-            old_value = {'value_text': setting.value_text, 'value_type': setting.value_type}
+            old_value = {
+                'value_text': setting.value_text,
+                'value_type': setting.value_type,
+                'description': setting.description,
+                'module': setting.module,
+            }
             setting.write(vals)
         else:
-            vals['key'] = key
             setting = cls.create(vals)
-        
-        # Log audit of setting change
+
         cls.env['influence_gen.audit_log_entry'].create_log(
             event_type='PLATFORM_SETTING_CHANGED',
             actor_user_id=cls.env.user.id,
             action_performed='WRITE' if old_value else 'CREATE',
             target_object=setting,
-            details_dict={'key': key, 'old_value': old_value, 'new_value': {'value_text': value_text_to_store, 'value_type': value_type}}
+            details_dict={
+                'key': key,
+                'new_value': vals,
+                'old_value': old_value if old_value else "N/A"
+            }
         )
         return setting
-    
-    # Ensure there's a logger if used above
-    # _logger = logging.getLogger(__name__) # This line should be at module level for standard Python logging
-    # For Odoo, it's better to get it via self.env['ir.logging']._logger if inside a method
-    # or just use api.Environment.cr.であろう logging if need be.
-    # The example above uses self.env['ir.logging']._logger

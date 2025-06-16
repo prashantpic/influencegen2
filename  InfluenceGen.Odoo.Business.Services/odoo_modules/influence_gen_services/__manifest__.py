@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     'name': 'InfluenceGen Business Services',
     'version': '18.0.1.0.0',
@@ -10,21 +9,21 @@
         'base',
         'mail',
         'account', # For payment integration
-        # 'portal', # if directly extending portal features here - example, not explicitly required by SDS for this module yet
+        # Add other Odoo core dependencies as identified (e.g., 'portal' if directly extending portal features here)
         'influence_gen_infrastructure_integration', # Dependency for REPO-IGOII-004
     ],
     'data': [
         'security/ir.model.access.csv',
         'security/influence_gen_security_groups.xml', # Define security groups if not in a base module
-        # Data files for models
+        # Data files for models (e.g., initial data for AreaOfInfluence, PlatformSetting defaults)
         'data/area_of_influence_data.xml',
         'data/platform_setting_data.xml',
         'data/data_retention_policy_data.xml',
         # Wizard views
         'wizards/data_retention_execution_wizard_views.xml',
         'wizards/legal_hold_management_wizard_views.xml',
-        # Model views
-        'views/influencer_profile_views.xml',
+        # Model views (if any backend views are managed directly by this service layer, e.g., for admin config)
+        'views/influencer_profile_views.xml', # Example, may not be needed if UI repo handles this
         'views/campaign_views.xml',
         'views/ai_image_model_views.xml',
         'views/platform_setting_views.xml',
