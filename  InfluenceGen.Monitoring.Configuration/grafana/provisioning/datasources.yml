@@ -1,0 +1,36 @@
+# grafana/provisioning/datasources.yml
+# Purpose: Configures Grafana datasources programmatically. (REQ-12-004)
+# Note: Using the direct definition method as shown in the SDS note.
+apiVersion: 1
+
+datasources:
+  - name: 'InfluenceGen Prometheus' # Must match name in prometheus_elasticsearch_datasources.json and dashboard JSONs
+    type: prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+    jsonData:
+      timeInterval: "15s"
+    editable: true # Allow UI edits if needed, or set to false for fully IaC
+
+  - name: 'InfluenceGen Elasticsearch Logs' # Must match name in prometheus_elasticsearch_datasources.json and dashboard JSONs
+    type: elasticsearch
+    url: http://elasticsearch:9200
+    access: proxy
+    jsonData:
+      timeField: "@timestamp"
+      esVersion: "8.0.0"
+      logMessageField: "message"
+      logLevelField: "log.level"
+    database: "[influencegen-*-logs-]YYYY.MM.DD"
+    editable: true
+
+  - name: 'InfluenceGen Audit Logs' # Must match name in prometheus_elasticsearch_datasources.json and dashboard JSONs
+    type: elasticsearch
+    url: http://elasticsearch:9200
+    access: proxy
+    jsonData:
+      timeField: "timestamp"
+      esVersion: "8.0.0"
+    database: "[influencegen-audit-logs-]YYYY.MM.DD"
+    editable: true

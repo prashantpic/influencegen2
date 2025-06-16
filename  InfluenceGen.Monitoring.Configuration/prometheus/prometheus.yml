@@ -1,0 +1,44 @@
+# prometheus/prometheus.yml
+global:
+  scrape_interval: 15s # REQ-12-003
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/odoo_rules.yml
+  - /etc/prometheus/rules/n8n_rules.yml
+  - /etc/prometheus/rules/ai_service_rules.yml
+  - /etc/prometheus/rules/system_rules.yml
+  - /etc/prometheus/rules/audit_log_rules.yml
+
+scrape_configs:
+  - job_name: 'odoo' # REQ-12-003, REQ-ATEL-001
+    metrics_path: /metrics # Assuming Odoo exposes metrics here, may need custom exporter
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/odoo_targets.json']
+
+  - job_name: 'n8n' # REQ-12-003, REQ-ATEL-001, REQ-ATEL-010
+    metrics_path: /metrics # N8N exposes Prometheus metrics by default
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/n8n_targets.json']
+
+  - job_name: 'ai-service' # REQ-12-003, REQ-ATEL-001
+    metrics_path: /metrics # Assuming AI service or its proxy exposes metrics
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/ai_service_targets.json']
+
+  - job_name: 'node' # REQ-12-003
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/node_exporter_targets.json'] # Example, assuming this file exists
+
+  - job_name: 'database' # REQ-12-003
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/db_exporter_targets.json'] # Example, assuming this file exists
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093'] # Alertmanager service name and port

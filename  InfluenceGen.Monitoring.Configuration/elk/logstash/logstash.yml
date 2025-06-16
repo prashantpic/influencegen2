@@ -1,0 +1,21 @@
+# elk/logstash/logstash.yml
+# Purpose: Main Logstash configuration.
+# (REQ-12-001)
+# Note: Using pipelines.yml for multiple pipelines.
+http.host: "0.0.0.0"
+# path.config: /usr/share/logstash/pipeline # Uncomment if using a single pipeline config file
+path.settings: /usr/share/logstash/config # Standard path for logstash.yml and pipelines.yml
+path.logs: /usr/share/logstash/logs
+path.data: /usr/share/logstash/data
+# pipeline.workers: # Number of CPU cores, default is auto
+# queue.type: persisted # Enable persistent queues for durability
+
+# Enable Elastic Agent integration if used
+# agent.id: ${LOGSTASH_AGENT_ID}
+# agent.download_source: ${LOGSTASH_AGENT_DOWNLOAD_SOURCE}
+
+# X-Pack monitoring configuration (requires Elasticsearch monitoring enabled)
+# xpack.monitoring.enabled: true
+# xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+# xpack.monitoring.elasticsearch.username: "logstash_system"
+# xpack.monitoring.elasticsearch.password: "${LOGSTASH_SYSTEM_PASSWORD}" # Injected

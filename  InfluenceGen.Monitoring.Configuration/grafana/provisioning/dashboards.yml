@@ -1,0 +1,13 @@
+# grafana/provisioning/dashboards.yml
+# Purpose: Configures Grafana to load dashboards from files. (REQ-12-004)
+apiVersion: 1
+
+providers:
+  - name: 'InfluenceGenDashboards'
+    orgId: 1
+    folder: 'InfluenceGen Platform'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/influencegen # This path inside Grafana container maps to grafana/dashboards/
