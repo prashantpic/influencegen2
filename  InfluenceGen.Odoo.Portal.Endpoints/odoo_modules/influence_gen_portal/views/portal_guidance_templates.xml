@@ -1,0 +1,29 @@
+<odoo>
+    <data>
+        <template id="snippet_help_tooltip" name="Help Tooltip Snippet">
+            <span class="ms-1 o_portal_help_tooltip"
+                  tabindex="0"
+                  role="button"
+                  data-bs-toggle="popover"
+                  data-bs-trigger="hover focus"
+                  t-att-title="_t('Help')"
+                  t-att-data-bs-content="help_text">
+                <i class="fa fa-question-circle text-muted" t-att-aria-label="_t('Help: %s', help_text)"/>
+            </span>
+        </template>
+
+        <!-- Placeholder for a tour step.
+             Actual tour library (e.g., Shepherd.js, Intro.js) would target these.
+             Example: <span class="o_portal_tour_step" data-step="1" t-att-data-intro="_t('This is your dashboard summary.')"></span>
+        -->
+        <template id="snippet_tour_step_placeholder" name="Tour Step Placeholder">
+            <span class="o_portal_tour_step"
+                  t-att-data-step="tour_step_number"
+                  t-att-data-title="tour_step_title"
+                  t-att-data-intro="tour_step_intro">
+                <!-- This element itself might be visually empty or wrap an existing element -->
+            </span>
+        </template>
+
+    </data>
+</odoo>

@@ -1,0 +1,60 @@
+<odoo>
+    <data>
+        <template id="portal_error_page" name="InfluenceGen Portal Error Page">
+            <t t-call="influence_gen_portal.influence_gen_portal_layout"> <!-- Or portal.portal_layout -->
+                <t t-set="page_name_display" t-value="error_title or _t('Error')"/>
+                <div class="container mt-5 mb-5">
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading"><t t-esc="error_title or _t('An Error Occurred')"/></h4>
+                        <p><t t-esc="error_message or _t('We encountered an unexpected issue. Please try again later or contact support if the problem persists.')"/></p>
+                        <hr/>
+                        <p class="mb-0">
+                            <t t-if="suggestions">
+                                <strong><t t-esc="_t('Suggestions:')"/></strong>
+                                <ul>
+                                    <t t-foreach="suggestions" t-as="suggestion">
+                                        <li><t t-esc="suggestion"/></li>
+                                    </t>
+                                </ul>
+                            </t>
+                            <a href="/my/dashboard" class="btn btn-primary"><i class="fa fa-home"/> <t t-esc="_t('Go to Dashboard')"/></a>
+                            <!-- Add a link to contact support or help page -->
+                            <!-- <a href="/help" class="btn btn-secondary"><i class="fa fa-question-circle"/> <t t-esc="_t('Help Center')"/></a> -->
+                        </p>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Custom 403 Forbidden Page for Portal -->
+        <template id="portal_403_error" name="InfluenceGen Portal 403 Error" inherit_id="website.403">
+            <xpath expr="//div[hasclass('container')]" position="replace">
+                <t t-call="influence_gen_portal.portal_error_page">
+                    <t t-set="error_title" t-value="_t('Access Denied (403)')"/>
+                    <t t-set="error_message" t-value="_t('You do not have sufficient permissions to access this page. Please ensure you are logged in with the correct account or contact support if you believe this is an error.')"/>
+                </t>
+            </xpath>
+        </template>
+
+        <!-- Custom 404 Not Found Page for Portal -->
+        <template id="portal_404_error" name="InfluenceGen Portal 404 Error" inherit_id="website.404">
+             <xpath expr="//div[hasclass('container')]" position="replace">
+                <t t-call="influence_gen_portal.portal_error_page">
+                    <t t-set="error_title" t-value="_t('Page Not Found (404)')"/>
+                    <t t-set="error_message" t-value="_t('The page you are looking for does not exist or may have been moved. Please check the URL or navigate using the main menu.')"/>
+                </t>
+            </xpath>
+        </template>
+
+        <!-- Custom 500 Internal Server Error Page for Portal (More user friendly than default) -->
+        <!-- Odoo's default 500 handling might be tricky to override completely this way for all cases,
+             but this provides a template if controllers explicitly render it. -->
+        <template id="portal_500_error" name="InfluenceGen Portal 500 Error">
+            <t t-call="influence_gen_portal.portal_error_page">
+                <t t-set="error_title" t-value="_t('Internal Server Error (500)')"/>
+                <t t-set="error_message" t-value="_t('We are experiencing some technical difficulties. Our team has been notified. Please try again in a few moments.')"/>
+            </t>
+        </template>
+
+    </data>
+</odoo>

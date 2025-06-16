@@ -1,0 +1,77 @@
+<odoo>
+    <data>
+        <!-- Inherit portal layout to add InfluenceGen specifics -->
+        <template id="portal_layout" name="InfluenceGen Portal Layout" inherit_id="portal.portal_layout">
+            <xpath expr="//nav[hasclass('o_portal_navbar')]/div[hasclass('collapse')]/ul[hasclass('o_portal_submenu')]" position="inside">
+                <!-- Ensure menu items are loaded from ir_ui_menu_data.xml via parent="portal.portal_my_home" -->
+                <!-- The actual menu items will be rendered by Odoo based on ir.ui.menu records -->
+                <!-- This template can be used to add specific classes or wrappers if needed,
+                     or to ensure custom assets are loaded if not handled by assets.xml -->
+            </xpath>
+
+            <!-- Example: Add a custom footer element if needed -->
+            <!--
+            <xpath expr="//footer" position="inside">
+                <div class="container mt-3">
+                    <p class="text-center text-muted small">
+                        <t t-esc="_t('InfluenceGen Platform &copy; %s', datetime.datetime.now().year)"/>
+                    </p>
+                </div>
+            </xpath>
+            -->
+        </template>
+
+        <!-- A more specific layout for InfluenceGen portal pages if further customization is needed beyond portal.portal_layout -->
+        <template id="influence_gen_portal_layout" name="InfluenceGen Main Portal Page Layout">
+            <t t-call="portal.portal_layout">
+                <t t-set="additional_title"><t t-esc="page_name"/></t>
+                 <t t-set="body_class" t-valuef="influence-gen-portal portal-page-{{page_name}}"/>
+                <div id="wrap" class="oe_structure oe_empty influence_gen_portal_wrap">
+                    <section class="s_title parallax s_parallax_is_fixed bg-black-50 pt24 pb24" data-vcss="001" data-scroll-background-ratio="0">
+                        <span class="s_parallax_bg oe_img_bg oe_custom_bg" style="background-image: none;"/>
+                        <div class="container">
+                            <h1><t t-esc="page_name_display or page_name"/></h1>
+                        </div>
+                    </section>
+                    <div class="container o_portal_wrap">
+                        <div class="row">
+                            <div class="col-12 o_portal_content">
+                                <t t-raw="0"/> <!-- Page content will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+
+        <!-- Template to display success/error messages commonly -->
+        <template id="portal_alert_messages">
+            <t t-if="success_message">
+                <div class="alert alert-success alert-dismissible fade show" role="alert" aria-live="polite">
+                    <t t-esc="success_message"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
+                </div>
+            </t>
+            <t t-if="error_message">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert" aria-live="assertive">
+                    <t t-esc="error_message"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
+                </div>
+            </t>
+            <t t-if="warning_message">
+                <div class="alert alert-warning alert-dismissible fade show" role="alert" aria-live="polite">
+                    <t t-esc="warning_message"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
+                </div>
+            </t>
+             <t t-if="info_message">
+                <div class="alert alert-info alert-dismissible fade show" role="alert" aria-live="polite">
+                    <t t-esc="info_message"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" t-att-aria-label="_t('Close')"></button>
+                </div>
+            </t>
+        </template>
+
+    </data>
+</odoo>

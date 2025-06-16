@@ -1,0 +1,29 @@
+<odoo>
+    <data>
+        <template id="snippet_skip_to_content" name="Skip to Main Content Link">
+            <a href="#o_portal_main_content" class="sr-only sr-only-focusable o_portal_skip_to_content_link">
+                <t t-esc="_t('Skip to main content')"/>
+            </a>
+        </template>
+
+        <!-- Example of an ARIA live region for dynamic announcements by JS -->
+        <template id="snippet_aria_live_region" name="ARIA Live Region">
+            <div class="sr-only" id="ig_portal_aria_live_region" aria-live="polite" aria-atomic="true">
+                <!-- Content will be injected by JavaScript for screen reader announcements -->
+            </div>
+        </template>
+
+        <!-- Add this to portal_layout just after body tag -->
+        <template id="portal_layout_accessibility_enhancements" inherit_id="portal.portal_layout" priority="5">
+             <xpath expr="//body" position="inside">
+                <t t-call="influence_gen_portal.snippet_skip_to_content"/>
+                <t t-call="influence_gen_portal.snippet_aria_live_region"/>
+             </xpath>
+             <xpath expr="//div[@id='wrapwrap']/main" position="attributes">
+                 <attribute name="id">o_portal_main_content</attribute> <!-- Target for skip link -->
+                 <attribute name="tabindex">-1</attribute> <!-- Make it focusable for skip link -->
+             </xpath>
+        </template>
+
+    </data>
+</odoo>
