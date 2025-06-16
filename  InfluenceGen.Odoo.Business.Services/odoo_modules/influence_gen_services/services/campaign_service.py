@@ -1,32 +1,32 @@
-# -*- coding: utf-8 -*-
 import logging
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
-class CampaignService(models.AbstractModel):
-    _name = 'influence_gen.campaign.service'
-    _description = 'InfluenceGen Campaign Service'
+class CampaignService:
+    """
+    Service class for orchestrating campaign management.
+    """
 
     def __init__(self, env):
-        super(CampaignService, self).__init__(env)
         self.env = env
 
     def create_campaign(self, campaign_data):
         """
-        Creates a new campaign. REQ-2-001, REQ-2-002, REQ-IPF-003.
-        :param campaign_data: dict of campaign values
-        :return: influence_gen.campaign record
+        Creates a new campaign.
+        REQ-2-001, REQ-2-002, REQ-IPF-003
         """
-        # Add basic validation for required fields if not handled by model itself
-        required_fields = ['name', 'start_date', 'end_date', 'compensation_model_type']
-        for field in required_fields:
-            if not campaign_data.get(field):
-                raise UserError(f"Missing required campaign data: {field}")
-        
+        _logger.info("Creating campaign with data: %s", campaign_data)
+        # Basic validation (model level constraints will also apply)
+        if not campaign_data.get('name'):
+            raise UserError(_("Campaign name is required."))
+        # Add other validations as necessary based on campaign_data structure
+
         try:
             campaign = self.env['influence_gen.campaign'].create(campaign_data)
+            _logger.info("Campaign '%s' (ID: %s) created successfully.", campaign.name, campaign.id)
+
             self.env['influence_gen.audit_log_entry'].create_log(
                 event_type='CAMPAIGN_CREATED',
                 actor_user_id=self.env.user.id,
@@ -36,18 +36,17 @@ class CampaignService(models.AbstractModel):
             )
             return campaign
         except Exception as e:
-            _logger.error(f"Failed to create campaign: {e}")
-            raise UserError(f"Could not create campaign: {e}")
+            _logger.error("Error creating campaign: %s", e)
+            raise UserError(_("Could not create campaign: %s") % e)
 
     def update_campaign_status(self, campaign_id, new_status):
         """
         Updates the status of a campaign.
-        :param campaign_id: ID of the influence_gen.campaign
-        :param new_status: string, the new status
         """
+        _logger.info("Updating status for campaign ID: %s to %s", campaign_id, new_status)
         campaign = self.env['influence_gen.campaign'].browse(campaign_id)
         if not campaign.exists():
-            raise UserError(f"Campaign with ID {campaign_id} not found.")
+            raise UserError(_("Campaign not found."))
 
         if new_status == 'published':
             campaign.action_publish()
@@ -59,171 +58,141 @@ class CampaignService(models.AbstractModel):
             campaign.action_archive()
         elif new_status == 'cancelled':
             campaign.action_cancel()
-        # Add other status transitions as needed (e.g., draft, pending_review)
-        elif new_status == 'draft':
-            campaign.write({'status': 'draft'}) # Direct write if no action method
-            self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='CAMPAIGN_STATUS_UPDATED',
-                actor_user_id=self.env.user.id,
-                action_performed='WRITE',
-                target_object=campaign,
-                details_dict={'old_status': campaign.status, 'new_status': new_status} # old_status is before write
-            )
-        elif new_status == 'pending_review':
-            campaign.write({'status': 'pending_review'})
-            self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='CAMPAIGN_STATUS_UPDATED',
-                actor_user_id=self.env.user.id,
-                action_performed='WRITE',
-                target_object=campaign,
-                details_dict={'old_status': campaign.status, 'new_status': new_status}
-            )
+        # Add other status transitions if defined in campaign model actions
         else:
-            raise UserError(f"Unsupported status transition: {new_status}")
+            # Generic status update if no specific action method exists (less ideal)
+            # campaign.write({'status': new_status})
+            # self.env['influence_gen.audit_log_entry'].create_log(
+            # event_type='CAMPAIGN_STATUS_UPDATED',
+            # actor_user_id=self.env.user.id,
+            # action_performed='WRITE',
+            # target_object=campaign,
+            # details_dict={'old_status': campaign.status, 'new_status': new_status}
+            # )
+            raise UserError(_("Unsupported status transition or status: %s") % new_status)
+        
+        # Audit log is created within the campaign model's action methods.
+        _logger.info("Campaign ID: %s status updated to %s", campaign_id, campaign.status)
 
 
     def process_campaign_application(self, influencer_id, campaign_id, proposal_text=None, custom_answers_json=None):
         """
         Processes a campaign application from an influencer.
-        :param influencer_id: ID of influence_gen.influencer_profile
-        :param campaign_id: ID of influence_gen.campaign
-        :param proposal_text: string, influencer's proposal
-        :param custom_answers_json: string, JSON of answers to custom questions
-        :return: influence_gen.campaign_application record
         """
+        _logger.info("Processing campaign application for influencer ID: %s, campaign ID: %s", influencer_id, campaign_id)
         influencer = self.env['influence_gen.influencer_profile'].browse(influencer_id)
-        campaign = self.env['influence_gen.campaign'].browse(campaign_id)
-
         if not influencer.exists():
-            raise UserError(f"Influencer profile with ID {influencer_id} not found.")
-        if not campaign.exists():
-            raise UserError(f"Campaign with ID {campaign_id} not found.")
-        
+            raise UserError(_("Influencer profile not found."))
         if influencer.account_status != 'active':
-            raise UserError("Your account must be active to apply for campaigns.")
-        if campaign.status not in ['published', 'open']: # Assuming 'open' is a valid status for applications
-            raise UserError("This campaign is not currently open for applications.")
+            raise UserError(_("Influencer account is not active. Cannot apply to campaigns."))
 
-        # Check for existing application
-        if self.env['influence_gen.campaign_application'].search_count([
-            ('influencer_profile_id', '=', influencer.id),
-            ('campaign_id', '=', campaign.id)
-        ]):
-            raise UserError("You have already applied to this campaign.")
+        campaign = self.env['influence_gen.campaign'].browse(campaign_id)
+        if not campaign.exists():
+            raise UserError(_("Campaign not found."))
+        if campaign.status not in ['published', 'open']: # Assuming 'open' is a valid status for applications
+            raise UserError(_("This campaign is not currently open for applications."))
+
+        # Validate eligibility (placeholder for more complex rules)
+        # e.g., check against campaign.target_influencer_criteria_json
 
         application_vals = {
-            'influencer_profile_id': influencer.id,
             'campaign_id': campaign.id,
+            'influencer_profile_id': influencer.id,
             'proposal_text': proposal_text,
             'custom_questions_answers_json': custom_answers_json,
             'status': 'submitted',
         }
         try:
             application = self.env['influence_gen.campaign_application'].create(application_vals)
+            _logger.info("Campaign application ID: %s created.", application.id)
+
             self.env['influence_gen.audit_log_entry'].create_log(
                 event_type='CAMPAIGN_APPLICATION_SUBMITTED',
-                actor_user_id=influencer.user_id.id,
+                actor_user_id=influencer.user_id.id, # Action by influencer
                 action_performed='CREATE',
                 target_object=application,
                 details_dict={'campaign_id': campaign.id, 'influencer_id': influencer.id}
             )
 
-            # Trigger "Application Submitted" notification to influencer
+            # Trigger notifications
             try:
-                self.env['influence_gen.infrastructure.integration.service'].send_notification(
+                # To influencer
+                self.env['influence_gen.infrastructure.integration.services'].send_notification(
                     recipient_user_ids=[influencer.user_id.id],
-                    subject=f"Application Submitted for {campaign.name}",
-                    body_html=f"<p>Dear {influencer.name},</p><p>Your application for the campaign '{campaign.name}' has been successfully submitted.</p>"
+                    template_name='campaign_application_submitted_influencer',
+                    context={'campaign_name': campaign.name, 'influencer_name': influencer.name}
                 )
-            except Exception as e:
-                _logger.error(f"Failed to send application submitted notification to influencer: {e}")
+                # To admin/campaign manager
+                # Determine recipient (e.g. campaign creator, specific role)
+                # For now, let's assume admins.
+                admin_group = self.env.ref('influence_gen_services.group_influence_gen_admin', raise_if_not_found=False)
+                campaign_manager_group = self.env.ref('influence_gen_services.group_influence_gen_campaign_manager', raise_if_not_found=False)
+                
+                notif_recipient_ids = set()
+                if admin_group:
+                    notif_recipient_ids.update(self.env['res.users'].search([('groups_id', 'in', admin_group.id)]).ids)
+                if campaign_manager_group:
+                     notif_recipient_ids.update(self.env['res.users'].search([('groups_id', 'in', campaign_manager_group.id)]).ids)
 
-            # Notify relevant admin/manager (e.g., campaign creator or admin group)
-            # This logic can be enhanced, e.g. notify campaign.create_uid or a specific role
-            admin_group = self.env.ref('influence_gen_services.group_influence_gen_campaign_manager', raise_if_not_found=False) \
-                          or self.env.ref('influence_gen_services.group_influence_gen_admin', raise_if_not_found=False)
-            if admin_group:
-                admin_users = self.env['res.users'].search([('groups_id', 'in', admin_group.id)])
-                if admin_users:
-                    try:
-                        self.env['influence_gen.infrastructure.integration.service'].send_notification(
-                            recipient_user_ids=admin_users.ids,
-                            subject=f"New Application for Campaign: {campaign.name}",
-                            body_html=f"<p>Influencer {influencer.name} has applied for the campaign '{campaign.name}'.</p>"
-                        )
-                    except Exception as e:
-                        _logger.error(f"Failed to send new application notification to admin/manager: {e}")
+                if notif_recipient_ids:
+                    self.env['influence_gen.infrastructure.integration.services'].send_notification(
+                        recipient_user_ids=list(notif_recipient_ids),
+                        template_name='campaign_application_received_admin',
+                        context={'campaign_name': campaign.name, 'influencer_name': influencer.name, 'application_id': application.id}
+                    )
+            except Exception as e:
+                _logger.error("Failed to send campaign application submission notification for app %s: %s", application.id, e)
 
             return application
         except Exception as e:
-            _logger.error(f"Failed to process campaign application: {e}")
-            raise UserError(f"Could not process your application: {e}")
-
+            _logger.error("Error processing campaign application: %s", e)
+            # Handle unique constraint violation gracefully
+            if 'influence_gen_campaign_application_campaign_influencer_uniq' in str(e):
+                 raise UserError(_("You have already applied to this campaign."))
+            raise UserError(_("Could not process campaign application: %s") % e)
 
     def review_campaign_application(self, application_id, decision, reviewer_user_id, reason_if_rejected=None):
         """
-        Reviews a campaign application. REQ-2-007.
-        :param application_id: ID of influence_gen.campaign_application
-        :param decision: 'approved' or 'rejected'
-        :param reviewer_user_id: ID of res.users (reviewer)
-        :param reason_if_rejected: string, reason if decision is 'rejected'
+        Processes the review of a campaign application.
+        REQ-2-007
         """
+        _logger.info("Reviewing campaign application ID: %s, Decision: %s", application_id, decision)
         application = self.env['influence_gen.campaign_application'].browse(application_id)
         if not application.exists():
-            raise UserError(f"Campaign Application with ID {application_id} not found.")
+            raise UserError(_("Campaign application not found."))
         
-        reviewer_user = self.env['res.users'].browse(reviewer_user_id)
-        if not reviewer_user.exists():
-            raise UserError(f"Reviewer user with ID {reviewer_user_id} not found.")
+        reviewer = self.env['res.users'].browse(reviewer_user_id)
+        if not reviewer.exists():
+            raise UserError(_("Reviewer user not found."))
 
         if decision == 'approved':
-            application.action_approve(reviewer_user.id)
+            application.action_approve(reviewer.id)
         elif decision == 'rejected':
             if not reason_if_rejected:
-                raise UserError("Reason for rejection is required.")
-            application.action_reject(reviewer_user.id, reason_if_rejected)
+                raise UserError(_("A reason is required for rejecting an application."))
+            application.action_reject(reviewer.id, reason_if_rejected)
         else:
-            raise UserError(f"Invalid decision: {decision}. Must be 'approved' or 'rejected'.")
+            raise UserError(_("Invalid application review decision: %s") % decision)
+        
+        # Notifications and audit logs are handled by the model's action methods.
+        _logger.info("Campaign application ID: %s status updated to %s", application_id, application.status)
 
     def handle_content_submission(self, application_id, content_attachments=None, content_link=None, content_caption=None, generated_image_id=None):
         """
         Handles content submission for a campaign application.
-        :param application_id: ID of influence_gen.campaign_application
-        :param content_attachments: List of dicts for ir.attachment creation, or list of attachment IDs
-        :param content_link: string, URL to content
-        :param content_caption: string, text/caption for content
-        :param generated_image_id: ID of influence_gen.generated_image if applicable
-        :return: influence_gen.content_submission record
+        content_attachments is expected to be a list of dicts for ir.attachment creation:
+        [{'name': 'file1.jpg', 'datas': 'base64_string1'}, ...]
         """
+        _logger.info("Handling content submission for application ID: %s", application_id)
         application = self.env['influence_gen.campaign_application'].browse(application_id)
         if not application.exists():
-            raise UserError(f"Campaign Application with ID {application_id} not found.")
-        
+            raise UserError(_("Campaign application not found."))
         if application.status != 'approved':
-            raise UserError("Content can only be submitted for approved applications.")
+            raise UserError(_("Content can only be submitted for approved applications."))
 
-        if not content_attachments and not content_link and not generated_image_id:
-            raise UserError("At least one form of content (attachment, link, or AI image) must be provided.")
-
-        attachment_ids = []
-        if content_attachments:
-            attachment_model = self.env['ir.attachment']
-            for attachment_data in content_attachments:
-                if isinstance(attachment_data, int): # If it's already an ID
-                    attachment_ids.append(attachment_data)
-                elif isinstance(attachment_data, dict) and attachment_data.get('datas'):
-                     # Create new attachment
-                    vals = {
-                        'name': attachment_data.get('name', 'campaign_content'),
-                        'datas': attachment_data['datas'],
-                        'res_model': 'influence_gen.content_submission', 
-                        # res_id will be set later if needed, or keep generic
-                    }
-                    attachment = attachment_model.create(vals)
-                    attachment_ids.append(attachment.id)
-                else:
-                    _logger.warning(f"Invalid attachment data provided: {attachment_data}")
-
+        # Basic validation
+        if not (content_attachments or content_link or generated_image_id):
+            raise UserError(_("At least one form of content (attachment, link, or AI image) must be provided."))
 
         submission_vals = {
             'campaign_application_id': application.id,
@@ -232,102 +201,145 @@ class CampaignService(models.AbstractModel):
             'generated_image_id': generated_image_id if generated_image_id else False,
             'review_status': 'pending_review',
         }
+        
+        attachment_ids = []
+        if content_attachments:
+            for att_data in content_attachments:
+                if not att_data.get('datas') or not att_data.get('name'):
+                    _logger.warning("Skipping attachment due to missing data or name: %s", att_data.get('name'))
+                    continue
+                # Max file size check for content could be here, from PlatformSetting
+                attachment = self.env['ir.attachment'].create({
+                    'name': att_data['name'],
+                    'datas': att_data['datas'],
+                    'res_model': 'influence_gen.content_submission', # Temp, will be updated
+                    'access_token': self.env['ir.attachment']._generate_access_token(),
+                })
+                attachment_ids.append(attachment.id)
+        
         if attachment_ids:
             submission_vals['content_attachment_ids'] = [(6, 0, attachment_ids)]
-
+            
         try:
             submission = self.env['influence_gen.content_submission'].create(submission_vals)
+            _logger.info("Content submission ID: %s created.", submission.id)
+            
+            # Link attachments properly if created
+            if attachment_ids:
+                self.env['ir.attachment'].browse(attachment_ids).write({'res_id': submission.id})
+
+
             self.env['influence_gen.audit_log_entry'].create_log(
                 event_type='CONTENT_SUBMITTED',
-                actor_user_id=application.influencer_profile_id.user_id.id,
+                actor_user_id=application.influencer_profile_id.user_id.id, # Action by influencer
                 action_performed='CREATE',
                 target_object=submission,
                 details_dict={'application_id': application.id, 'campaign_id': application.campaign_id.id}
             )
-            # Notify admin
-            admin_group = self.env.ref('influence_gen_services.group_influence_gen_campaign_manager', raise_if_not_found=False) \
-                          or self.env.ref('influence_gen_services.group_influence_gen_admin', raise_if_not_found=False)
+
+            # Trigger notification to admin/campaign manager
+            admin_group = self.env.ref('influence_gen_services.group_influence_gen_admin', raise_if_not_found=False)
+            campaign_manager_group = self.env.ref('influence_gen_services.group_influence_gen_campaign_manager', raise_if_not_found=False)
+            
+            notif_recipient_ids = set()
             if admin_group:
-                admin_users = self.env['res.users'].search([('groups_id', 'in', admin_group.id)])
-                if admin_users:
-                    try:
-                        self.env['influence_gen.infrastructure.integration.service'].send_notification(
-                            recipient_user_ids=admin_users.ids,
-                            subject=f"New Content Submitted for {application.campaign_id.name}",
-                            body_html=f"<p>Influencer {application.influencer_profile_id.name} has submitted content for the campaign '{application.campaign_id.name}'. Review needed.</p>"
-                        )
-                    except Exception as e:
-                        _logger.error(f"Failed to send content submitted notification to admin: {e}")
+                notif_recipient_ids.update(self.env['res.users'].search([('groups_id', 'in', admin_group.id)]).ids)
+            if campaign_manager_group:
+                 notif_recipient_ids.update(self.env['res.users'].search([('groups_id', 'in', campaign_manager_group.id)]).ids)
+
+            if notif_recipient_ids:
+                try:
+                    self.env['influence_gen.infrastructure.integration.services'].send_notification(
+                        recipient_user_ids=list(notif_recipient_ids),
+                        template_name='content_submitted_for_review_admin',
+                        context={
+                            'campaign_name': application.campaign_id.name,
+                            'influencer_name': application.influencer_profile_id.name,
+                            'submission_id': submission.id
+                        }
+                    )
+                except Exception as e:
+                    _logger.error("Failed to send content submission notification for sub %s: %s", submission.id, e)
+
             return submission
         except Exception as e:
-            _logger.error(f"Failed to handle content submission: {e}")
-            raise UserError(f"Could not submit content: {e}")
+            _logger.error("Error handling content submission: %s", e)
+            raise UserError(_("Could not process content submission: %s") % e)
 
     def review_content_submission(self, submission_id, decision, reviewer_user_id, feedback_text=None):
         """
-        Reviews a content submission. REQ-2-010. Corresponds to SEQ-CMP-005.
-        :param submission_id: ID of influence_gen.content_submission
-        :param decision: 'approved', 'rejected', or 'revision_requested'
-        :param reviewer_user_id: ID of res.users (reviewer)
-        :param feedback_text: string, feedback if decision is 'rejected' or 'revision_requested'
+        Processes the review of a content submission.
+        REQ-2-010 (Corresponds to SEQ-CMP-005)
         """
+        _logger.info("Reviewing content submission ID: %s, Decision: %s", submission_id, decision)
         submission = self.env['influence_gen.content_submission'].browse(submission_id)
         if not submission.exists():
-            raise UserError(f"Content Submission with ID {submission_id} not found.")
-
-        reviewer_user = self.env['res.users'].browse(reviewer_user_id)
-        if not reviewer_user.exists():
-            raise UserError(f"Reviewer user with ID {reviewer_user_id} not found.")
+            raise UserError(_("Content submission not found."))
+            
+        reviewer = self.env['res.users'].browse(reviewer_user_id)
+        if not reviewer.exists():
+            raise UserError(_("Reviewer user not found."))
 
         if decision == 'approved':
-            submission.action_approve(reviewer_user.id)
+            submission.action_approve(reviewer.id)
+             # Potentially trigger payment record creation if final submission approved
+            if submission.is_final_submission:
+                _logger.info("Final content submission %s approved. Triggering payment consideration.", submission.id)
+                try:
+                    self.env['influence_gen.payment_service'](self.env).create_payment_record_for_submission(submission.id)
+                except Exception as e:
+                    _logger.error("Failed to auto-create payment record for submission %s: %s", submission.id, e)
+                    # Non-critical to content approval flow, just log.
+
         elif decision == 'rejected':
             if not feedback_text:
-                raise UserError("Feedback is required for rejecting content.")
-            submission.action_reject(reviewer_user.id, feedback_text)
+                raise UserError(_("Feedback text is required for rejecting content."))
+            submission.action_reject(reviewer.id, feedback_text)
         elif decision == 'revision_requested':
             if not feedback_text:
-                raise UserError("Feedback is required for requesting revision.")
-            submission.action_request_revision(reviewer_user.id, feedback_text)
+                raise UserError(_("Feedback text is required for requesting revision."))
+            submission.action_request_revision(reviewer.id, feedback_text)
         else:
-            raise UserError(f"Invalid decision: {decision}. Must be 'approved', 'rejected', or 'revision_requested'.")
+            raise UserError(_("Invalid content review decision: %s") % decision)
+        
+        # Notifications and audit logs are handled by the model's action methods.
+        _logger.info("Content submission ID: %s review status updated to %s", submission_id, submission.review_status)
 
     def record_campaign_performance_metrics(self, campaign_id, metrics_data, influencer_id=None, submission_id=None):
         """
-        Records manual campaign performance metrics. REQ-2-011.
-        :param campaign_id: ID of influence_gen.campaign
-        :param metrics_data: dict of metric_name: metric_value
-        :param influencer_id: (optional) ID of influence_gen.influencer_profile if metrics are per influencer
-        :param submission_id: (optional) ID of influence_gen.content_submission if metrics are per submission
+        Records (manual) performance metrics for a campaign.
+        REQ-2-011
+        metrics_data is expected to be a dictionary or JSON string.
         """
+        _logger.info("Recording performance metrics for campaign ID: %s", campaign_id)
         campaign = self.env['influence_gen.campaign'].browse(campaign_id)
         if not campaign.exists():
-            raise UserError(f"Campaign with ID {campaign_id} not found.")
+            raise UserError(_("Campaign not found."))
 
-        if not isinstance(metrics_data, dict):
-            raise UserError("Metrics data must be a dictionary.")
-
-        # The model method `add_manual_performance_metric` takes individual metric_name, metric_value.
-        # This service method could iterate or the model method could be adapted to take a dict.
-        # For now, let's assume the model method can be called multiple times or adapted.
-        # For simplicity, if model method takes one metric, call it in a loop:
-        for metric_name, metric_value in metrics_data.items():
-            campaign.add_manual_performance_metric(
-                metric_name=metric_name,
-                metric_value=metric_value,
-                influencer_id=influencer_id,
-                submission_id=submission_id
-            )
+        # The SDS `campaign.add_manual_performance_metric` takes (self, metric_name, metric_value, influencer_id=None, submission_id=None)
+        # This service method gets `metrics_data`. We need to adapt.
+        # Assuming metrics_data is a dict like {'reach': 10000, 'engagement_rate': 0.05}
         
-        self.env['influence_gen.audit_log_entry'].create_log(
-            event_type='CAMPAIGN_PERFORMANCE_METRICS_RECORDED',
-            actor_user_id=self.env.user.id,
-            action_performed='UPDATE',
-            target_object=campaign,
-            details_dict={
-                'campaign_id': campaign.id, 
-                'metrics_data': metrics_data, 
-                'influencer_id': influencer_id, 
-                'submission_id': submission_id
-            }
-        )
+        # This method in Campaign model is add_manual_performance_metric(self, metric_name, metric_value, influencer_id=None, submission_id=None)
+        # The service method receives metrics_data (a dict).
+        # We'll assume metrics_data is a dict and campaign.add_manual_performance_metric handles updating the JSON field.
+        # For simplicity, let's assume `add_manual_performance_metric` can take the whole dict.
+        # If it's one metric at a time, this service needs to iterate.
+        # The current campaign.py method in SDS expects metric_name and metric_value.
+        # So, the service should iterate if `metrics_data` is a dict of metrics.
+
+        if isinstance(metrics_data, dict):
+            for metric_name, metric_value in metrics_data.items():
+                campaign.add_manual_performance_metric(
+                    metric_name=metric_name,
+                    metric_value=metric_value,
+                    influencer_id=influencer_id,
+                    submission_id=submission_id
+                )
+        else:
+            # If metrics_data is just a single value or needs specific parsing
+            # For this example, let's assume it should be a dict.
+            raise UserError(_("Metrics data should be a dictionary of metric_name: metric_value pairs."))
+
+        # Audit log is created within the campaign model's method.
+        _logger.info("Performance metrics recorded for campaign ID: %s", campaign_id)
