@@ -1,0 +1,46 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600 # Update if older than 1 hour
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - htop
+      - curl
+      - wget
+      - git
+      - python3-pip
+      - ntp
+      - unzip
+    state: present
+
+- name: Ensure NTP service is running and enabled
+  ansible.builtin.service:
+    name: ntp
+    state: started
+    enabled: yes
+
+- name: Set timezone to UTC
+  ansible.builtin.timezone:
+    name: UTC
+
+- name: Basic security - disable password authentication for SSH (if using keys)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    state: present
+  notify: restart ssh
+
+- name: Basic security - disable root login for SSH
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+  notify: restart ssh
+
+# Note: Further hardening like fail2ban, firewall setup (if not using AWS SGs exclusively)
+# and user management should be added for production.

@@ -1,0 +1,56 @@
+[options]
+; This is the base configuration file for Odoo
+; You can find more options at https://www.odoo.com/documentation/18.0/administration/maintain/deploy.html
+
+{% if odoo_db_host_var and odoo_db_user_var and odoo_db_password_var %}
+db_host = {{ odoo_db_host_var }}
+db_port = {{ odoo_db_port_var }}
+db_user = {{ odoo_db_user_var }}
+db_password = {{ odoo_db_password_var }}
+{% endif %}
+; db_name = False  ; Specify database name if not using default 'odoo' or managing via command line
+; db_template = template1 ; Specify template database
+
+admin_passwd = {{ odoo_admin_passwd_var }} # CHANGE THIS IN PRODUCTION AND SECURELY MANAGE IT
+
+addons_path = {{ odoo_addons_path_var }}
+
+data_dir = {{ odoo_data_dir_var }}
+
+logfile = {{ odoo_log_file_var }}
+log_level = info ; debug, info, warn, error, critical
+
+limit_time_cpu = 600
+limit_time_real = 1200
+limit_request = 8192
+limit_memory_hard = 2560000000 # bytes (approx 2.5GB)
+limit_memory_soft = 2048000000 # bytes (approx 2GB)
+
+# If running behind a reverse proxy like Nginx or HAProxy
+; proxy_mode = True
+
+# CSV handling
+; csv_internal_sep = ,
+
+; Web server options
+; xmlrpc_port = 8069
+; http_port = 8069
+
+; Workers (for production, use multiple workers)
+; workers = 0 # For dev, 0 or -1 (number of cores) is fine. For prod, calculate based on resources.
+; max_cron_threads = 1 # Set to 0 in dev if not needed, 1 for default cron in prod
+
+; List of server-wide modules to load at startup
+; server_wide_modules = web
+
+; Base URL for web interface. If using a reverse proxy, configure this.
+; web_base_url = http://your.odoo.domain
+
+; Other potentially useful options:
+; without_demo = all # Disable demo data in production
+; smtp_server = localhost
+; smtp_port = 25
+; smtp_user = False
+; smtp_password = False
+; smtp_ssl = False
+; smtp_timeout = 60

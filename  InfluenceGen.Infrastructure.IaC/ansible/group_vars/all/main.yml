@@ -1,0 +1,7 @@
+---
+# Variables applicable to all hosts
+ansible_user: ubuntu # Default user for SSH connection
+
+# General paths (can be overridden in role defaults or other group_vars)
+# base_install_dir: "/opt"
+# log_dir: "/var/log"

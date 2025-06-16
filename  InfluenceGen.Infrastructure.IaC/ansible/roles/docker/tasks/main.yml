@@ -1,0 +1,44 @@
+---
+- name: Add Docker's official GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Update apt cache after adding repo
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install Docker Engine, CLI, containerd, and Compose plugin
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+
+- name: Ensure Docker service is running and enabled
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add {{ ansible_user }} to the docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+  # Note: This task requires logging out and back in for the group change to take effect
+  # on the current SSH session. Subsequent Ansible connections will use the new group.
+
+# Optional: Install Docker Compose standalone if preferred over plugin
+# - name: Install Docker Compose standalone
+#   ansible.builtin.get_url:
+#     url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64"
+#     dest: /usr/local/bin/docker-compose
+#     mode: '0755'
