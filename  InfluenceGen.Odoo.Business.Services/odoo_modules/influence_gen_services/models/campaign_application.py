@@ -1,4 +1,5 @@
-from odoo import models, fields, api, _
+# -*- coding: utf-8 -*-
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 class InfluenceGenCampaignApplication(models.Model):
@@ -7,18 +8,12 @@ class InfluenceGenCampaignApplication(models.Model):
     _order = 'submitted_at desc'
 
     campaign_id = fields.Many2one(
-        'influence_gen.campaign',
-        string="Campaign",
-        required=True,
-        ondelete='cascade',
-        index=True
+        'influence_gen.campaign', string="Campaign",
+        required=True, ondelete='cascade', index=True
     )
     influencer_profile_id = fields.Many2one(
-        'influence_gen.influencer_profile',
-        string="Influencer",
-        required=True,
-        ondelete='cascade',
-        index=True
+        'influence_gen.influencer_profile', string="Influencer",
+        required=True, ondelete='cascade', index=True
     )
     name = fields.Char(string="Application Reference", compute='_compute_name', store=True)
     proposal_text = fields.Text(string="Proposal / Expression of Interest")
@@ -30,11 +25,18 @@ class InfluenceGenCampaignApplication(models.Model):
         ('rejected', 'Rejected'),
         ('withdrawn_by_influencer', 'Withdrawn by Influencer')
     ], string="Application Status", default='submitted', required=True, tracking=True, index=True)
-    submitted_at = fields.Datetime(string="Submitted At", default=fields.Datetime.now, readonly=True)
+    submitted_at = fields.Datetime(
+        string="Submitted At", default=fields.Datetime.now, readonly=True
+    )
     reviewed_at = fields.Datetime(string="Reviewed At", readonly=True)
-    reviewer_user_id = fields.Many2one('res.users', string="Reviewed By", readonly=True, index=True)
+    reviewer_user_id = fields.Many2one(
+        'res.users', string="Reviewed By", readonly=True, index=True
+    )
     rejection_reason = fields.Text(string="Reason for Rejection")
-    content_submission_ids = fields.One2many('influence_gen.content_submission', 'campaign_application_id', string="Content Submissions")
+    content_submission_ids = fields.One2many(
+        'influence_gen.content_submission', 'campaign_application_id',
+        string="Content Submissions"
+    )
 
     _sql_constraints = [
         ('campaign_influencer_uniq',
@@ -47,83 +49,81 @@ class InfluenceGenCampaignApplication(models.Model):
         for app in self:
             app.name = f"{app.campaign_id.name or 'N/A'} - {app.influencer_profile_id.name or 'N/A'}"
 
-    def _log_status_change(self, old_status, new_status, details=None):
-        self.ensure_one()
-        log_details = {
-            'application_id': self.id,
-            'old_status': old_status,
-            'new_status': new_status,
-            'campaign': self.campaign_id.name,
-            'influencer': self.influencer_profile_id.name,
-        }
-        if details:
-            log_details.update(details)
-
-        self.env['influence_gen.audit_log_entry'].create_log(
-            event_type='CAMPAIGN_APPLICATION_STATUS_CHANGED',
-            actor_user_id=self.env.user.id,
-            action_performed='UPDATE',
-            target_object=self,
-            details_dict=log_details
-        )
-
     def action_approve(self, reviewer_user_id):
+        """Approves the application. Called by CampaignService. REQ-2-007."""
         self.ensure_one()
         if self.status not in ('submitted', 'under_review'):
-            raise UserError(_("Application can only be approved if 'Submitted' or 'Under Review'."))
-        
-        old_status = self.status
+            raise UserError(_("Only submitted or under review applications can be approved."))
+
         self.write({
             'status': 'approved',
-            'reviewer_user_id': reviewer_user_id.id if reviewer_user_id else self.env.user.id,
+            'reviewer_user_id': reviewer_user_id.id,
             'reviewed_at': fields.Datetime.now()
         })
-        self._log_status_change(old_status, 'approved', {'reviewer': self.reviewer_user_id.name})
-
+        self.env['influence_gen.audit_log_entry'].create_log(
+            event_type='CAMPAIGN_APPLICATION_APPROVED',
+            actor_user_id=reviewer_user_id.id,
+            action_performed='APPROVE_APPLICATION',
+            target_object=self
+        )
         # Trigger notification "Application Approved" to influencer
-        # self.env['influence_gen.infrastructure.integration.service'].send_notification(
-        #     user_id=self.influencer_profile_id.user_id.id,
-        #     message_type='campaign_application_approved',
-        #     message_params={'campaign_name': self.campaign_id.name}
-        # )
-        self.message_post(body=_("Application approved by %s.", self.reviewer_user_id.name))
+        try:
+            self.env['influence_gen.infrastructure.integration.services'].send_notification(
+                user_ids=self.influencer_profile_id.user_id.ids,
+                message_type='application_approved',
+                subject=_("Your application for campaign '%s' has been approved!", self.campaign_id.name),
+                body=_("Congratulations! Your application for the campaign '%s' has been approved.", self.campaign_id.name)
+            )
+        except Exception as e:
+            _logger.error(f"Failed to send application approved notification for app {self.id}: {e}")
         return True
 
     def action_reject(self, reviewer_user_id, reason):
+        """Rejects the application. REQ-2-007."""
         self.ensure_one()
         if self.status not in ('submitted', 'under_review'):
-            raise UserError(_("Application can only be rejected if 'Submitted' or 'Under Review'."))
+            raise UserError(_("Only submitted or under review applications can be rejected."))
         if not reason:
-            raise UserError(_("A reason for rejection is required."))
+            raise UserError(_("A reason is required for rejecting an application."))
 
-        old_status = self.status
         self.write({
             'status': 'rejected',
-            'reviewer_user_id': reviewer_user_id.id if reviewer_user_id else self.env.user.id,
+            'reviewer_user_id': reviewer_user_id.id,
             'reviewed_at': fields.Datetime.now(),
             'rejection_reason': reason
         })
-        self._log_status_change(old_status, 'rejected', {'reviewer': self.reviewer_user_id.name, 'reason': reason})
-
+        self.env['influence_gen.audit_log_entry'].create_log(
+            event_type='CAMPAIGN_APPLICATION_REJECTED',
+            actor_user_id=reviewer_user_id.id,
+            action_performed='REJECT_APPLICATION',
+            target_object=self,
+            details_dict={'reason': reason}
+        )
         # Trigger notification "Application Rejected" to influencer
-        # self.env['influence_gen.infrastructure.integration.service'].send_notification(
-        #     user_id=self.influencer_profile_id.user_id.id,
-        #     message_type='campaign_application_rejected',
-        #     message_params={'campaign_name': self.campaign_id.name, 'reason': reason}
-        # )
-        self.message_post(body=_("Application rejected by %s. Reason: %s", self.reviewer_user_id.name, reason))
+        try:
+            self.env['influence_gen.infrastructure.integration.services'].send_notification(
+                user_ids=self.influencer_profile_id.user_id.ids,
+                message_type='application_rejected',
+                subject=_("Update on your application for campaign '%s'", self.campaign_id.name),
+                body=_("Unfortunately, your application for the campaign '%s' has been rejected. Reason: %s", self.campaign_id.name, reason)
+            )
+        except Exception as e:
+            _logger.error(f"Failed to send application rejected notification for app {self.id}: {e}")
         return True
 
     def action_withdraw(self):
+        """Allows influencer to withdraw their application."""
         self.ensure_one()
-        # Potentially add constraints, e.g., cannot withdraw if already approved and content submitted
         if self.status not in ('submitted', 'under_review'):
-            raise UserError(_("Application can only be withdrawn if 'Submitted' or 'Under Review'."))
+            raise UserError(_("Only submitted or under review applications can be withdrawn."))
+        if self.env.user != self.influencer_profile_id.user_id and not self.env.user.has_group('influence_gen_services.group_influence_gen_admin'):
+             raise UserError(_("You are not authorized to withdraw this application."))
 
-        old_status = self.status
         self.write({'status': 'withdrawn_by_influencer'})
-        self._log_status_change(old_status, 'withdrawn_by_influencer')
-        # Notify admin/campaign manager
-        # self.env['influence_gen.infrastructure.integration.service'].send_notification_to_group(...)
-        self.message_post(body=_("Application withdrawn by influencer."))
+        self.env['influence_gen.audit_log_entry'].create_log(
+            event_type='CAMPAIGN_APPLICATION_WITHDRAWN',
+            actor_user_id=self.env.user.id,
+            action_performed='WITHDRAW_APPLICATION',
+            target_object=self
+        )
         return True

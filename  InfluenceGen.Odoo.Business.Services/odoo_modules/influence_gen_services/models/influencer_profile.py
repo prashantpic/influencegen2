@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 import json
 import re
-from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError, UserError
 
 class InfluenceGenInfluencerProfile(models.Model):
     _name = 'influence_gen.influencer_profile'
@@ -9,7 +10,10 @@ class InfluenceGenInfluencerProfile(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string="Full Name", required=True, tracking=True)
-    user_id = fields.Many2one('res.users', string="Odoo User", ondelete='cascade', required=True, index=True, copy=False)
+    user_id = fields.Many2one(
+        'res.users', string="Odoo User", ondelete='cascade',
+        required=True, index=True, copy=False
+    )
     email = fields.Char(string="Email", required=True, tracking=True, index=True)
     phone = fields.Char(string="Phone Number", tracking=True)
     residential_address = fields.Text(string="Residential Address", tracking=True)
@@ -27,10 +31,22 @@ class InfluenceGenInfluencerProfile(models.Model):
         ('active', 'Active'),
         ('suspended', 'Suspended')
     ], string="Account Status", default='inactive', required=True, tracking=True, index=True)
-    social_media_profile_ids = fields.One2many('influence_gen.social_media_profile', 'influencer_profile_id', string="Social Media Profiles")
-    kyc_data_ids = fields.One2many('influence_gen.kyc_data', 'influencer_profile_id', string="KYC Submissions")
-    bank_account_ids = fields.One2many('influence_gen.bank_account', 'influencer_profile_id', string="Bank Accounts")
-    terms_consent_ids = fields.One2many('influence_gen.terms_consent', 'influencer_profile_id', string="Terms Consents")
+    social_media_profile_ids = fields.One2many(
+        'influence_gen.social_media_profile', 'influencer_profile_id',
+        string="Social Media Profiles"
+    )
+    kyc_data_ids = fields.One2many(
+        'influence_gen.kyc_data', 'influencer_profile_id',
+        string="KYC Submissions"
+    )
+    bank_account_ids = fields.One2many(
+        'influence_gen.bank_account', 'influencer_profile_id',
+        string="Bank Accounts"
+    )
+    terms_consent_ids = fields.One2many(
+        'influence_gen.terms_consent', 'influencer_profile_id',
+        string="Terms Consents"
+    )
     area_of_influence_ids = fields.Many2many(
         'influence_gen.area_of_influence',
         'influencer_area_of_influence_rel',
@@ -38,8 +54,7 @@ class InfluenceGenInfluencerProfile(models.Model):
         string="Areas of Influence"
     )
     onboarding_checklist_json = fields.Text(
-        string="Onboarding Checklist (JSON)",
-        default='{}',
+        string="Onboarding Checklist (JSON)", default='{}',
         help="Stores status of various onboarding steps: kyc_submitted, bank_submitted, tos_agreed, etc."
     )
 
@@ -48,122 +63,131 @@ class InfluenceGenInfluencerProfile(models.Model):
         ('user_id_uniq', 'unique(user_id)', 'An Odoo user can only be linked to one influencer profile!')
     ]
 
+    def _compute_display_name(self):
+        for record in self:
+            record.display_name = record.name or record.email
+
     def action_activate_account(self):
+        """Activates the influencer's account. REQ-IOKYC-012."""
         self.ensure_one()
         if self.kyc_status != 'approved':
             raise UserError(_("KYC must be approved before activating the account."))
+        
         if not self.check_onboarding_completion():
-            raise UserError(_("All required onboarding steps must be completed before activating the account."))
+            raise UserError(_("All onboarding steps must be completed before activating the account. "
+                              "Please ensure KYC is approved, a bank account is verified, "
+                              "terms are consented, and at least one social media profile is verified."))
 
         self.write({'account_status': 'active'})
         self.env['influence_gen.audit_log_entry'].create_log(
             event_type='ACCOUNT_ACTIVATED',
             actor_user_id=self.env.user.id,
-            action_performed='UPDATE',
-            target_object=self,
-            details_dict={'old_status': self.account_status, 'new_status': 'active'}
+            action_performed='ACTIVATE',
+            target_object=self
         )
         # Trigger notification "Account Activated" via notification service (REPO-IGOII-004)
-        # This typically would be:
-        # self.env['influence_gen.infrastructure.integration.service'].send_notification(
-        #     user_id=self.user_id.id,
-        #     message_type='account_activated',
-        #     message_params={'influencer_name': self.name}
-        # )
-        # Placeholder for actual notification call to infra layer
-        self.message_post(body=_("Account activated."))
+        try:
+            self.env['influence_gen.infrastructure.integration.services'].send_notification(
+                user_ids=self.user_id.ids,
+                message_type='account_activated',
+                subject=_("Your InfluenceGen Account is Active!"),
+                body=_("Congratulations! Your InfluenceGen account has been activated.")
+            )
+        except Exception as e:
+            # Log error if notification fails, but don't block activation
+            _logger.error(f"Failed to send account activation notification for influencer {self.id}: {e}")
+
         return True
 
     def action_deactivate_account(self, reason="Administrative action"):
+        """Deactivates or suspends the influencer's account."""
         self.ensure_one()
-        old_status = self.account_status
-        self.write({'account_status': 'suspended'}) # Or 'inactive' based on more specific logic
+        self.write({'account_status': 'suspended'}) # Or 'inactive' based on precise needs
         self.env['influence_gen.audit_log_entry'].create_log(
             event_type='ACCOUNT_DEACTIVATED',
             actor_user_id=self.env.user.id,
-            action_performed='UPDATE',
+            action_performed='DEACTIVATE',
             target_object=self,
-            details_dict={'old_status': old_status, 'new_status': self.account_status, 'reason': reason}
+            details_dict={'reason': reason}
         )
         # Trigger notification "Account Deactivated/Suspended"
-        # self.env['influence_gen.infrastructure.integration.service'].send_notification(
-        #     user_id=self.user_id.id,
-        #     message_type='account_deactivated',
-        #     message_params={'influencer_name': self.name, 'reason': reason}
-        # )
-        self.message_post(body=_("Account deactivated/suspended. Reason: %s", reason))
+        try:
+            self.env['influence_gen.infrastructure.integration.services'].send_notification(
+                user_ids=self.user_id.ids,
+                message_type='account_deactivated',
+                subject=_("Your InfluenceGen Account Status Update"),
+                body=_("Your InfluenceGen account has been deactivated/suspended. Reason: %s", reason)
+            )
+        except Exception as e:
+            _logger.error(f"Failed to send account deactivation notification for influencer {self.id}: {e}")
         return True
 
     def update_kyc_status(self, new_status, notes=None):
+        """Updates the overall KYC status of the influencer."""
         self.ensure_one()
-        old_status = self.kyc_status
         self.write({'kyc_status': new_status})
         self.env['influence_gen.audit_log_entry'].create_log(
             event_type='KYC_STATUS_UPDATED',
             actor_user_id=self.env.user.id, # Or system if automated
-            action_performed='UPDATE',
+            action_performed='UPDATE_KYC_STATUS',
             target_object=self,
-            details_dict={'old_status': old_status, 'new_status': new_status, 'notes': notes or ''}
+            details_dict={'new_status': new_status, 'notes': notes}
         )
         if new_status == 'approved':
-            if self.check_onboarding_completion(): # Check if other steps are also done
-                 self.action_activate_account()
-        # Notification is expected to be triggered by the calling service (e.g., OnboardingService)
-        # or the specific KYCData action method.
+            try:
+                if self.check_onboarding_completion():
+                    self.action_activate_account()
+            except UserError:
+                # Activation might not be possible yet, onboarding checklist will guide
+                pass
+        return True
 
     @api.constrains('email')
     def _check_email_format(self):
+        """Validate email format. REQ-DMG-014."""
         for record in self:
-            if record.email and not re.match(r"[^@]+@[^@]+\.[^@]+", record.email):
-                raise ValidationError(_("Invalid email address format: %s", record.email))
+            if record.email:
+                if not re.match(r"[^@]+@[^@]+\.[^@]+", record.email):
+                    raise ValidationError(_("Invalid email address format: %s", record.email))
 
     def check_onboarding_completion(self):
+        """Internal method to check if all mandatory onboarding steps are complete."""
         self.ensure_one()
         if self.kyc_status != 'approved':
             return False
         if not self.bank_account_ids.filtered(lambda b: b.verification_status == 'verified'):
             return False
+        
+        # Check ToS consent (example: check against platform setting for current versions)
+        current_tos_version = self.env['influence_gen.platform_setting'].get_param('influence_gen.default_tos_version')
+        current_privacy_version = self.env['influence_gen.platform_setting'].get_param('influence_gen.default_privacy_policy_version')
+        
         latest_consent = self.get_latest_terms_consent()
-        if not latest_consent: # Basic check, version check would be more robust
+        if not latest_consent or \
+           (current_tos_version and latest_consent.tos_version != current_tos_version) or \
+           (current_privacy_version and latest_consent.privacy_policy_version != current_privacy_version):
             return False
-        # Add version check against PlatformSetting for current ToS/Privacy versions if needed
-        # current_tos_version = self.env['influence_gen.platform_setting'].get_param('influence_gen.default_tos_version')
-        # current_privacy_version = self.env['influence_gen.platform_setting'].get_param('influence_gen.default_privacy_policy_version')
-        # if latest_consent.tos_version != current_tos_version or latest_consent.privacy_policy_version != current_privacy_version:
-        #     return False
-
+            
         if not self.social_media_profile_ids.filtered(lambda s: s.verification_status == 'verified'):
             return False
-        
-        # Check from JSON checklist as well
-        try:
-            checklist = json.loads(self.onboarding_checklist_json or '{}')
-            if not checklist.get('kyc_submitted') or \
-               not checklist.get('bank_submitted') or \
-               not checklist.get('tos_agreed') or \
-               not checklist.get('social_media_verified'): # Assuming a key for overall social media verification
-                return False
-        except json.JSONDecodeError:
-            return False # Invalid JSON means checklist is not properly maintained
-
         return True
 
     def get_latest_terms_consent(self):
+        """Fetches the most recent terms consent record for the influencer."""
         self.ensure_one()
         return self.env['influence_gen.terms_consent'].search([
             ('influencer_profile_id', '=', self.id)
         ], order='consent_date desc', limit=1)
 
     def update_onboarding_step_status(self, step_key, status=True):
+        """Updates the onboarding_checklist_json for a given step."""
         self.ensure_one()
-        try:
-            checklist = json.loads(self.onboarding_checklist_json or '{}')
-        except json.JSONDecodeError:
-            checklist = {}
-        
+        checklist = json.loads(self.onboarding_checklist_json or '{}')
         checklist[step_key] = status
-        self.onboarding_checklist_json = json.dumps(checklist)
+        self.write({'onboarding_checklist_json': json.dumps(checklist)})
+        return True
 
     def get_primary_bank_account(self):
+        """Returns the primary bank account for payouts."""
         self.ensure_one()
         return self.bank_account_ids.filtered(lambda b: b.is_primary)

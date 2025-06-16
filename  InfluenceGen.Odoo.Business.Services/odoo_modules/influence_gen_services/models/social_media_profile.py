@@ -1,6 +1,7 @@
-import uuid
+# -*- coding: utf-8 -*-
 import re
-from odoo import models, fields, api, _
+import uuid
+from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 
 class InfluenceGenSocialMediaProfile(models.Model):
@@ -8,11 +9,8 @@ class InfluenceGenSocialMediaProfile(models.Model):
     _description = "Influencer Social Media Profile"
 
     influencer_profile_id = fields.Many2one(
-        'influence_gen.influencer_profile',
-        string="Influencer Profile",
-        required=True,
-        ondelete='cascade',
-        index=True
+        'influence_gen.influencer_profile', string="Influencer Profile",
+        required=True, ondelete='cascade', index=True
     )
     platform = fields.Selection([
         ('instagram', 'Instagram'),
@@ -51,108 +49,89 @@ class InfluenceGenSocialMediaProfile(models.Model):
 
     @api.constrains('url', 'platform')
     def _check_url_format(self):
+        """Validate URL format based on platform. REQ-DMG-015."""
         for record in self:
             if record.url:
                 # Basic URL validation
                 if not re.match(r"^https?://[^\s/$.?#].[^\s]*$", record.url):
-                    raise ValidationError(_("Invalid URL format for %s.", record.platform))
+                    raise ValidationError(_("Invalid URL format for %s.", record.url))
                 # Platform specific checks (examples)
                 if record.platform == 'instagram' and 'instagram.com/' not in record.url:
-                    raise ValidationError(_("Instagram URL does not seem valid."))
+                    raise ValidationError(_("Instagram URL should contain 'instagram.com/'."))
                 if record.platform == 'tiktok' and 'tiktok.com/' not in record.url:
-                    raise ValidationError(_("TikTok URL does not seem valid."))
-                # Add more platform-specific regex if needed
+                     raise ValidationError(_("TikTok URL should contain 'tiktok.com/'."))
+                # Add more platform specific regex if needed
 
     def action_initiate_verification(self, method):
+        """Called by OnboardingService to start a verification process. REQ-IOKYC-006."""
         self.ensure_one()
-        if self.verification_status == 'verified':
-            raise UserError(_("This profile is already verified."))
-
         vals = {
             'verification_method': method,
-            'verification_status': 'verification_initiated'
+            'verification_status': 'verification_initiated',
         }
-        verification_details = {}
-
         if method == 'code_in_bio':
-            code = str(uuid.uuid4())[:8].upper() # Generate a simple code
-            vals['verification_code'] = code
-            verification_details['code'] = code
-            verification_details['instructions'] = _("Please place the code '%s' in your profile bio or a new post.", code)
-
+            vals['verification_code'] = str(uuid.uuid4())[:8] # Generate a simple code
+        
         self.write(vals)
-
         self.env['influence_gen.audit_log_entry'].create_log(
             event_type='SOCIAL_MEDIA_VERIFICATION_INITIATED',
             actor_user_id=self.env.user.id,
-            action_performed='UPDATE',
+            action_performed='INITIATE_VERIFICATION',
             target_object=self,
-            details_dict={'method': method, 'profile_id': self.id}
+            details_dict={'method': method}
         )
-        return verification_details
+        return {'verification_code': vals.get('verification_code')}
 
     def action_confirm_verification(self, verification_input=None):
+        """Called by OnboardingService to confirm verification. REQ-IOKYC-006."""
         self.ensure_one()
-        if self.verification_status == 'verified':
-            return True # Already verified
-
         success = False
-        if self.verification_method == 'code_in_bio':
-            # This part requires an external check.
-            # Assume verification_input is True if admin/system confirmed code is present.
-            if verification_input is True: # Or compare verification_input (code found) with self.verification_code
-                success = True
-            elif isinstance(verification_input, str) and verification_input == self.verification_code: # for automated check
-                 success = True
+        audit_details = {'method': self.verification_method, 'input': verification_input}
 
+        if self.verification_method == 'code_in_bio':
+            # This part usually involves an admin or automated system checking the bio/post
+            # For simulation, we assume verification_input is the code found
+            if self.verification_code and verification_input == self.verification_code:
+                success = True
         elif self.verification_method == 'oauth':
-            # OAuth flow result would be passed in verification_input (e.g., token or success flag)
-            if verification_input and verification_input.get('status') == 'success':
+            # OAuth flow would set verification_input to a success token or flag
+            if verification_input == 'oauth_success_token': # Placeholder
                 success = True
         elif self.verification_method == 'manual':
-            # Admin manually marks as verified, so input is implicitly True
-            success = True
+            # Admin manually confirms
+            success = True # Assuming this action is called by an admin marking it as verified
         elif self.verification_method == 'api_insights':
-            # If metrics can be fetched successfully as proof
-            if verification_input and verification_input.get('metrics_fetched') is True:
+             # API Insights verification would set verification_input to a success flag
+            if verification_input == 'api_insights_verified': # Placeholder
                 success = True
-
+        else:
+            raise UserError(_("Unknown verification method: %s", self.verification_method))
 
         if success:
             self.write({
                 'verification_status': 'verified',
                 'verified_at': fields.Datetime.now()
             })
-            self.influencer_profile_id.update_onboarding_step_status('social_media_verified', True) # General flag
-            self.influencer_profile_id.update_onboarding_step_status(f'social_media_{self.platform}_verified', True) # Specific flag
-
-            self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='SOCIAL_MEDIA_VERIFICATION_CONFIRMED',
-                actor_user_id=self.env.user.id,
-                action_performed='UPDATE',
-                target_object=self,
-                details_dict={'profile_id': self.id, 'status': 'verified'}
-            )
+            self.influencer_profile_id.update_onboarding_step_status('social_media_verified', True)
+            audit_outcome = 'success'
         else:
             self.write({'verification_status': 'failed'})
-            self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='SOCIAL_MEDIA_VERIFICATION_FAILED',
-                actor_user_id=self.env.user.id,
-                action_performed='UPDATE',
-                target_object=self,
-                details_dict={'profile_id': self.id, 'status': 'failed', 'reason': verification_input}
-            )
+            audit_outcome = 'failure'
+
+        self.env['influence_gen.audit_log_entry'].create_log(
+            event_type='SOCIAL_MEDIA_VERIFICATION_CONFIRMED',
+            actor_user_id=self.env.user.id,
+            action_performed='CONFIRM_VERIFICATION',
+            target_object=self,
+            details_dict=audit_details,
+            outcome=audit_outcome
+        )
         return success
 
     def fetch_audience_metrics(self):
-        # Placeholder for future enhancement.
-        # This would typically call an infrastructure service.
-        # self.env['influence_gen.infrastructure.integration.service'].fetch_social_metrics(self.id)
-        self.ensure_one()
-        _logger.info(f"Placeholder: Fetching audience metrics for social media profile {self.id}")
-        # Example update:
-        # self.write({
-        #     'audience_metrics_json': json.dumps({'followers': 1000, 'engagement_rate': 0.05}),
-        #     'last_fetched_at': fields.Datetime.now()
-        # })
+        """Placeholder for potential future enhancement to fetch metrics from social media APIs."""
+        # This would call an external service via the infrastructure layer.
+        # e.g., self.env['influence_gen.infrastructure.integration.services'].fetch_social_metrics(self.id)
+        # For now, it's a placeholder.
+        _logger.info("fetch_audience_metrics called for SocialMediaProfile %s (Not Implemented)", self.id)
         return False

@@ -1,77 +1,121 @@
+# -*- coding: utf-8 -*-
 import json
-from odoo import models, fields, api, _
+from odoo import api, fields, models, _
+from odoo.http import request
 
 class InfluenceGenAuditLogEntry(models.Model):
     _name = 'influence_gen.audit_log_entry'
     _description = "System Audit Log Entry"
     _order = 'timestamp desc'
 
-    timestamp = fields.Datetime(string="Timestamp (UTC)", default=fields.Datetime.now, required=True, readonly=True, index=True)
+    timestamp = fields.Datetime(
+        string="Timestamp (UTC)", default=fields.Datetime.now,
+        required=True, readonly=True, index=True
+    )
     event_type = fields.Char(string="Event Type", required=True, index=True)
-    actor_user_id = fields.Many2one('res.users', string="Actor User", ondelete='set null', readonly=True, index=True)
-    actor_description = fields.Char(string="Actor Description", compute='_compute_actor_description', store=True, readonly=True)
+    actor_user_id = fields.Many2one(
+        'res.users', string="Actor User",
+        ondelete='set null', readonly=True, index=True
+    )
+    actor_description = fields.Char(
+        string="Actor Description", compute='_compute_actor_description',
+        store=True, readonly=True
+    )
     target_model_name = fields.Char(string="Target Model", readonly=True, index=True)
     target_record_id = fields.Integer(string="Target Record ID", readonly=True, index=True)
-    target_record_display_name = fields.Char(string="Target Record Name", compute='_compute_target_display_name', store=False, readonly=True)
-    action_performed = fields.Char(string="Action Performed", required=True, readonly=True) # e.g., 'CREATE', 'WRITE', 'UNLINK', 'LOGIN_ATTEMPT'
+    target_record_display_name = fields.Char(
+        string="Target Record Name", compute='_compute_target_display_name',
+        store=False, readonly=True # Not stored due to potential performance issues and deletion
+    )
+    action_performed = fields.Char(string="Action Performed", required=True, readonly=True)
     details_json = fields.Text(string="Details (JSON)", readonly=True)
     ip_address = fields.Char(string="Source IP Address", readonly=True)
     outcome = fields.Selection([
         ('success', 'Success'),
         ('failure', 'Failure')
-    ], string="Outcome", readonly=True, default='success') # Default to success unless specified
+    ], string="Outcome", readonly=True, default='success') # Default to success, override on failure
     failure_reason = fields.Text(string="Failure Reason", readonly=True)
 
     @api.model
-    def create_log(cls, event_type, actor_user_id, action_performed, target_object=None, details_dict=None, ip_address=None, outcome='success', failure_reason=None):
+    def create_log(cls, event_type, actor_user_id, action_performed,
+                   target_object=None, details_dict=None, ip_address=None,
+                   outcome='success', failure_reason=None):
+        """Central method to create audit log entries. REQ-ATEL-005, REQ-ATEL-006."""
+        
         vals = {
-            'timestamp': fields.Datetime.now(), # Ensure it's set on creation
             'event_type': event_type,
-            'actor_user_id': actor_user_id.id if hasattr(actor_user_id, 'id') else actor_user_id, # Can be int or record
+            'actor_user_id': actor_user_id.id if actor_user_id else None,
             'action_performed': action_performed,
-            'ip_address': ip_address,
             'outcome': outcome,
             'failure_reason': failure_reason,
         }
+
         if target_object and isinstance(target_object, models.BaseModel) and target_object.exists():
-            vals['target_model_name'] = target_object._name
-            vals['target_record_id'] = target_object.id
-        
+            # Ensure target_object is a single record if providing ID
+            if len(target_object) > 1 : # If it's a multi-recordset, log generally or iterate
+                 _logger.warning("Audit log target_object is a multi-recordset. Logging general model or first record.")
+                 # Decide on handling: log for model, or log for first record, or error
+                 # For now, let's assume it should be a single record if ID is expected
+                 # If logging for multiple records, target_record_id might be better left None and details_json used
+                 vals['target_model_name'] = target_object[0]._name
+                 # vals['target_record_id'] = target_object[0].id # Or handle differently
+            else:
+                vals['target_model_name'] = target_object._name
+                vals['target_record_id'] = target_object.id if target_object.id else None # handles NewId
+        elif target_object and isinstance(target_object, str): # if model name is passed
+             vals['target_model_name'] = target_object
+
+
         if details_dict:
             try:
-                vals['details_json'] = json.dumps(details_dict, default=str) # Use default=str for non-serializable objects like datetime
-            except TypeError:
-                vals['details_json'] = json.dumps({'error': 'Could not serialize details_dict'})
-        
-        return cls.create(vals)
+                vals['details_json'] = json.dumps(details_dict, default=str) # Use str for non-serializable
+            except TypeError as e:
+                _logger.error(f"Failed to serialize audit log details: {e}. Details: {details_dict}")
+                vals['details_json'] = json.dumps({"error": "Failed to serialize details", "original_keys": list(details_dict.keys())})
+
+
+        if not ip_address and request:
+            vals['ip_address'] = request.httprequest.remote_addr if request.httprequest else None
+        elif ip_address:
+            vals['ip_address'] = ip_address
+            
+        return cls.sudo().create(vals) # Use sudo() to ensure logs are always created
 
     @api.depends('actor_user_id')
     def _compute_actor_description(self):
-        for record in self:
-            if record.actor_user_id:
-                record.actor_description = record.actor_user_id.name
+        for log in self:
+            if log.actor_user_id:
+                log.actor_description = log.actor_user_id.name
             else:
-                record.actor_description = "System Process"
+                log.actor_description = "System Process"
 
-    # store=False as fetching display_name can be costly and might fail if record is deleted
     def _compute_target_display_name(self):
-        for record in self:
-            record.target_record_display_name = "" # Default
-            if record.target_model_name and record.target_record_id:
+        # This method is non-stored due to potential issues with deleted records
+        # and performance on large datasets if stored.
+        for log in self:
+            log.target_record_display_name = "" # Default
+            if log.target_model_name and log.target_record_id:
                 try:
-                    if record.target_model_name in self.env:
-                        target_model = self.env[record.target_model_name]
-                        # Check if 'active' field exists for sudo access if record might be archived
-                        if hasattr(target_model, 'active'):
-                             target_rec = target_model.with_context(active_test=False).browse(record.target_record_id).exists()
-                        else:
-                             target_rec = target_model.browse(record.target_record_id).exists()
-
-                        if target_rec:
-                            record.target_record_display_name = target_rec.display_name
-                        else:
-                            record.target_record_display_name = _("[Record Deleted/Inaccessible]")
+                    target_model = self.env[log.target_model_name]
+                    # Check if model has 'display_name' or 'name'
+                    if hasattr(target_model, '_rec_name') and target_model._rec_name:
+                        rec_name_field = target_model._rec_name
+                    elif 'display_name' in target_model._fields:
+                        rec_name_field = 'display_name'
+                    elif 'name' in target_model._fields:
+                        rec_name_field = 'name'
+                    else: # No standard name field
+                        log.target_record_display_name = f"Record ID: {log.target_record_id}"
+                        continue
+                    
+                    # Sudo to read in case regular user lost access
+                    record = target_model.sudo().browse(log.target_record_id).exists()
+                    if record:
+                        log.target_record_display_name = record[rec_name_field]
                     else:
-                        record.target_record_display_name = _("[Model Unknown]")
-                except Exception: # Catch broad exceptions as this is a display field
-                    record.target_record_display_name = _("[Error Fetching Name]")
+                        log.target_record_display_name = f"Record ID: {log.target_record_id} (Not Found/Deleted)"
+                except KeyError: # Model not found
+                    log.target_record_display_name = f"Model: {log.target_model_name}, ID: {log.target_record_id} (Model Not Found)"
+                except Exception as e:
+                    _logger.error(f"Error computing target display name for audit log {log.id}: {e}")
+                    log.target_record_display_name = f"Record ID: {log.target_record_id} (Error)"

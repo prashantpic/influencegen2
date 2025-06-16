@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-#	* influence_gen_services
+# 	* influence_gen_services
 #
 msgid ""
 msgstr ""
@@ -14,3 +14,16 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: influence_gen_services
+#: model:ir.model,name:influence_gen_services.model_influence_gen_influencer_profile
+msgid "Influencer Profile"
+msgstr ""
+
+#. module: influence_gen_services
+#: model:ir.model.fields,field_description:influence_gen_services.field_influence_gen_influencer_profile__name
+msgid "Full Name"
+msgstr ""
+
+# ... (This file will be populated by Odoo's i18n tools based on translatable strings in .py and .xml files)
+# For now, it's a basic POT header.

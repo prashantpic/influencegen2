@@ -1,4 +1,5 @@
-from odoo import models, fields, api, _
+# -*- coding: utf-8 -*-
+from odoo import api, fields, models, _
 
 class InfluenceGenAreaOfInfluence(models.Model):
     _name = 'influence_gen.area_of_influence'
@@ -8,7 +9,7 @@ class InfluenceGenAreaOfInfluence(models.Model):
     name = fields.Char(string="Name", required=True, index=True, unique=True)
     description = fields.Text(string="Description")
     
-    # M2M defined on influencer_profile side for the relation table name
+    # M2M relationship with influencer_profile is defined on influencer_profile model
     # influencer_profile_ids = fields.Many2many(
     #     'influence_gen.influencer_profile',
     #     'influencer_area_of_influence_rel',  # Relation table name
@@ -17,6 +18,5 @@ class InfluenceGenAreaOfInfluence(models.Model):
     #     string="Influencers"
     # )
 
-    _sql_constraints = [
-        ('name_uniq', 'unique(name)', 'Area of Influence name must be unique!')
-    ]
+    # No specific methods defined in SDS for this model beyond standard CRUD
+    # It's primarily a lookup table.

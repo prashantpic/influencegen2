@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 {
     'name': 'InfluenceGen Business Services',
     'version': '18.0.1.0.0',
