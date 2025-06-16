@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+# This module primarily provides services and controllers.
+# Access to ir.config_parameter is typically restricted to base.group_system.
+# The public callback endpoint has custom token authentication.
+# Services are called internally by other Odoo components (controllers, models)
+# which operate within their own security context.
+# If this module were to define its own non-abstract models requiring UI access,
+# ACLs would be added here.
+# Example for a hypothetical model:
+# access_influence_gen_ai_config_admin,influence_gen.ai.config.admin,model_influence_gen_ai_config,base.group_system,1,1,1,1

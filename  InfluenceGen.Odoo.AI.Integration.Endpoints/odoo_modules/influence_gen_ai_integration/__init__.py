@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from . import controllers
 from . import services
 from . import utils
-
-# Models are assumed to be in a separate base module (e.g., influence_gen_base_models)
-# and are not imported here unless this module specifically extends them or adds new ones.
-# Based on the SDS, this module focuses on endpoints and services, not defining primary models.
+# Assuming base models are in a separate module and this one might define its own models or extend them.
+# If this module defines models directly:
+# from . import models
