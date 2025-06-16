@@ -1,0 +1,104 @@
+// InfluenceGen Portal Responsive SCSS
+
+// Odoo's Bootstrap 5 based framework provides extensive responsive utilities
+// (e.g., .d-none, .d-md-block, .col-md-6, .text-center, etc.).
+// This file should primarily contain custom responsive adjustments
+// for InfluenceGen portal specific components or layouts if Odoo's
+// utilities are not sufficient or need overrides.
+
+// Common Breakpoints (align with Bootstrap 5 or customize)
+// Small devices (landscape phones, 576px and up)
+// @media (min-width: 576px) { ... }
+
+// Medium devices (tablets, 768px and up)
+// @media (min-width: 768px) { ... }
+
+// Large devices (desktops, 992px and up)
+// @media (min-width: 992px) { ... }
+
+// Extra large devices (large desktops, 1200px and up)
+// @media (min-width: 1200px) { ... }
+
+// Example: Adjusting portal navigation for smaller screens
+// This might be handled by Odoo's portal layout or website navbar by default.
+// If custom navigation is built:
+// .o_influence_gen_portal {
+//   .portal-navigation-main {
+//     @media (max-width: 991.98px) { // Below large breakpoint
+//       // Example: Collapse to a hamburger menu
+//       // display: none; // Hide desktop nav
+//     }
+//   }
+//   .portal-navigation-mobile-toggle {
+//     @media (min-width: 992px) {
+//       // display: none; // Hide mobile toggle on desktop
+//     }
+//   }
+// }
+
+// Example: Responsive adjustments for a custom dashboard widget
+// .igp-dashboard-widget {
+//   @media (max-width: 767.98px) { // Below medium breakpoint
+//     // Make widgets full width on smaller screens
+//     flex-basis: 100%;
+//     margin-bottom: 1rem;
+//   }
+// }
+
+// Example: Font size adjustments for smaller screens
+// body.o_influence_gen_portal {
+//   @media (max-width: 575.98px) { // Extra small devices
+//     font-size: 14px; // Slightly smaller base font size
+//     h1 {
+//       font-size: 2rem; // Adjust heading sizes
+//     }
+//   }
+// }
+
+// Example: Form layouts for onboarding on mobile
+// .onboarding-form-container {
+//   .form-group {
+//     @media (max-width: 767.98px) {
+//       // Stack form elements if they are side-by-side on desktop
+//       flex-direction: column;
+//       align-items: flex-start;
+//
+//       label, input, select, textarea {
+//         width: 100%;
+//         margin-bottom: 0.5rem;
+//       }
+//     }
+//   }
+// }
+
+// Ensure content like tables are scrollable on small screens if they overflow
+.table-responsive-igp { // Custom class if needed beyond Bootstrap's .table-responsive
+  @media (max-width: 767.98px) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+// Adjustments for specific components like AI Image Generator on mobile
+// .ai-image-generator-component {
+//   .parameter-controls {
+//     @media (max-width: 767.98px) {
+//       // Stack controls vertically
+//       flex-direction: column;
+//       .param-group {
+//         width: 100%;
+//         margin-bottom: 10px;
+//       }
+//     }
+//   }
+//   .generated-images-grid {
+//      @media (max-width: 575.98px) {
+//        // Single column image display
+//        grid-template-columns: 1fr;
+//      }
+//   }
+// }
+
+// Placeholder for further responsive styles

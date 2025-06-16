@@ -1,0 +1,61 @@
+// InfluenceGen Portal Main SCSS
+
+// 1. Odoo Variables & Mixins (Import Odoo's bootstrap and utilities)
+// Odoo's `web.assets_frontend` already includes Bootstrap variables and mixins.
+// We can override or extend them if needed.
+// For example, to use Odoo's variables:
+// @import "~@web/legacy/scss/primary_variables.scss";
+// @import "~@web/legacy/scss/mixins.scss";
+
+// 2. Custom Variables (if any, for InfluenceGen specific branding)
+// @import "variables"; // Example: if you have a _variables.scss
+
+// 3. Base/Global Styles for the Portal
+// Example: Specific body typography, link styles for the portal context.
+// body.o_influence_gen_portal {
+//   font-family: 'YourPortalFont', sans-serif;
+// }
+// .o_influence_gen_portal a {
+//   color: var(--igp-primary-color, o-color('primary')); // Using CSS var or Odoo color
+//   &:hover {
+//     color: var(--igp-primary-hover-color, darken(o-color('primary'), 10%));
+//   }
+// }
+
+// 4. Layout Styles (Adjustments to Odoo's portal layout if needed)
+// @import "layout"; // Example: if you have a _layout.scss for header/footer tweaks
+
+// 5. Component-Specific Styles
+// These would be styles for custom OWL components or specific QWeb template structures.
+// If components have their own SCSS files, they might be imported here or directly in assets.
+// @import "components/file_uploader";
+// @import "components/ai_image_generator";
+// @import "components/dashboard_widgets";
+// @import "components/campaign_card";
+
+// 6. Page-Specific Styles
+// Styles for particular portal pages if they require unique layouts beyond components.
+// @import "pages/profile";
+// @import "pages/campaign_discovery";
+// @import "pages/onboarding";
+
+// 7. Accessibility Styles (Imported - ensure this file exists and is populated)
+@import "accessibility";
+
+// 8. Responsive Styles (Imported - ensure this file exists and is populated)
+@import "responsive";
+
+// Utility Classes (if any specific to this portal)
+// .igp-text-highlight {
+//   color: o-color('info');
+//   font-weight: bold;
+// }
+
+// Example of a global portal style
+.o_portal_wrap.o_influence_gen_portal {
+    // Styles specific to the InfluenceGen portal wrapper
+    h1, h2, h3, h4, h5, h6 {
+        // Example: Define specific heading styles for the portal
+        // color: #333;
+    }
+}

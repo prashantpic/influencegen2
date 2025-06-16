@@ -1,0 +1,85 @@
+// InfluenceGen Portal Accessibility SCSS
+// WCAG 2.1 AA Compliance Styles
+
+// 1. Visually Hidden Class (for screen reader only text)
+// Odoo provides .o_force_visually_hidden, but if a custom one is needed:
+.igp-sr-only,
+.sr-only { // Common alias
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important; // Use -1px to prevent any layout shift
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important; // Keep text on one line
+  border: 0 !important;
+}
+
+// 2. Focus Indicators
+// Ensure highly visible focus indicators for all focusable elements.
+// Odoo's default Bootstrap focus indicators are generally good, but can be enhanced.
+// This targets :focus-visible for modern browsers to avoid outline on mouse click,
+// while still providing for keyboard users. Fallback to :focus if needed.
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid Highlight; // Standard system highlight color
+  outline: 2px solid -webkit-focus-ring-color; // Webkit specific
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.4); // Softer glow, example
+}
+
+// Example for dark backgrounds, might need an inverted focus style
+// [data-bs-theme="dark"] {
+//   a:focus-visible,
+//   button:focus-visible,
+//   input:focus-visible,
+//   select:focus-visible,
+//   textarea:focus-visible,
+//   [tabindex]:not([tabindex="-1"]):focus-visible {
+//     outline-color: #fff; // Adjust for dark themes
+//     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+//   }
+// }
+
+
+// 3. Information Not Conveyed by Color Alone
+// Example: Ensure links in a block of text are underlined for non-color differentiation
+.igp-text-block-with-links {
+  a {
+    text-decoration: underline;
+    &:hover, &:focus {
+      text-decoration: none; // Common hover effect
+    }
+  }
+}
+
+// 4. Contrast
+// While contrast is primarily a design choice for color palettes,
+// specific component overrides might need checks here.
+// Example: If a custom component has low contrast text:
+// .my-custom-component-low-contrast {
+//   color: #777; // Too low on white background
+//   background-color: #fff;
+//   // To fix:
+//   // color: #555; // Better contrast
+// }
+
+// 5. ARIA Live Regions (Styling if needed, typically just sr-only)
+// The ig-sr-live-region from accessibility_utils.js is typically visually hidden.
+// No specific styling needed unless it were to be made partially visible for debugging.
+
+// 6. Pointer Target Size
+// Ensure interactive elements have adequate target size (WCAG 2.5.5 - AAA, but good practice for AA)
+// This is more a design/layout concern but could involve SCSS for min-width/height.
+// button, .btn, input[type="button"], input[type="submit"], input[type="reset"] {
+//   min-height: 44px;
+//   min-width: 44px;
+//   padding: 0.5rem 1rem; // Ensure padding contributes to clickable area
+// }
+
+// Placeholder for future accessibility-specific styles

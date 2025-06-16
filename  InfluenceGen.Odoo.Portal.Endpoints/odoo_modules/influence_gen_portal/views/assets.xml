@@ -1,0 +1,35 @@
+<odoo>
+    <data>
+        <template id="assets_frontend_influence_gen" name="InfluenceGen Portal Assets" inherit_id="web.assets_frontend">
+            <xpath expr="." position="inside">
+                <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/portal_main.scss"/>
+                <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/accessibility.scss"/>
+                <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/responsive.scss"/>
+                <!-- Add component-specific SCSS if they are standalone, e.g. -->
+                <!-- <link rel="stylesheet" type="text/scss" href="/influence_gen_portal/static/src/scss/components/ai_image_generator.scss"/> -->
+
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/services/portal_service.js"></script>
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/services/ai_image_service.js"></script>
+
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/utils/accessibility_utils.js"></script>
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/utils/localization_utils.js"></script>
+                
+                <!-- OWL Components (JS) -->
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/components/abstract_form_component.js"></script>
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/components/file_uploader_component.js"></script>
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/components/ai_image_generator_component.js"></script>
+                
+                <!-- Main portal JS, if any orchestrating logic -->
+                <script type="text/javascript" src="/influence_gen_portal/static/src/js/portal_main.js"></script>
+            </xpath>
+        </template>
+
+        <template id="assets_qweb_influence_gen" name="InfluenceGen Portal QWeb Assets" inherit_id="web.assets_qweb">
+            <xpath expr="." position="inside">
+                <template src="/influence_gen_portal/static/src/xml/components/abstract_form_component.xml"/>
+                <template src="/influence_gen_portal/static/src/xml/components/file_uploader_component.xml"/>
+                <template src="/influence_gen_portal/static/src/xml/components/ai_image_generator_component.xml"/>
+            </xpath>
+        </template>
+    </data>
+</odoo>
