@@ -1,0 +1,79 @@
+<odoo>
+    <data>
+        <template id="portal_campaign_discovery_list" name="Campaign Discovery">
+            <t t-call="portal.portal_layout">
+                <t t-set="breadcrumbs" t-value="[
+                    {'url': '/my/dashboard', 'text': _t('Dashboard')},
+                    {'url': '/my/campaigns', 'text': _t('Campaigns')}
+                ]"/>
+                 <t t-call="portal.portal_search_panel">
+                     <t t-set="title">
+                        <h1 class="mb-0"><t t-esc="_t('Discover Campaigns')"/></h1>
+                    </t>
+                </t>
+
+                <div class="container mt-4">
+                    <div class="row mb-3">
+                        <div class="col-lg-12">
+                            <form action="/my/campaigns" method="get" class="form-inline">
+                                <div class="row g-2">
+                                    <div class="col-md-5">
+                                        <input type="text" name="search" class="form-control" t-att-value="search" placeholder="Search campaigns..."/>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select name="filter_niche" class="form-select">
+                                            <option value=""><t t-esc="_t('All Niches')"/></option>
+                                            <t t-foreach="available_niches or []" t-as="niche">
+                                                <option t-att-value="niche.id" t-att-selected="niche.id == filter_niche"><t t-esc="niche.name"/></option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                         <select name="sort_by" class="form-select">
+                                            <option value="deadline_asc" t-att-selected="sort_by == 'deadline_asc'"><t t-esc="_t('Deadline Asc')"/></option>
+                                            <option value="deadline_desc" t-att-selected="sort_by == 'deadline_desc'"><t t-esc="_t('Deadline Desc')"/></option>
+                                            <option value="compensation_desc" t-att-selected="sort_by == 'compensation_desc'"><t t-esc="_t('Compensation Desc')"/></option>
+                                            <option value="recent" t-att-selected="sort_by == 'recent' or not sort_by"><t t-esc="_t('Recently Added')"/></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-primary w-100"><i class="fa fa-search me-1"/> <t t-esc="_t('Filter')"/></button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div t-if="not campaigns" class="alert alert-info" role="alert">
+                        <t t-esc="_t('No campaigns found matching your criteria. Please check back later or adjust your filters.')"/>
+                    </div>
+
+                    <div class="row">
+                        <t t-foreach="campaigns" t-as="campaign">
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100 shadow-sm campaign-card">
+                                    <div class="card-body d-flex flex-column">
+                                        <h5 class="card-title"><a t-attf-href="/my/campaigns/#{campaign.id}" class="text-decoration-none"><t t-esc="campaign.name"/></a></h5>
+                                        <h6 class="card-subtitle mb-2 text-muted"><t t-esc="campaign.brandClient"/></h6>
+                                        <p class="card-text flex-grow-1"><t t-esc="campaign.description_short or campaign.description[:100] + '...'"/> </p>
+                                        <ul class="list-unstyled">
+                                            <li><strong><t t-esc="_t('Compensation:')"/></strong> <t t-esc="campaign.compensationModel_display"/> <t t-if="campaign.compensation_teaser"> (<t t-esc="campaign.compensation_teaser"/>)</t></li>
+                                            <li><strong><t t-esc="_t('Deadline:')"/></strong> <span t-field="campaign.submissionDeadline" t-options='{"widget": "date"}'/></li>
+                                        </ul>
+                                        <a t-attf-href="/my/campaigns/#{campaign.id}" class="btn btn-primary mt-auto"><t t-esc="_t('View Details')"/></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <t t-if="pager">
+                        <div class="mt-3">
+                            <t t-call="portal.pager"/>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>

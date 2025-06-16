@@ -1,0 +1,130 @@
+<odoo>
+    <data>
+        <template id="portal_dashboard" name="Influencer Dashboard">
+            <t t-call="portal.portal_layout">
+                <t t-set="breadcrumbs" t-value="[
+                    {'url': '/my/dashboard', 'text': _t('Dashboard')}
+                ]"/>
+                <t t-call="portal.portal_search_panel">
+                    <t t-set="title">
+                        <h1 class="mb-0"><t t-esc="_t('My Dashboard')"/></h1>
+                    </t>
+                </t>
+
+                <div class="container o_portal_dashboard">
+                    <div class="row mt-4">
+                        <!-- Summary Cards -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-bullhorn me-2"/> <t t-esc="_t('Active Campaigns')"/></h5>
+                                    <p class="card-text display-4 fw-bold">
+                                        <t t-esc="summary_data.get('active_campaigns_count', 0)"/>
+                                    </p>
+                                    <a href="/my/campaigns" class="btn btn-sm btn-outline-primary"><t t-esc="_t('View Campaigns')"/></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-tasks me-2"/> <t t-esc="_t('Pending Tasks')"/></h5>
+                                    <p class="card-text display-4 fw-bold">
+                                        <t t-esc="summary_data.get('pending_tasks_count', 0)"/>
+                                    </p>
+                                    <t t-if="summary_data.get('pending_kyc', False)">
+                                        <a href="/my/kyc/submit" class="btn btn-sm btn-warning mb-1 d-block"><t t-esc="_t('Complete KYC')"/></a>
+                                    </t>
+                                    <t t-if="summary_data.get('pending_content_submissions_count', 0) > 0">
+                                         <a href="/my/campaigns?filter_by=active_participation" class="btn btn-sm btn-info d-block"><t t-raw="_t('Submit Content (%s)', summary_data.get('pending_content_submissions_count', 0))"/></a>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fa fa-magic me-2"/> <t t-esc="_t('AI Image Quota')"/></h5>
+                                    <p class="card-text display-4 fw-bold">
+                                        <t t-esc="summary_data.get('ai_quota_remaining', 0)"/> / <t t-esc="summary_data.get('ai_quota_total', 0)"/>
+                                    </p>
+                                    <a href="/my/ai-image-generator" class="btn btn-sm btn-outline-secondary"><t t-esc="_t('Generate Images')"/></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending Tasks & Notifications -->
+                    <div class="row mt-3">
+                        <div class="col-md-6 mb-4">
+                            <h4 class="mb-3"><t t-esc="_t('Tasks &amp; Actions')"/></h4>
+                            <div class="list-group">
+                                <t t-if="not summary_data.get('pending_tasks_count', 0)">
+                                    <div class="list-group-item text-muted">
+                                        <t t-esc="_t('No pending tasks. Well done!')"/>
+                                    </div>
+                                </t>
+                                <t t-if="summary_data.get('pending_kyc', False)">
+                                    <a href="/my/kyc/submit" class="list-group-item list-group-item-action list-group-item-warning">
+                                        <i class="fa fa-id-card me-2"/> <t t-esc="_t('Your KYC information needs completion or review.')"/>
+                                    </a>
+                                </t>
+                                <t t-if="summary_data.get('pending_bank_account_setup', False)">
+                                     <a href="/my/bank/setup" class="list-group-item list-group-item-action list-group-item-info">
+                                        <i class="fa fa-university me-2"/> <t t-esc="_t('Please set up your bank account details for payments.')"/>
+                                    </a>
+                                </t>
+                                <t t-foreach="summary_data.get('pending_content_submissions', [])" t-as="pending_sub">
+                                    <a t-attf-href="/my/campaigns/submit/#{pending_sub.application_id}" class="list-group-item list-group-item-action list-group-item-info">
+                                        <i class="fa fa-upload me-2"/> <t t-esc="_t('Submit content for campaign: %s', pending_sub.campaign_name)"/>
+                                    </a>
+                                </t>
+                                <t t-if="summary_data.get('pending_tos_agreement', False)">
+                                    <a href="/my/consent" class="list-group-item list-group-item-action list-group-item-danger">
+                                        <i class="fa fa-file-contract me-2"/> <t t-esc="_t('New Terms of Service or Privacy Policy require your attention.')"/>
+                                    </a>
+                                </t>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <h4 class="mb-3"><t t-esc="_t('Recent Notifications')"/></h4>
+                            <div class="list-group">
+                                <t t-if="not summary_data.get('notifications', [])">
+                                    <div class="list-group-item text-muted">
+                                        <t t-esc="_t('No new notifications.')"/>
+                                    </div>
+                                </t>
+                                <t t-foreach="summary_data.get('notifications', [])" t-as="notification">
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1"><t t-esc="notification.subject"/></h6>
+                                            <small><t t-esc="notification.date" t-options='{"widget": "datetime"}'/></small>
+                                        </div>
+                                        <p class="mb-1" t-out="notification.body"/>
+                                        <small t-if="notification.link"><a t-att-href="notification.link" class="text-primary"><t t-esc="_t('View Details')"/></a></small>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h4 class="mb-3"><t t-esc="_t('Quick Links')"/></h4>
+                            <div class="list-group list-group-horizontal-md flex-wrap">
+                                <a href="/my/profile" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-user me-2"/> <t t-esc="_t('My Profile')"/></a>
+                                <a href="/my/campaigns" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-bullhorn me-2"/> <t t-esc="_t('Discover Campaigns')"/></a>
+                                <a href="/my/ai-image-generator" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-magic me-2"/> <t t-esc="_t('AI Image Generator')"/></a>
+                                <a href="/my/payments" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-credit-card me-2"/> <t t-esc="_t('Payment Information')"/></a>
+                                <a href="/my/performance" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-line-chart me-2"/> <t t-esc="_t('My Performance')"/></a>
+                                <a href="/my/consent" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-check-square me-2"/> <t t-esc="_t('Terms &amp; Consent')"/></a>
+                                <a href="/help/influencegen" class="list-group-item list-group-item-action col-md-3 col-12"><i class="fa fa-question-circle me-2"/> <t t-esc="_t('Help &amp; Documentation')"/></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>
