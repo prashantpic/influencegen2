@@ -3,5 +3,7 @@
 from . import controllers
 from . import services
 from . import utils
-# If this module defines models directly, uncomment:
-# from . import models
+
+# Models are assumed to be in a separate base module (e.g., influence_gen_base_models)
+# and are not imported here unless this module specifically extends them or adds new ones.
+# Based on the SDS, this module focuses on endpoints and services, not defining primary models.

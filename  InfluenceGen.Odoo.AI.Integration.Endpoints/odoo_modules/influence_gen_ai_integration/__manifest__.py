@@ -4,20 +4,20 @@
     'version': '18.0.1.0.0',
     'summary': 'Manages Odoo-side integration with N8N for AI image generation.',
     'author': 'SSS-AI',
-    'website': 'https://your_company_website.com',
+    'website': 'https_your_company_website.com', # Replace with actual
     'category': 'InfluenceGen/Integrations',
-    'license': 'AGPL-3',
+    'license': 'AGPL-3', # Or your chosen license
     'depends': [
         'base',
         'web',
         'mail',
-        'influence_gen_base_models',
+        'influence_gen_base_models', # Defines AIImageGenerationRequest, GeneratedImage etc.
     ],
     'data': [
+        'security/ir.model.access.csv',
         'security/data/ir_config_parameter_data.xml',
-        # 'security/ir.model.access.csv', # Add if new models with UI access are defined
     ],
     'installable': True,
-    'application': False,
+    'application': False, # This is a technical/connector module
     'auto_install': False,
 }
