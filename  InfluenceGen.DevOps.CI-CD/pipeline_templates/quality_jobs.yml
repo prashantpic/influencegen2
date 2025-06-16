@@ -1,0 +1,80 @@
+# GitLab CI/CD Template for Quality Check Jobs
+# This file provides standardized templates for running code quality checks
+# such as linting, static analysis, and security scans.
+# These templates are intended to be included and extended in the main .gitlab-ci.yml file.
+
+# Template for running linters
+# Expects LINT_TARGET_PATH and LINT_REPORTS_DIR to be set by the extending job.
+.run_linting_template:
+  stage: validate # Can also be 'quality_scan' depending on pipeline structure
+  script:
+    - echo "Running linters on path: $LINT_TARGET_PATH..."
+    - mkdir -p $LINT_REPORTS_DIR # Ensure report directory exists
+    - bash $CI_PROJECT_DIR/scripts/quality/run_linting.sh
+  allow_failure: true # Initially allow to fail; can be overridden to 'false' in extending job or once stable
+  artifacts:
+    when: always # Collect reports regardless of job success/failure
+    paths:
+      - $LINT_REPORTS_DIR/
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor and access to the odoo-build-env image
+
+# Template for running static analysis (e.g., SonarQube)
+# Expects SONAR_PROJECT_KEY, SONAR_HOST_URL, SONAR_TOKEN to be available (usually as CI/CD variables).
+# Specific script execution will depend on the tool.
+.run_static_analysis_template:
+  stage: quality_scan
+  script:
+    - echo "Running static analysis..."
+    # Example for SonarScanner CLI (assuming it's installed in the image or downloaded)
+    # - sonar-scanner \
+    #    -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+    #    -Dsonar.sources=. \
+    #    -Dsonar.host.url=$SONAR_HOST_URL \
+    #    -Dsonar.login=$SONAR_TOKEN
+    - echo "Static analysis tool execution to be implemented here."
+    - mkdir -p static_analysis_reports/
+    - echo "Static analysis report placeholder" > static_analysis_reports/static_analysis_report.txt
+  allow_failure: true # Can be set based on quality gate status from SonarQube or similar
+  artifacts:
+    when: always
+    paths:
+      - static_analysis_reports/
+    expire_in: 1 week
+  tags:
+    - docker
+
+# Template for running security scans (e.g., Trivy for containers, Snyk for dependencies)
+# Specific script execution will depend on the tool(s) used.
+# Expects SECURITY_REPORTS_DIR to be set by the extending job.
+.run_security_scans_template:
+  stage: quality_scan
+  script:
+    - echo "Running security scans..."
+    - mkdir -p $SECURITY_REPORTS_DIR
+    # Example for Trivy image scan (if an image was built in a previous stage)
+    # Needs IMAGE_TO_SCAN variable defined by extending job.
+    # - if [ -n "$IMAGE_TO_SCAN" ]; then
+    #     trivy image --exit-code 0 --format template --template "@contrib/gitlab.tpl" -o $SECURITY_REPORTS_DIR/gl-container-scanning-report.json $IMAGE_TO_SCAN
+    #     trivy image --exit-code 0 --format table -o $SECURITY_REPORTS_DIR/trivy_scan_report.txt $IMAGE_TO_SCAN
+    #   else
+    #     echo "No IMAGE_TO_SCAN variable set, skipping container scan."
+    #   fi
+    # Example for Snyk (needs SNYK_TOKEN CI variable)
+    # - snyk test --all-projects --sarif-file-output=$SECURITY_REPORTS_DIR/snyk.sarif || true
+    # - snyk code test --sarif-file-output=$SECURITY_REPORTS_DIR/snyk-code.sarif || true
+    - echo "Security scanning tool execution to be implemented here."
+    - echo "Security scan report placeholder" > $SECURITY_REPORTS_DIR/security_scan_report.txt
+  allow_failure: true # Or set based on severity of findings. Can be overridden.
+  artifacts:
+    when: always
+    paths:
+      - $SECURITY_REPORTS_DIR/
+    # Example for GitLab integrated reports
+    # reports:
+    #   container_scanning: $SECURITY_REPORTS_DIR/gl-container-scanning-report.json
+    #   sast: $SECURITY_REPORTS_DIR/snyk.sarif # Or other SAST report format
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor and necessary security tools installed

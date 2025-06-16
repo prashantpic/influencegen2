@@ -1,0 +1,102 @@
+# GitLab CI/CD Template for Deployment Jobs
+# This file provides standardized templates for deploying application artifacts
+# and training materials to various environments (Dev, Staging, Production).
+# These templates integrate with deployment scripts and change management for production.
+
+# Template for deploying to the Development environment
+# Extending job should define rules for when this runs (e.g., feature branches, develop).
+# Expects environment variables for dev server access and artifact names to be set.
+.deploy_to_dev_template:
+  stage: deploy_dev
+  script:
+    - echo "Deploying to Development environment..."
+    - bash $CI_PROJECT_DIR/scripts/deploy/to_dev.sh
+  environment:
+    name: development/$CI_COMMIT_REF_SLUG
+    url: http://dev-$CI_COMMIT_REF_SLUG.influencegen.com # Example URL, adjust as needed
+    on_stop: stop_dev_environment # Optional: Define a job to clean up dynamic environments
+  tags:
+    - docker # Assumes runner has network access to dev environment and necessary tools (ssh, scp)
+
+# Template for deploying to the Staging/UAT environment
+# Typically runs on 'develop' branch or manually triggered.
+# Expects environment variables for staging server access and artifact names.
+.deploy_to_staging_template:
+  stage: deploy_staging
+  script:
+    - echo "Deploying to Staging environment..."
+    - bash $CI_PROJECT_DIR/scripts/deploy/to_staging.sh
+  environment:
+    name: staging
+    url: http://staging.influencegen.com # Example URL
+  when: manual # Default to manual, can be overridden by rules in extending job
+  allow_failure: false # Staging deployments should succeed
+  tags:
+    - docker
+
+# Template for deploying to the Production environment
+# Strictly manual trigger, runs only on 'main' branch or tags.
+# Integrates change management checks.
+# Expects PROD_* env vars, artifact names, and CHANGE_REQUEST_ID (for Jira integration).
+.deploy_to_production_template:
+  stage: deploy_prod
+  script:
+    - echo "Starting Production deployment process..."
+    # Check for change management approval (REQ-OP-CM-004)
+    # This script should exit with non-zero if approval is not met.
+    - |
+      if [ "$ENABLE_JIRA_INTEGRATION_FOR_PROD_DEPLOY" == "true" ] && [ -n "$CHANGE_REQUEST_ID" ]; then
+        echo "Checking JIRA issue $CHANGE_REQUEST_ID for approval..."
+        bash $CI_PROJECT_DIR/scripts/utils/jira_integrate.sh check_approval "$CHANGE_REQUEST_ID"
+      elif [ "$ENABLE_JIRA_INTEGRATION_FOR_PROD_DEPLOY" == "true" ] && [ -z "$CHANGE_REQUEST_ID" ]; then
+        echo "ERROR: JIRA integration is enabled, but CHANGE_REQUEST_ID is not set. Failing deployment."
+        exit 1
+      else
+        echo "JIRA integration for production deployment is disabled or CHANGE_REQUEST_ID not provided. Proceeding with manual approval assumption."
+      fi
+    - echo "Change management check passed (or skipped). Proceeding with production deployment..."
+    - bash $CI_PROJECT_DIR/scripts/deploy/to_production.sh
+  environment:
+    name: production
+    url: http://influencegen.com # Example URL
+  when: manual # Always manual for production
+  allow_failure: false # Production deployments must succeed
+  # Rules should be defined in the job extending this template to restrict to main/tags
+  # e.g.,
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_TAG'
+  #     when: manual
+  #   - when: never
+  tags:
+    - docker
+
+# Template for deploying training materials (REQ-DTS-001)
+# Typically runs on 'main' branch or specific tags.
+# Extending job should set dependencies if training materials are built in a prior step.
+.deploy_training_materials_template:
+  stage: deploy_training_materials # As per SDS section 5.1
+  script:
+    - echo "Deploying training materials..."
+    - bash $CI_PROJECT_DIR/scripts/deploy/deploy_training_materials.sh
+  # Rules should be defined in the job extending this template
+  # e.g.,
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_TAG'
+  #     when: on_success # Or manual, depending on policy
+  #   - when: never
+  tags:
+    - docker # Assumes runner has access to deployment target (S3/SSH) and tools (aws cli, rsync)
+
+# Example job for stopping dynamic development environments (if created)
+# .stop_dev_environment_template:
+#   stage: .post # Or a cleanup stage
+#   script:
+#     - echo "Stopping/cleaning up dynamic environment $CI_ENVIRONMENT_NAME"
+#     # Add script here to teardown environment (e.g., delete resources)
+#   environment:
+#     name: development/$CI_COMMIT_REF_SLUG
+#     action: stop
+#   when: manual # Or triggered automatically
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE == "merged"'
+#       when: manual # Or on_success to auto-cleanup after MR merge

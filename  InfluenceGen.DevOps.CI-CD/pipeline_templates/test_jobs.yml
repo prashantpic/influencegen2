@@ -1,0 +1,65 @@
+# GitLab CI/CD Template for Test Jobs
+# This file provides standardized templates for running various types of tests
+# such as unit tests, integration tests, and UI automation tests.
+# These templates are intended to be included and extended in the main .gitlab-ci.yml file.
+
+# Template for running unit tests
+# Expects TEST_REPORTS_OUTPUT_DIR to be set by the extending job for JUnit reports.
+# Expects ODOO_MODULES_TO_TEST, ODOO_DB_NAME to be set for Odoo unit tests.
+# Extending job should specify dependencies (e.g., build artifacts).
+.run_unit_tests_template:
+  stage: test
+  script:
+    - echo "Running unit tests..."
+    - mkdir -p $TEST_REPORTS_OUTPUT_DIR # Ensure report directory exists
+    - bash $CI_PROJECT_DIR/scripts/test/run_unit_tests.sh
+  artifacts:
+    when: always # Collect reports even if tests fail
+    reports:
+      junit: $TEST_REPORTS_OUTPUT_DIR/gl-junit-report.xml # Path to the JUnit XML report
+    paths:
+      - $TEST_REPORTS_OUTPUT_DIR/
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor and access to the odoo-build-env image
+
+# Template for running integration tests
+# Expects TEST_ENVIRONMENT_URL, TEST_SUITE_PATH, INTEGRATION_TEST_REPORTS_DIR to be set by the extending job.
+# Extending job should specify dependencies (e.g., deployment to a test environment).
+.run_integration_tests_template:
+  stage: test
+  script:
+    - echo "Running integration tests against $TEST_ENVIRONMENT_URL..."
+    - mkdir -p $INTEGRATION_TEST_REPORTS_DIR # Ensure report directory exists
+    - bash $CI_PROJECT_DIR/scripts/test/run_integration_tests.sh
+  artifacts:
+    when: always # Collect reports even if tests fail
+    reports:
+      junit: $INTEGRATION_TEST_REPORTS_DIR/gl-integration-junit-report.xml # Path to JUnit XML
+    paths:
+      - $INTEGRATION_TEST_REPORTS_DIR/
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor
+
+# Template for running UI automation tests (if applicable)
+# Expects UI_TEST_ENVIRONMENT_URL, UI_TEST_SUITE_PATH, UI_TEST_REPORTS_DIR to be set.
+# Extending job should specify dependencies (e.g., deployment to a test environment).
+.run_ui_automation_tests_template:
+  stage: test
+  script:
+    - echo "Running UI automation tests against $UI_TEST_ENVIRONMENT_URL..."
+    - mkdir -p $UI_TEST_REPORTS_DIR # Ensure report directory exists
+    # Placeholder for actual UI test execution command
+    # e.g., bash $CI_PROJECT_DIR/scripts/test/run_ui_tests.sh $UI_TEST_SUITE_PATH
+    - echo "UI test execution script to be implemented."
+    - echo "<testsuite name='ui_automation_placeholder' tests='1'><testcase name='placeholder_test' status='run'/></testsuite>" > $UI_TEST_REPORTS_DIR/gl-ui-junit-report.xml # Placeholder report
+  artifacts:
+    when: always
+    reports:
+      junit: $UI_TEST_REPORTS_DIR/gl-ui-junit-report.xml
+    paths:
+      - $UI_TEST_REPORTS_DIR/
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor

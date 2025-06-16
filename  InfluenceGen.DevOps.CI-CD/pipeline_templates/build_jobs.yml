@@ -1,0 +1,69 @@
+# GitLab CI/CD Template for Build Jobs
+# This file provides standardized templates for building various artifacts
+# like Odoo modules, N8N workflows, and Docker images.
+# These templates are intended to be included and extended in the main .gitlab-ci.yml file.
+
+# Template for building Odoo custom modules
+# Expected by script:
+# $1 (source_dir): Path to the checked-out Odoo modules repository.
+# $2 (output_artifact_name): Name of the output zip/tar.gz file.
+# Expects ODOO_MODULES_SRC_DIR and ODOO_MODULES_ARTIFACT_NAME variables to be set by the extending job.
+.build_odoo_modules_template:
+  stage: build
+  script:
+    - echo "Building Odoo modules..."
+    - bash $CI_PROJECT_DIR/scripts/build/odoo_modules.sh $ODOO_MODULES_SRC_DIR $ODOO_MODULES_ARTIFACT_NAME
+  artifacts:
+    paths:
+      - $ODOO_MODULES_ARTIFACT_NAME # The name should be set by the job extending this template
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor and access to the odoo-build-env image
+
+# Template for building N8N workflows
+# Expected by script:
+# $1 (source_dir): Path to the checked-out N8N workflows repository.
+# $2 (output_artifact_name): Name of the output zip file.
+# Expects N8N_WORKFLOWS_SRC_DIR and N8N_WORKFLOWS_ARTIFACT_NAME variables to be set by the extending job.
+.build_n8n_workflows_template:
+  stage: build
+  script:
+    - echo "Building N8N workflows package..."
+    - bash $CI_PROJECT_DIR/scripts/build/n8n_workflows.sh $N8N_WORKFLOWS_SRC_DIR $N8N_WORKFLOWS_ARTIFACT_NAME
+  artifacts:
+    paths:
+      - $N8N_WORKFLOWS_ARTIFACT_NAME # The name should be set by the job extending this template
+    expire_in: 1 week
+  tags:
+    - docker # Assumes a runner with Docker executor
+
+# Template for building Docker images
+# Expects the following variables to be set by the extending job:
+# DOCKERFILE_PATH_PARAM: Path to the Dockerfile.
+# IMAGE_NAME_PARAM: Name for the Docker image (e.g., my-app).
+# IMAGE_TAG_PARAM: Tag for the Docker image (e.g., $CI_COMMIT_SHA, latest).
+# REGISTRY_URL_PARAM (Optional): URL of the Docker registry (e.g., $CI_REGISTRY_IMAGE). If set, image will be pushed.
+# BUILD_CONTEXT_PARAM (Optional, default: .): Docker build context path.
+.build_docker_image_template:
+  stage: build
+  image: docker:26.1.3 # Use a specific Docker version
+  services:
+    - docker:26.1.3-dind # Docker-in-Docker service
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs" # Required for Docker-in-Docker
+    # DOCKER_HOST: tcp://docker:2376 # For dind service
+    # DOCKER_DRIVER: overlay2 # Recommended storage driver for dind
+  before_script:
+    - echo "Logging into Docker registry if REGISTRY_URL_PARAM is set and CI_REGISTRY_USER is available..."
+    - |
+      if [ -n "$REGISTRY_URL_PARAM" ] && [ -n "$CI_REGISTRY_USER" ]; then
+        docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+      elif [ -n "$REGISTRY_URL_PARAM" ] && [ -n "$DOCKER_HUB_USER" ]; then
+        docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PASSWORD" # For Docker Hub or other registries
+      fi
+  script:
+    - echo "Building Docker image $IMAGE_NAME_PARAM:$IMAGE_TAG_PARAM from $DOCKERFILE_PATH_PARAM..."
+    - export BUILD_CONTEXT_PATH=${BUILD_CONTEXT_PARAM:-.} # Default build context to current directory if not set
+    - bash $CI_PROJECT_DIR/scripts/build/docker_images.sh # Script will use env vars
+  tags:
+    - docker # Assumes a runner with Docker executor and dind capabilities
