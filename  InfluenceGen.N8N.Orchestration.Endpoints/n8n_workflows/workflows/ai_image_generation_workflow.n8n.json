@@ -1,0 +1,319 @@
+```json
+{
+  "name": "AI Image Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "={{ $env.N8N_WEBHOOK_PATH_AI_IMAGE }}",
+        "responseMode": "onReceived",
+        "responseCode": "200",
+        "responseData": "json",
+        "responseBody": "={\n    \"status\": \"received\",\n    \"message\": \"AI image generation request queued.\",\n    \"correlationId\": \"{{$json.body.correlation_id}}\"\n}",
+        "headerAuth": "={{$credentials[$env.N8N_WEBHOOK_AUTH_ODOO_CREDENTIAL_NAME].data}}",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "id": "21c16999-7096-4180-87e8-7822f7c0a96d",
+      "name": "Odoo Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "={{ $env.N8N_WEBHOOK_AUTH_ODOO_CREDENTIAL_NAME }}",
+          "name": "={{ $env.N8N_WEBHOOK_AUTH_ODOO_CREDENTIAL_NAME }}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const InfluenceGenN8NUtilsLogging = {\n    formatLogEntry: (level, message, context) => {\n        const logEntry = {\n            timestamp: new Date().toISOString(),\n            level: level,\n            message: message,\n            n8n: {},\n            app: {\n                correlationId: null,\n                nodeName: null,\n            },\n            payload: null,\n        };\n\n        if (context) {\n            if (context.workflowInstance) {\n                logEntry.n8n.executionId = context.workflowInstance.id;\n                logEntry.n8n.workflowId = context.workflowInstance.workflowId;\n            }\n            logEntry.app.nodeName = context.nodeName || null;\n            logEntry.app.correlationId = context.correlationId || null;\n\n            if (context.data) {\n                logEntry.payload = { ...(logEntry.payload || {}), ...context.data };\n            }\n        }\n        return logEntry;\n    },\n    logInfo: (workflowInstance, nodeName, correlationId, message, data = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"INFO\", message, context);\n        console.log(JSON.stringify(logEntry));\n    },\n    logError: (workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data: errorDetails };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"ERROR\", errorMessage, context);\n        console.log(JSON.stringify(logEntry));\n    }\n};\nconst logInfo = InfluenceGenN8NUtilsLogging.logInfo;\nconst logError = InfluenceGenN8NUtilsLogging.logError;\n\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\nconst body = items[0].json.body;\n\nif (!body || !body.correlation_id) {\n    logError(wfInstance, nodeName, null, \"Main Workflow: Missing correlation_id in Odoo request.\", { requestBody: body });\n    // Setting an error object that can be checked by an IF node, or throw to go to error workflow path.\n    // As per SDS, throwing error to halt and route to error handling.\n    items[0].json.errorHandled = true; // Mark that error is being explicitly handled for routing\n    throw new Error(\"Missing correlation_id in Odoo request. Cannot proceed.\");\n}\n\nconst correlationId = body.correlation_id;\nitems[0].json.correlationId = correlationId; // Ensure it's top-level for easy access\n\nlogInfo(wfInstance, nodeName, correlationId, \"Main Workflow: AI Image Generation request received from Odoo.\", { odooPayload: body });\n\nreturn items;"
+      },
+      "id": "e0d00f86-d66a-4b95-a841-381c0022d4f8",
+      "name": "Initial Log & Correlation ID",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const InfluenceGenN8NUtilsLogging = {\n    formatLogEntry: (level, message, context) => {\n        const logEntry = {\n            timestamp: new Date().toISOString(),\n            level: level,\n            message: message,\n            n8n: {},\n            app: {\n                correlationId: null,\n                nodeName: null,\n            },\n            payload: null,\n        };\n        if (context) {\n            if (context.workflowInstance) {\n                logEntry.n8n.executionId = context.workflowInstance.id;\n                logEntry.n8n.workflowId = context.workflowInstance.workflowId;\n            }\n            logEntry.app.nodeName = context.nodeName || null;\n            logEntry.app.correlationId = context.correlationId || null;\n            if (context.data) {\n                logEntry.payload = { ...(logEntry.payload || {}), ...context.data };\n            }\n        }\n        return logEntry;\n    },\n    logInfo: (workflowInstance, nodeName, correlationId, message, data = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"INFO\", message, context);\n        console.log(JSON.stringify(logEntry));\n    },\n    logError: (workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data: errorDetails };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"ERROR\", errorMessage, context);\n        console.log(JSON.stringify(logEntry));\n    }\n};\nconst logInfo = InfluenceGenN8NUtilsLogging.logInfo;\nconst logError = InfluenceGenN8NUtilsLogging.logError;\n\nconst InfluenceGenN8NUtilsTransformation = {\n    prepareAIServiceRequest: (odooPayload, aiServiceConfig) => {\n        const standardizedRequest = {\n            prompt: odooPayload.prompt,\n            negative_prompt: odooPayload.negative_prompt || null,\n            model_identifier: odooPayload.model_preference,\n            resolution: odooPayload.resolution,\n            aspect_ratio: odooPayload.aspect_ratio,\n            seed: odooPayload.seed || null,\n            inference_steps: odooPayload.inference_steps || null,\n            cfg_scale: odooPayload.cfg_scale || null,\n            correlationId: odooPayload.correlation_id,\n        };\n        if (aiServiceConfig) {\n            if (aiServiceConfig.default_inference_steps && !standardizedRequest.inference_steps) {\n                standardizedRequest.inference_steps = aiServiceConfig.default_inference_steps;\n            }\n            if (aiServiceConfig.model_mapping && aiServiceConfig.model_mapping[odooPayload.model_preference]) {\n                standardizedRequest.model_identifier = aiServiceConfig.model_mapping[odooPayload.model_preference];\n            }\n        }\n        return standardizedRequest;\n    },\n    formatOdooCallbackPayload: (aiServiceResponse, originalRequest, isSuccess) => {\n        const callbackPayload = {\n            correlationId: originalRequest.correlation_id || (originalRequest.body ? originalRequest.body.correlation_id : null) || (items[0].json.correlationId || null),\n            status: isSuccess ? \"success\" : \"error\",\n        };\n        if (isSuccess) {\n            callbackPayload.imageUrl = aiServiceResponse.imageUrl || null;\n            callbackPayload.imageData = aiServiceResponse.imageData || null;\n            callbackPayload.contentType = aiServiceResponse.contentType || null;\n            callbackPayload.metadata = aiServiceResponse.metadata || {};\n        } else {\n            callbackPayload.errorCode = aiServiceResponse.errorCode || \"AI_GENERATION_FAILED\";\n            callbackPayload.errorMessage = aiServiceResponse.errorMessage || \"An unknown error occurred during AI image generation.\";\n        }\n        return callbackPayload;\n    },\n    extractImageDetails: (aiServiceAdapterResponse) => {\n        if (aiServiceAdapterResponse && aiServiceAdapterResponse.status === \"success\") {\n            const details = {\n                imageUrl: aiServiceAdapterResponse.imageUrl || null,\n                imageData: aiServiceAdapterResponse.imageData || null,\n                format: null, \n                dimensions: null, \n                contentType: aiServiceAdapterResponse.contentType || null,\n            };\n            if (details.contentType) {\n                if (details.contentType.includes('png')) details.format = 'png';\n                else if (details.contentType.includes('jpeg') || details.contentType.includes('jpg')) details.format = 'jpeg';\n            }\n            if (aiServiceAdapterResponse.metadata && aiServiceAdapterResponse.metadata.width && aiServiceAdapterResponse.metadata.height) {\n                details.dimensions = `${aiServiceAdapterResponse.metadata.width}x${aiServiceAdapterResponse.metadata.height}`;\n            }\n            return details;\n        }\n        return null;\n    }\n};\nconst prepareAIServiceRequest = InfluenceGenN8NUtilsTransformation.prepareAIServiceRequest;\n\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\nconst odooPayload = items[0].json.body;\nconst correlationId = items[0].json.correlationId;\n\nitems[0].json.originalOdooRequest = odooPayload; // Keep for callback formatting\n\nif (!odooPayload.prompt || !odooPayload.model_preference) {\n    const errorMsg = \"Main Workflow: Missing prompt or model_preference.\";\n    logError(wfInstance, nodeName, correlationId, errorMsg, { payload: odooPayload });\n    items[0].json.error = {\n        status: \"error\",\n        errorCode: \"INPUT_VALIDATION_ERROR\",\n        errorMessage: errorMsg\n    };\n    return items; // This error will be routed by the IF node\n}\n\n// Determine AI Service Config (Simplified example)\nlet adapterWorkflowId = null;\nlet apiCredentialName = null;\nlet aiServiceBaseUrl = null;\n\n// Assuming model_preference indicates the adapter type\nif (odooPayload.model_preference && odooPayload.model_preference.toLowerCase().includes('flux')) {\n    adapterWorkflowId = $env.AI_SERVICE_ADAPTER_SUBWORKFLOW_ID_FLUX_LORA;\n    apiCredentialName = $env.AI_SERVICE_FLUX_LORA_API_KEY_CREDENTIAL_NAME; // Name of the credential for Flux LoRA\n    aiServiceBaseUrl = $env.AI_SERVICE_FLUX_LORA_API_BASE_URL;\n} else {\n    // Potentially handle other model preferences or default to an error\n    const errorMsg = `Main Workflow: Unsupported model_preference '${odooPayload.model_preference}'. No adapter configured.`;\n    logError(wfInstance, nodeName, correlationId, errorMsg, { model_preference: odooPayload.model_preference });\n    items[0].json.error = {\n        status: \"error\",\n        errorCode: \"ADAPTER_CONFIGURATION_ERROR\",\n        errorMessage: errorMsg\n    };\n    return items;\n}\n\nconst aiServiceConfig = {\n    // This config is mostly used by prepareAIServiceRequest if it needs more complex logic\n    // For this example, direct values are set below for adapterInput\n};\n\nconst adapterInput = prepareAIServiceRequest(odooPayload, aiServiceConfig);\nadapterInput.correlationId = correlationId; // ensure it's in the payload for the sub-workflow\nadapterInput.api_credential_name = apiCredentialName; // Pass the name of the N8N credential\nadapterInput.ai_service_base_url = aiServiceBaseUrl;\n\nitems[0].json.adapterWorkflowId = adapterWorkflowId;\nitems[0].json.adapterInput = adapterInput;\n\nlogInfo(wfInstance, nodeName, correlationId, \"Main Workflow: Input validated and prepared for AI adapter.\", { adapterInput: adapterInput, adapterWorkflowId: adapterWorkflowId });\n\nreturn items;"
+      },
+      "id": "7649d269-1c9f-4315-9775-9fe8d98d5c97",
+      "name": "Input Validation & Preparation",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.error != null }}"
+            }
+          ]
+        }
+      },
+      "id": "e44b823e-67a6-4074-a03f-08e7dfd4df71",
+      "name": "Error Route Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ $json.adapterWorkflowId }}",
+        "source": "json",
+        "dataJson": "={{ JSON.stringify($json.adapterInput) }}",
+        "options": {
+          "retryOnFail": true,
+          "retryCount": "={{ parseInt($env.N8N_ADAPTER_CALL_RETRIES) || 3 }}",
+          "retryDelay": 60000,
+          "retryBackoff": "exponential"
+        }
+      },
+      "id": "19b52479-0b73-45f8-8a8f-2856dc6aa9f9",
+      "name": "Execute AI Service Adapter",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const InfluenceGenN8NUtilsLogging = {\n    formatLogEntry: (level, message, context) => {\n        const logEntry = {\n            timestamp: new Date().toISOString(),\n            level: level,\n            message: message,\n            n8n: {},\n            app: {\n                correlationId: null,\n                nodeName: null,\n            },\n            payload: null,\n        };\n        if (context) {\n            if (context.workflowInstance) {\n                logEntry.n8n.executionId = context.workflowInstance.id;\n                logEntry.n8n.workflowId = context.workflowInstance.workflowId;\n            }\n            logEntry.app.nodeName = context.nodeName || null;\n            logEntry.app.correlationId = context.correlationId || null;\n            if (context.data) {\n                logEntry.payload = { ...(logEntry.payload || {}), ...context.data };\n            }\n        }\n        return logEntry;\n    },\n    logInfo: (workflowInstance, nodeName, correlationId, message, data = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"INFO\", message, context);\n        console.log(JSON.stringify(logEntry));\n    },\n    logError: (workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data: errorDetails };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"ERROR\", errorMessage, context);\n        console.log(JSON.stringify(logEntry));\n    }\n};\nconst logInfo = InfluenceGenN8NUtilsLogging.logInfo;\nconst logError = InfluenceGenN8NUtilsLogging.logError;\n\nconst InfluenceGenN8NUtilsTransformation = {\n    prepareAIServiceRequest: (odooPayload, aiServiceConfig) => {\n        const standardizedRequest = {\n            prompt: odooPayload.prompt,\n            negative_prompt: odooPayload.negative_prompt || null,\n            model_identifier: odooPayload.model_preference,\n            resolution: odooPayload.resolution,\n            aspect_ratio: odooPayload.aspect_ratio,\n            seed: odooPayload.seed || null,\n            inference_steps: odooPayload.inference_steps || null,\n            cfg_scale: odooPayload.cfg_scale || null,\n            correlationId: odooPayload.correlation_id,\n        };\n        if (aiServiceConfig) {\n            if (aiServiceConfig.default_inference_steps && !standardizedRequest.inference_steps) {\n                standardizedRequest.inference_steps = aiServiceConfig.default_inference_steps;\n            }\n            if (aiServiceConfig.model_mapping && aiServiceConfig.model_mapping[odooPayload.model_preference]) {\n                standardizedRequest.model_identifier = aiServiceConfig.model_mapping[odooPayload.model_preference];\n            }\n        }\n        return standardizedRequest;\n    },\n    formatOdooCallbackPayload: (aiServiceResponse, originalRequest, isSuccess) => {\n        const callbackPayload = {\n            correlationId: originalRequest.correlation_id || (originalRequest.body ? originalRequest.body.correlation_id : null) || (items[0].json.correlationId || null),\n            status: isSuccess ? \"success\" : \"error\",\n        };\n        if (isSuccess) {\n            callbackPayload.imageUrl = aiServiceResponse.imageUrl || null;\n            callbackPayload.imageData = aiServiceResponse.imageData || null;\n            callbackPayload.contentType = aiServiceResponse.contentType || null;\n            callbackPayload.metadata = aiServiceResponse.metadata || {};\n        } else {\n            callbackPayload.errorCode = aiServiceResponse.errorCode || \"AI_GENERATION_FAILED\";\n            callbackPayload.errorMessage = aiServiceResponse.errorMessage || \"An unknown error occurred during AI image generation.\";\n        }\n        return callbackPayload;\n    },\n    extractImageDetails: (aiServiceAdapterResponse) => {\n        if (aiServiceAdapterResponse && aiServiceAdapterResponse.status === \"success\") {\n            const details = {\n                imageUrl: aiServiceAdapterResponse.imageUrl || null,\n                imageData: aiServiceAdapterResponse.imageData || null,\n                format: null, \n                dimensions: null, \n                contentType: aiServiceAdapterResponse.contentType || null,\n            };\n            if (details.contentType) {\n                if (details.contentType.includes('png')) details.format = 'png';\n                else if (details.contentType.includes('jpeg') || details.contentType.includes('jpg')) details.format = 'jpeg';\n            }\n            if (aiServiceAdapterResponse.metadata && aiServiceAdapterResponse.metadata.width && aiServiceAdapterResponse.metadata.height) {\n                details.dimensions = `${aiServiceAdapterResponse.metadata.width}x${aiServiceAdapterResponse.metadata.height}`;\n            }\n            return details;\n        }\n        return null;\n    }\n};\nconst formatOdooCallbackPayload = InfluenceGenN8NUtilsTransformation.formatOdooCallbackPayload;\n\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\n\n// The entire output from Execute Workflow node is in items[0].json\nconst adapterResponse = items[0].json; \nconst originalOdooRequest = items[0].json.originalOdooRequest; // Passed along from Input Validation\nconst correlationId = items[0].json.correlationId; // Passed along from Input Validation\n\nconst isSuccess = adapterResponse.status === \"success\";\nconst odooCallbackPayload = formatOdooCallbackPayload(adapterResponse, originalOdooRequest, isSuccess);\n// Ensure correlationId is in the final payload, formatOdooCallbackPayload should handle this\nodooCallbackPayload.correlationId = correlationId || odooCallbackPayload.correlationId; \n\nif(isSuccess) {\n    logInfo(wfInstance, nodeName, correlationId, \"Main Workflow: AI Service Adapter successful. Prepared Odoo callback.\", { callbackPayload: odooCallbackPayload });\n} else {\n    logError(wfInstance, nodeName, correlationId, \"Main Workflow: AI Service Adapter failed. Prepared Odoo error callback.\", { errorPayload: odooCallbackPayload, adapterResponse: adapterResponse });\n}\n\nitems[0].json.odooCallbackPayload = odooCallbackPayload;\nreturn items;"
+      },
+      "id": "e6f47f2b-78a5-44e2-88f5-46ae654c60ae",
+      "name": "Process Adapter Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ODOO_CALLBACK_BASE_URL + $env.ODOO_CALLBACK_IMAGE_RESULT_ENDPOINT }}",
+        "authentication": "headerAuth",
+        "jsonBody": "={{ JSON.stringify($json.odooCallbackPayload) }}",
+        "options": {
+          "timeout": 30000,
+          "sslVerify": true,
+          "retryOnFail": true,
+          "retryCount": "={{ parseInt($env.N8N_ODOO_CALLBACK_RETRIES) || 2 }}",
+          "retryDelay": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "sendBody": true,
+        "bodyContentType": "json"
+      },
+      "id": "4b54e3d0-5e36-47b7-87da-a3597c23a7bb",
+      "name": "Odoo Callback Node",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1920,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "={{ $env.ODOO_CALLBACK_API_KEY_CREDENTIAL_NAME }}",
+          "name": "={{ $env.ODOO_CALLBACK_API_KEY_CREDENTIAL_NAME }}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const InfluenceGenN8NUtilsLogging = {\n    formatLogEntry: (level, message, context) => {\n        const logEntry = {\n            timestamp: new Date().toISOString(),\n            level: level,\n            message: message,\n            n8n: {},\n            app: {\n                correlationId: null,\n                nodeName: null,\n            },\n            payload: null,\n        };\n        if (context) {\n            if (context.workflowInstance) {\n                logEntry.n8n.executionId = context.workflowInstance.id;\n                logEntry.n8n.workflowId = context.workflowInstance.workflowId;\n            }\n            logEntry.app.nodeName = context.nodeName || null;\n            logEntry.app.correlationId = context.correlationId || null;\n            if (context.data) {\n                logEntry.payload = { ...(logEntry.payload || {}), ...context.data };\n            }\n        }\n        return logEntry;\n    },\n    logInfo: (workflowInstance, nodeName, correlationId, message, data = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"INFO\", message, context);\n        console.log(JSON.stringify(logEntry));\n    }\n};\nconst logInfo = InfluenceGenN8NUtilsLogging.logInfo;\n\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\nconst correlationId = items[0].json.correlationId || (items[0].json.odooCallbackPayload ? items[0].json.odooCallbackPayload.correlationId : 'UNKNOWN_CORRELATION_ID');\n\nlogInfo(wfInstance, nodeName, correlationId, \"Main Workflow: Successfully sent callback to Odoo.\", { response: items[0].json.response, requestPayload: items[0].json.odooCallbackPayload });\nreturn items;"
+      },
+      "id": "7535b441-26c7-4348-8dfa-bbd557f95092",
+      "name": "Log Odoo Callback Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const InfluenceGenN8NUtilsLogging = {\n    formatLogEntry: (level, message, context) => {\n        const logEntry = {\n            timestamp: new Date().toISOString(),\n            level: level,\n            message: message,\n            n8n: {},\n            app: {\n                correlationId: null,\n                nodeName: null,\n            },\n            payload: null,\n        };\n        if (context) {\n            if (context.workflowInstance) {\n                logEntry.n8n.executionId = context.workflowInstance.id;\n                logEntry.n8n.workflowId = context.workflowInstance.workflowId;\n            }\n            logEntry.app.nodeName = context.nodeName || null;\n            logEntry.app.correlationId = context.correlationId || null;\n            if (context.data) {\n                logEntry.payload = { ...(logEntry.payload || {}), ...context.data };\n            }\n        }\n        return logEntry;\n    },\n    logError: (workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data: errorDetails };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"ERROR\", errorMessage, context);\n        console.log(JSON.stringify(logEntry));\n    }\n};\nconst logError = InfluenceGenN8NUtilsLogging.logError;\n\nconst InfluenceGenN8NUtilsTransformation = {\n    prepareAIServiceRequest: (odooPayload, aiServiceConfig) => { /* ... */ return {}; },\n    formatOdooCallbackPayload: (aiServiceResponse, originalRequest, isSuccess) => {\n        const callbackPayload = {\n            correlationId: originalRequest.correlation_id || (originalRequest.body ? originalRequest.body.correlation_id : null) || (items[0].json.correlationId || null),\n            status: isSuccess ? \"success\" : \"error\",\n        };\n        if (isSuccess) { /* ... */ } \n        else {\n            callbackPayload.errorCode = aiServiceResponse.errorCode || \"AI_GENERATION_FAILED\";\n            callbackPayload.errorMessage = aiServiceResponse.errorMessage || \"An unknown error occurred during AI image generation.\";\n        }\n        return callbackPayload;\n    },\n    extractImageDetails: (aiServiceAdapterResponse) => { /* ... */ return null; }\n};\nconst formatOdooCallbackPayload = InfluenceGenN8NUtilsTransformation.formatOdooCallbackPayload;\n\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\n\n// Error data comes from different sources: \n// 1. IF node (true branch) -> items[0].json.error (set by Input Validation)\n// 2. Execute Workflow (error output) -> items[0].json.error (N8N error structure), items[0].json.lastNodeExecuted, etc.\n// 3. Initial Log & Correlation ID (if error is thrown and routed to workflow error) -> items[0].json (N8N error structure)\n\nlet errorData = items[0].json; // Default to the whole item if it's an N8N error output\nlet originalOdooRequest = items[0].json.originalOdooRequest; // Might have been set by Input Validation node\nlet correlationId = items[0].json.correlationId; // Might have been set by Initial Log or Input Validation\n\nlet errorMessage = \"An unexpected error occurred during AI image generation.\";\nlet errorCode = \"N8N_WORKFLOW_ERROR\";\nlet errorDetailsForLog = {};\n\nif (items[0].json.error && items[0].json.error.errorMessage && items[0].json.error.errorCode) {\n    // Case 1: Error explicitly set by Input Validation & Preparation\n    errorMessage = items[0].json.error.errorMessage;\n    errorCode = items[0].json.error.errorCode;\n    errorDetailsForLog = items[0].json.error;\n} else if (items[0].json.error && items[0].json.error.message) {\n    // Case 2 or 3: N8N standard error structure (from Execute Workflow error or thrown error)\n    errorMessage = items[0].json.error.message;\n    if (items[0].json.error.code) errorCode = items[0].json.error.code;\n    errorDetailsForLog = items[0].json.error;\n    // Try to get originalOdooRequest and correlationId if not already set\n    if (!originalOdooRequest && items[0].json.execution && items[0].json.execution.context && items[0].json.execution.context.errorSourceNodeData) {\n        // This path is complex, for simplicity, we rely on it being passed if available\n        // or use what we have.\n    }\n    if (!correlationId && originalOdooRequest && originalOdooRequest.correlation_id) {\n        correlationId = originalOdooRequest.correlation_id;\n    } else if (!correlationId && originalOdooRequest && originalOdooRequest.body && originalOdooRequest.body.correlation_id) {\n        correlationId = originalOdooRequest.body.correlation_id;\n    }\n} else if (typeof items[0].json.errorMessage === 'string') {\n    // Adapter might have outputted an error structure directly\n    errorMessage = items[0].json.errorMessage;\n    errorCode = items[0].json.errorCode || \"ADAPTER_ERROR\";\n    errorDetailsForLog = items[0].json;\n}\n\ncorrelationId = correlationId || \"UNKNOWN_CORRELATION_ID\";\nitems[0].json.correlationId = correlationId; // Ensure it's set for logging and subsequent nodes\n\n// Ensure originalOdooRequest is an object for formatOdooCallbackPayload\noriginalOdooRequest = originalOdooRequest || { correlation_id: correlationId }; \nif (!originalOdooRequest.correlation_id) originalOdooRequest.correlation_id = correlationId;\n\n\nconst odooErrorPayload = formatOdooCallbackPayload(\n    { errorCode: errorCode, errorMessage: errorMessage },\n    originalOdooRequest, // This should contain correlation_id\n    false\n);\nodooErrorPayload.correlationId = correlationId; // Re-ensure from determined correlationId\n\nlogError(wfInstance, nodeName, correlationId, `Main Workflow: Error processing request - ${errorMessage}`, { error: errorDetailsForLog, odooPayloadForCallback: odooErrorPayload });\n\nitems[0].json.odooCallbackPayload = odooErrorPayload;\nreturn items;"
+      },
+      "id": "2d7f8a7e-4009-408a-b869-23c8a329d0f2",
+      "name": "Error Formatting",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const InfluenceGenN8NUtilsLogging = {\n    formatLogEntry: (level, message, context) => {\n        const logEntry = {\n            timestamp: new Date().toISOString(),\n            level: level,\n            message: message,\n            n8n: {},\n            app: {\n                correlationId: null,\n                nodeName: null,\n            },\n            payload: null,\n        };\n        if (context) {\n            if (context.workflowInstance) {\n                logEntry.n8n.executionId = context.workflowInstance.id;\n                logEntry.n8n.workflowId = context.workflowInstance.workflowId;\n            }\n            logEntry.app.nodeName = context.nodeName || null;\n            logEntry.app.correlationId = context.correlationId || null;\n            if (context.data) {\n                logEntry.payload = { ...(logEntry.payload || {}), ...context.data };\n            }\n        }\n        return logEntry;\n    },\n    logError: (workflowInstance, nodeName, correlationId, errorMessage, errorDetails = {}) => {\n        const context = { workflowInstance, nodeName, correlationId, data: errorDetails };\n        const logEntry = InfluenceGenN8NUtilsLogging.formatLogEntry(\"ERROR\", errorMessage, context);\n        console.log(JSON.stringify(logEntry));\n    }\n};\nconst logError = InfluenceGenN8NUtilsLogging.logError;\n\nconst wfInstance = $execution;\nconst nodeName = $currentNode.name;\n// Attempt to retrieve correlationId from various possible locations in the error item\nlet correlationId = items[0].json.correlationId || \n                    (items[0].json.odooCallbackPayload ? items[0].json.odooCallbackPayload.correlationId : null) || \n                    (items[0].json.originalOdooRequest ? items[0].json.originalOdooRequest.correlation_id : null) || \n                    (items[0].json.body ? items[0].json.body.correlation_id : null) ||\n                     \"UNKNOWN_CORRELATION_ID\";\n\nlogError(wfInstance, nodeName, correlationId, \"Main Workflow: CRITICAL - Failed to send callback to Odoo after processing error.\", { errorDetails: items[0].json });\nreturn items; // End workflow"
+      },
+      "id": "5877f89b-98f2-441f-82ed-17215cc75f6e",
+      "name": "Final Log Failure",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Odoo Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initial Log & Correlation ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initial Log & Correlation ID": {
+      "main": [
+        [
+          {
+            "node": "Input Validation & Preparation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validation & Preparation": {
+      "main": [
+        [
+          {
+            "node": "Error Route Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Route Check": {
+      "main": [
+        [
+          {
+            "node": "Error Formatting",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute AI Service Adapter",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute AI Service Adapter": {
+      "main": [
+        [
+          {
+            "node": "Process Adapter Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Error Formatting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Adapter Response": {
+      "main": [
+        [
+          {
+            "node": "Odoo Callback Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Odoo Callback Node": {
+      "main": [
+        [
+          {
+            "node": "Log Odoo Callback Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Final Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Formatting": {
+      "main": [
+        [
+          {
+            "node": "Odoo Callback Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "PLEASE_REPLACE_WITH_ACTUAL_INSTANCE_ID"
+  },
+  "id": "PLEASE_REPLACE_WITH_ACTUAL_WORKFLOW_ID",
+  "tags": [
+    {
+      "id": "1",
+      "name": "InfluenceGen"
+    },
+    {
+      "id": "2",
+      "name": "AI Orchestration"
+    }
+  ],
+  "pinData": {}
+}
+```
