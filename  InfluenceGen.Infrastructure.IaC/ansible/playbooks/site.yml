@@ -1,0 +1,31 @@
+```yaml
+---
+- name: Configure all servers with common settings
+  hosts: all
+  roles:
+    - common
+
+- name: Setup Docker on servers that require it
+  hosts: n8n_servers:ai_servers # Apply docker role only to groups that need it
+  roles:
+    - docker
+
+- name: Setup Odoo Application Servers
+  hosts: odoo_servers
+  roles:
+    - odoo_setup
+  # Define variables needed by odoo_setup role for these hosts
+  # This could pull variables from group_vars/<env>.yml or passed via --extra-vars
+
+- name: Setup N8N Servers
+  hosts: n8n_servers
+  roles:
+    - n8n_setup
+  # Define variables needed by n8n_setup role for these hosts
+
+- name: Setup AI Model Serving Servers
+  hosts: ai_servers
+  roles:
+    - ai_server_setup
+  # Define variables needed by ai_server_setup role for these hosts
+```
