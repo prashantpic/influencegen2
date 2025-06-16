@@ -1,147 +1,184 @@
-from odoo import api, fields, models, _
+from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
+from ..services.data_management_service import DataManagementService # Adjusted path
+
+import logging
+_logger = logging.getLogger(__name__)
 
 class LegalHoldManagementWizard(models.TransientModel):
     _name = 'influence_gen.legal_hold_management_wizard'
     _description = "Legal Hold Management Wizard"
 
-    # Define a selection of models that can be put on legal hold.
-    # This list should be maintained based on relevant business models.
-    TARGET_MODEL_SELECTION = [
+    _target_model_selection = [
         ('influence_gen.influencer_profile', 'Influencer Profile'),
         ('influence_gen.campaign', 'Campaign'),
         ('influence_gen.campaign_application', 'Campaign Application'),
         ('influence_gen.content_submission', 'Content Submission'),
-        ('influence_gen.generated_image', 'AI Generated Image'),
+        ('influence_gen.generated_image', 'Generated Image'),
         ('influence_gen.kyc_data', 'KYC Data'),
-        # Add other models as they become relevant for legal holds
+        # Add other relevant models here that can be subject to legal hold
     ]
 
     target_model_selection = fields.Selection(
-        selection=TARGET_MODEL_SELECTION,
+        selection=_target_model_selection,
         string="Target Model",
         required=True,
-        help="Select the Odoo model for which records will be put on/lifted from legal hold."
+        help="Select the Odoo model for which to apply or lift a legal hold."
     )
     target_record_ids_char = fields.Char(
         string="Record IDs (comma-separated)",
         required=True,
-        help="Enter a comma-separated list of database IDs for the selected model."
+        help="Enter a comma-separated list of database IDs for the records in the selected model."
     )
     hold_reason = fields.Text(
         string="Reason for Hold/Lift",
         required=True,
-        help="Provide a reason for applying or lifting the legal hold. This will be logged."
+        help="Provide a clear reason for applying or lifting the legal hold. This will be audited."
     )
     action_type = fields.Selection(
-        selection=[
-            ('apply', 'Apply Hold'),
-            ('lift', 'Lift Hold')
-        ],
+        [('apply', 'Apply Hold'), ('lift', 'Lift Hold')],
         string="Action",
         required=True,
         default='apply',
-        help="Select whether to apply or lift the legal hold."
+        help="Choose whether to apply a new legal hold or lift an existing one."
     )
 
-    def _parse_record_ids(self):
-        """ Parses the comma-separated string of record IDs into a list of integers. """
-        self.ensure_one()
-        if not self.target_record_ids_char:
-            raise UserError(_("Record IDs cannot be empty."))
-        try:
-            record_ids = [int(rid.strip()) for rid in self.target_record_ids_char.split(',') if rid.strip()]
-            if not record_ids:
-                raise ValueError("No valid IDs found after parsing.")
-            return record_ids
-        except ValueError as e:
-            raise UserError(_("Invalid Record IDs format. Please provide a comma-separated list of numbers. Error: %s") % e)
+    @api.constrains('target_record_ids_char')
+    def _check_target_record_ids_char(self):
+        for wizard in self:
+            if wizard.target_record_ids_char:
+                try:
+                    ids = [int(x.strip()) for x in wizard.target_record_ids_char.split(',') if x.strip()]
+                    if not ids:
+                        raise ValidationError("Record IDs cannot be empty if provided.")
+                    if any(not isinstance(id_val, int) or id_val <= 0 for id_val in ids):
+                        raise ValidationError("All Record IDs must be positive integers.")
+                except ValueError:
+                    raise ValidationError("Record IDs must be a comma-separated list of numbers.")
 
-    def action_process_legal_hold(self):
+    def action_process_legal_hold(self) -> dict:
         """
         Processes the legal hold action (apply or lift) based on wizard parameters.
-        REQ-DRH-009
+        REQ-DRH-009: Implement a mechanism to apply and lift legal holds on specific data entities.
         """
         self.ensure_one()
-        DataManagementService = self.env['influence_gen.services.data_management_service']
-        
+
+        if not self.target_model_selection or not self.target_record_ids_char or not self.hold_reason:
+            raise UserError("Target Model, Record IDs, and Reason are required.")
+
         try:
-            record_ids = self._parse_record_ids()
-            if not self.target_model_selection:
-                raise UserError(_("Target Model must be selected."))
-            if not self.hold_reason:
-                raise UserError(_("Reason for Hold/Lift must be provided."))
+            record_ids = [int(x.strip()) for x in self.target_record_ids_char.split(',') if x.strip()]
+            if not record_ids:
+                raise UserError("Please provide at least one Record ID.")
+        except ValueError:
+            raise UserError("Invalid format for Record IDs. Please use comma-separated numbers.")
 
-            audit_details = {
-                'target_model': self.target_model_selection,
-                'record_ids': record_ids,
-                'reason': self.hold_reason,
-                'action_type': self.action_type,
-            }
+        data_management_service = DataManagementService(self.env)
+        applied_by_user_id = self.env.user.id
+        success = False
+        log_action = 'APPLY_LEGAL_HOLD' if self.action_type == 'apply' else 'LIFT_LEGAL_HOLD'
 
+        try:
             if self.action_type == 'apply':
-                DataManagementService.apply_legal_hold(
+                _logger.info(
+                    "Applying legal hold via wizard. Model: %s, IDs: %s, Reason: %s, User: %s",
+                    self.target_model_selection, record_ids, self.hold_reason, applied_by_user_id
+                )
+                success = data_management_service.apply_legal_hold(
                     model_name=self.target_model_selection,
                     record_ids=record_ids,
                     hold_reason=self.hold_reason,
-                    applied_by_user_id=self.env.user.id
+                    applied_by_user_id=applied_by_user_id
                 )
-                message = _("Legal hold successfully APPLIED to %s records of model %s.") % (len(record_ids), self.target_model_selection)
-                event_type = 'LEGAL_HOLD_APPLIED'
             elif self.action_type == 'lift':
-                DataManagementService.lift_legal_hold(
+                _logger.info(
+                    "Lifting legal hold via wizard. Model: %s, IDs: %s, Reason: %s, User: %s",
+                    self.target_model_selection, record_ids, self.hold_reason, applied_by_user_id # Reason is also useful for lifting
+                )
+                success = data_management_service.lift_legal_hold(
                     model_name=self.target_model_selection,
                     record_ids=record_ids,
-                    reason_for_lift=self.hold_reason, # SDS for service mentions `lifted_by_user_id`, reason implicit via audit
-                    lifted_by_user_id=self.env.user.id
+                    lifted_by_user_id=applied_by_user_id,
+                    lift_reason=self.hold_reason # Pass reason for lifting as well for audit
                 )
-                message = _("Legal hold successfully LIFTED from %s records of model %s.") % (len(record_ids), self.target_model_selection)
-                event_type = 'LEGAL_HOLD_LIFTED'
-            else:
-                # Should not happen due to field 'required' and default
-                raise UserError(_("Invalid action type selected."))
 
-            self.env['influence_gen.audit_log_entry'].create_log(
-                event_type=event_type,
-                actor_user_id=self.env.user.id,
-                action_performed='EXECUTE_WIZARD',
-                target_model_name=self.target_model_selection, # Log against the target model
-                details_dict=audit_details,
-                outcome='success'
-            )
-            
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Legal Hold Management'),
-                    'message': message,
-                    'sticky': False,
-                    'type': 'success',
+            if success:
+                message_action = "applied" if self.action_type == 'apply' else "lifted"
+                message = f"Legal hold successfully {message_action} for selected records."
+                
+                self.env['influence_gen.audit_log_entry'].create_log(
+                    event_type=log_action,
+                    actor_user_id=applied_by_user_id,
+                    action_performed=self.action_type.upper(),
+                    target_model_name=self.target_model_selection,
+                    # For multiple records, consider how to log target_record_id or summarize
+                    details_dict={
+                        'record_ids': record_ids,
+                        'reason': self.hold_reason,
+                        'model': self.target_model_selection
+                    },
+                    outcome='success'
+                )
+                
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': ('Success'),
+                        'message': message,
+                        'sticky': False,
+                        'type': 'success',
+                    }
                 }
-            }
+            else:
+                message_action = "apply" if self.action_type == 'apply' else "lift"
+                error_message = f"Failed to {message_action} legal hold. Please check logs."
+                self.env['influence_gen.audit_log_entry'].create_log(
+                    event_type=log_action,
+                    actor_user_id=applied_by_user_id,
+                    action_performed=self.action_type.upper(),
+                    target_model_name=self.target_model_selection,
+                    details_dict={
+                        'record_ids': record_ids,
+                        'reason': self.hold_reason,
+                        'model': self.target_model_selection
+                    },
+                    outcome='failure',
+                    failure_reason="Service call returned failure."
+                )
+                raise UserError(error_message)
 
-        except (UserError, ValidationError) as e: # Catch UserError or ValidationError raised by parsing or service
+        except UserError as e:
+            _logger.error("UserError during legal hold processing: %s", str(e))
             self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='LEGAL_HOLD_PROCESSING_FAILURE',
-                actor_user_id=self.env.user.id,
-                action_performed='EXECUTE_WIZARD',
-                target_model_name=self.target_model_selection if self.target_model_selection else self._name,
-                details_dict={'reason': self.hold_reason, 'action_type': self.action_type, 'error': str(e)},
+                event_type=log_action,
+                actor_user_id=applied_by_user_id,
+                action_performed=self.action_type.upper(),
+                target_model_name=self.target_model_selection,
+                details_dict={
+                    'record_ids': record_ids if 'record_ids' in locals() else self.target_record_ids_char,
+                    'reason': self.hold_reason,
+                    'model': self.target_model_selection
+                },
                 outcome='failure',
                 failure_reason=str(e)
             )
-            raise # Re-raise the caught error to display it to the user
+            raise
         except Exception as e:
+            _logger.error("Exception during legal hold processing: %s", str(e), exc_info=True)
             self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='LEGAL_HOLD_PROCESSING_UNEXPECTED_FAILURE',
-                actor_user_id=self.env.user.id,
-                action_performed='EXECUTE_WIZARD',
-                target_model_name=self.target_model_selection if self.target_model_selection else self._name,
-                details_dict={'reason': self.hold_reason, 'action_type': self.action_type, 'error': str(e)},
+                event_type=log_action,
+                actor_user_id=applied_by_user_id,
+                action_performed=self.action_type.upper(),
+                target_model_name=self.target_model_selection,
+                details_dict={
+                    'record_ids': record_ids if 'record_ids' in locals() else self.target_record_ids_char,
+                    'reason': self.hold_reason,
+                    'model': self.target_model_selection
+                },
                 outcome='failure',
-                failure_reason=str(e)
+                failure_reason=f"An unexpected error occurred: {str(e)}"
             )
-            raise UserError(_("An unexpected error occurred while processing the legal hold: %s") % str(e))
+            raise UserError(f"An unexpected error occurred during legal hold processing: {str(e)}")
 
         return {'type': 'ir.actions.act_window_close'}
