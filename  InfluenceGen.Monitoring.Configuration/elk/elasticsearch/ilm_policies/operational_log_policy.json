@@ -1,0 +1,41 @@
+# Purpose: ILM policy for operational logs.
+# (REQ-12-001, REQ-ATEL-004)
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {
+          "rollover": {
+            "max_size": "50gb",
+            "max_age": "7d"
+          },
+          "set_priority": { "priority": 100 }
+        }
+      },
+      "warm": {
+        "min_age": "30d",
+        "actions": {
+          "forcemerge": { "max_num_segments": 1 },
+          "shrink": { "number_of_shards": 1 }, # Example: reduce shards
+          "allocate": { "require": { "box_type": "warm" } }, # Example: move to warm nodes
+          "set_priority": { "priority": 50 }
+        }
+      },
+      "cold": {
+        "min_age": "90d",
+        "actions": {
+          "freeze": {}, # Freeze index
+          "allocate": { "require": { "box_type": "cold" } }, # Example: move to cold nodes
+          "set_priority": { "priority": 0 }
+        }
+      },
+      "delete": {
+        "min_age": "180d", # Adjust per SRS 7.3 for operational logs
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}

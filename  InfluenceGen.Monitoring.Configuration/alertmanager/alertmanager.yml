@@ -1,0 +1,87 @@
+global: # REQ-12-008, REQ-12-009, REQ-16-008, REQ-16-010
+  resolve_timeout: 5m
+  # smtp_smarthost, smtp_from, etc. for email, if not defined per receiver
+  # slack_api_url, pagerduty_url - actual secrets via env vars or secrets manager
+  # Example:
+  # smtp_smarthost: 'smtp.example.com:587'
+  # smtp_from: 'alertmanager@influencegen.com'
+  # smtp_auth_username: 'alertmanager_user'
+  # smtp_auth_password: ${SMTP_PASSWORD} # Injected from environment
+
+route:
+  group_by: ['alertname', 'component', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: 'default-receiver' # Catch-all
+  routes:
+    - receiver: 'critical-pagerduty-receiver' # REQ-16-010
+      matchers:
+        - severity =~ "critical|P1"
+      continue: true # Allows multiple receivers for critical alerts if needed
+    - receiver: 'warning-slack-receiver' # REQ-16-010
+      matchers:
+        - severity =~ "warning|P2"
+    - receiver: 'info-email-receiver'
+      matchers:
+        - severity =~ "info|P3"
+    # Specific component routing if needed
+    - receiver: 'odoo-team-email'
+      matchers:
+        - component == "odoo"
+        - severity =~ "warning|critical"
+      # Add more specific routes as needed
+
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'ops-catchall@influencegen.com'
+        send_resolved: true
+        html: '{{ template "default_template.tmpl" . }}'
+        headers:
+          Subject: '[InfluenceGen ALERT] {{ .CommonLabels.alertname }} ({{ .Status }})'
+
+  - name: 'critical-pagerduty-receiver' # REQ-16-010
+    pagerduty_configs:
+      - service_key: ${PAGERDUTY_SERVICE_KEY_CRITICAL} # Injected
+        send_resolved: true
+        client: 'InfluenceGen Alertmanager'
+        client_url: '{{ .ExternalURL }}'
+        description: '{{ template "pagerduty.default.description" . }}' # Uses Alertmanager's default or custom
+        severity: '{{ if .CommonLabels.severity }}{{ .CommonLabels.severity | toLower }}{{ else }}critical{{ end }}'
+        details:
+          firing: '{{ template "default_template.tmpl" . }}'
+
+  - name: 'warning-slack-receiver' # REQ-16-010
+    slack_configs:
+      - api_url: ${SLACK_WEBHOOK_URL_WARNINGS} # Injected
+        channel: '#influencegen-alerts-warning'
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.component }}'
+        text: '{{ template "slack.default.text" . }}' # Uses Alertmanager's default or custom
+
+  - name: 'info-email-receiver'
+    email_configs:
+      - to: 'ops-info@influencegen.com'
+        send_resolved: true
+        html: '{{ template "default_template.tmpl" . }}'
+        headers:
+          Subject: '[InfluenceGen INFO] {{ .CommonLabels.alertname }} ({{ .Status }})'
+
+  - name: 'odoo-team-email'
+    email_configs:
+      - to: 'odoo-dev-alerts@influencegen.com'
+        send_resolved: true
+        html: '{{ template "default_template.tmpl" . }}'
+        headers:
+          Subject: '[Odoo ALERT] {{ .CommonLabels.alertname }} ({{ .Status }})'
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# inhibit_rules:
+# - target_matchers:
+#     severity: 'warning'
+#   source_matchers:
+#     severity: 'critical'
+#   equal: ['alertname', 'instance']

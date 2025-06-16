@@ -1,0 +1,43 @@
+# Note: These rules depend on metrics being exported from the ELK stack
+# or a custom audit log metrics exporter (e.g., count of specific log entries).
+groups:
+  - name: AuditLogAlerts
+    rules:
+      - alert: HighRateOfFailedLogins # REQ-12-008, REQ-16-009, REQ-ATEL-005
+        expr: sum(rate(audit_log_events_total{eventType="user.login", outcome="failure"}[5m])) > 10 # Example: > 10 failed logins across all instances in 5 mins
+        for: 5m
+        labels:
+          severity: warning # P2
+          component: audit
+          service: security_monitoring
+        annotations:
+          summary: "High rate of failed login attempts detected"
+          description: "Detected {{ $value }} failed login events in the last 5 minutes. (REQ-12-008, REQ-16-009, REQ-ATEL-005)"
+          runbook_url: "http://internal.wiki/runbooks/high-failed-logins"
+
+      - alert: SuspiciousAdminActivity # REQ-12-008, REQ-16-009, REQ-ATEL-005
+        # This is highly dependent on specific metrics or aggregation logic
+        # Example placeholder: Alert if a specific 'permission_change' event occurs for a sensitive user
+        expr: sum(rate(audit_log_events_total{eventType="user.permissions.update", actorUserId="sensitive_admin_id"}[5m])) > 0 # Example: Any such event
+        for: 1m
+        labels:
+          severity: critical # P1
+          component: audit
+          service: security_monitoring
+        annotations:
+          summary: "Suspicious administrative activity detected"
+          description: "A suspicious administrative action (e.g., permission change by sensitive user) was detected. (REQ-12-008, REQ-16-009, REQ-ATEL-005)"
+          runbook_url: "http://internal.wiki/runbooks/suspicious-admin-activity"
+
+      - alert: AuditLogIngestionLagHigh # REQ-12-008, REQ-16-009
+        # Assumes a metric reporting the delay between log generation and indexing
+        expr: audit_log_ingestion_lag_seconds > 300 # Example: > 5 minutes lag
+        for: 5m
+        labels:
+          severity: warning # P2
+          component: audit
+          service: logging_pipeline
+        annotations:
+          summary: "Audit log ingestion lag is high"
+          description: "The delay in audit logs reaching Elasticsearch is {{ $value }} seconds, indicating a pipeline issue. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/audit-log-lag"

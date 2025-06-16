@@ -1,0 +1,33 @@
+# Purpose: Elasticsearch index template for Odoo logs.
+# (REQ-12-001, REQ-12-002, REQ-ATEL-004)
+{
+  "index_patterns": ["influencegen-odoo-logs-*"],
+  "template": {
+    "settings": {
+      "index": {
+        "lifecycle": {
+          "name": "operational_log_policy",
+          "rollover_alias": "influencegen-odoo-logs"
+        },
+        "number_of_shards": 3,
+        "number_of_replicas": 1,
+        "refresh_interval": "5s"
+      }
+    },
+    "mappings": {
+      "_source": { "enabled": true },
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "message": { "type": "text" },
+        "log.level": { "type": "keyword" },
+        "app_name": { "type": "keyword" },
+        "host": { "properties": { "name": { "type": "keyword" } } },
+        "trace.id": { "type": "keyword", "ignore_above": 1024 }, # For correlation ID
+        # Fields parsed from Odoo logs (adjust based on actual log format and grok)
+        "dbname": { "type": "keyword", "ignore_above": 256 },
+        "pid": { "type": "long" }
+        # Add other specific fields if parsed
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# Purpose: Core Elasticsearch configuration.
+cluster.name: "influencegen-elk-cluster"
+node.name: ${NODE_NAME} # Injected per node
+# node.roles: [ data_hot, data_warm, data_cold, ingest, ml, master, remote_cluster_client ] # Example node roles for ILM tiers
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300 # Required for node-to-node communication
+discovery.seed_hosts: ["es-node1:9300", "es-node2:9300"] # Placeholder for initial discovery
+cluster.initial_master_nodes: ["es-node1"] # Placeholder: list initial master-eligible nodes
+
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# Security settings (recommended for production)
+xpack.security.enabled: true
+# xpack.security.enrollment.enabled: true # For initial setup
+# xpack.security.http.ssl.enabled: true
+# xpack.security.transport.ssl.enabled: true
+
+# ILM related settings
+# action.destructive_requires_name: true # Prevent accidental deletion without explicit index name
+
+# X-Pack monitoring
+# xpack.monitoring.collection.enabled: true
+
+# Heap size - configure via environment variable ES_JAVA_OPTS
+# For example: ES_JAVA_OPTS="-Xms4g -Xmx4g"

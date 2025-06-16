@@ -1,0 +1,43 @@
+# Purpose: Defines datasources for Grafana provisioning. (REQ-12-004)
+{
+    "apiVersion": 1,
+    "datasources": [
+        {
+            "name": "InfluenceGen Prometheus",
+            "type": "prometheus",
+            "url": "http://prometheus:9090", # Prometheus service name and port
+            "access": "proxy", # Recommended for browser access
+            "isDefault": true,
+            "jsonData": {
+                "timeInterval": "15s"
+            },
+            "readOnly": false
+        },
+        {
+            "name": "InfluenceGen Elasticsearch Logs",
+            "type": "elasticsearch",
+            "url": "http://elasticsearch:9200", # Elasticsearch service name and port
+            "access": "proxy", # Recommended for browser access
+            "jsonData": {
+                "timeField": "@timestamp",
+                "esVersion": "8.0.0", # Adjust to match ES version
+                "logMessageField": "message",
+                "logLevelField": "log.level"
+            },
+            "database": "[influencegen-*-logs-]YYYY.MM.DD", # Example index pattern for operational logs
+            "readOnly": false
+        },
+        {
+            "name": "InfluenceGen Audit Logs",
+            "type": "elasticsearch",
+            "url": "http://elasticsearch:9200",
+            "access": "proxy", # Recommended for browser access
+            "jsonData": {
+                "timeField": "timestamp", # As per AuditLog table
+                "esVersion": "8.0.0"
+            },
+            "database": "[influencegen-audit-logs-]YYYY.MM.DD", # Example index pattern for audit logs
+            "readOnly": false
+        }
+    ]
+}

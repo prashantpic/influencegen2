@@ -1,0 +1,51 @@
+groups:
+  - name: OdooApplicationAlerts
+    rules:
+      - alert: OdooRequestLatencyHigh # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: histogram_quantile(0.95, sum(rate(odoo_http_request_duration_seconds_bucket[5m])) by (le, instance)) > 1 # Example threshold
+        for: 5m
+        labels:
+          severity: warning # P2
+          component: odoo
+          service: influencegen_app
+        annotations:
+          summary: "High HTTP request latency on Odoo instance {{ $labels.instance }}"
+          description: "Odoo instance {{ $labels.instance }} p95 request latency is {{ $value | printf \"%.2f\" }}s for the last 5 minutes. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/odoo-high-latency"
+
+      - alert: OdooHttpErrorRateHigh # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: sum(rate(odoo_http_requests_total{status=~"5.."}[5m])) / sum(rate(odoo_http_requests_total[5m])) * 100 > 5 # Example threshold (5% 5xx errors)
+        for: 5m
+        labels:
+          severity: critical # P1
+          component: odoo
+          service: influencegen_app
+        annotations:
+          summary: "High HTTP error rate on Odoo instance {{ $labels.instance }}"
+          description: "Odoo instance {{ $labels.instance }} is experiencing an HTTP 5xx error rate of {{ $value | printf \"%.2f\" }}% for the last 5 minutes. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/odoo-high-error-rate"
+
+      - alert: OdooWorkerSaturation # REQ-12-003, REQ-12-008
+        expr: odoo_workers_busy / odoo_workers_total > 0.9 # Example threshold (90% busy)
+        for: 10m
+        labels:
+          severity: warning # P2
+          component: odoo
+          service: influencegen_app
+        annotations:
+          summary: "Odoo worker saturation high on instance {{ $labels.instance }}"
+          description: "Odoo instance {{ $labels.instance }} workers are {{ $value | printf \"%.2f\" }}% busy for the last 10 minutes. (REQ-12-008)"
+          runbook_url: "http://internal.wiki/runbooks/odoo-worker-saturation"
+
+      # Placeholder for specific InfluenceGen business metrics if exported by Odoo
+      # - alert: InfluenceGenCampaignProcessingError
+      #   expr: ...
+      #   for: ...
+      #   labels:
+      #     severity: critical
+      #     component: odoo
+      #     service: influencegen_campaigns
+      #   annotations:
+      #     summary: "High rate of InfluenceGen campaign processing errors"
+      #     description: "..."
+      #     runbook_url: "..."

@@ -1,0 +1,82 @@
+groups:
+  - name: SystemInfrastructureAlerts
+    rules:
+      - alert: HostHighCpuLoad # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80 # Example threshold (80% CPU usage)
+        for: 10m
+        labels:
+          severity: warning # P2
+          component: system
+        annotations:
+          summary: "High CPU load on host {{ $labels.instance }}"
+          description: "Host {{ $labels.instance }} has averaged {{ $value | printf \"%.2f\" }}% CPU utilization for the last 10 minutes. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/high-cpu-load"
+
+      - alert: HostHighMemoryUsage # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85 # Example threshold (85% memory usage)
+        for: 10m
+        labels:
+          severity: warning # P2
+          component: system
+        annotations:
+          summary: "High memory usage on host {{ $labels.instance }}"
+          description: "Host {{ $labels.instance }} is using {{ $value | printf \"%.2f\" }}% of memory for the last 10 minutes. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/high-memory-usage"
+
+      - alert: HostDiskSpaceLow # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: node_filesystem_avail_bytes{fstype="ext4", mountpoint="/"} / node_filesystem_size_bytes{fstype="ext4", mountpoint="/"} * 100 < 10 # Example threshold (less than 10% free space on root)
+        for: 15m
+        labels:
+          severity: critical # P1
+          component: system
+        annotations:
+          summary: "Low disk space on host {{ $labels.instance }} mountpoint {{ $labels.mountpoint }}"
+          description: "Host {{ $labels.instance }} mountpoint {{ $labels.mountpoint }} has less than {{ $value | printf \"%.2f\" }}% disk space free. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/low-disk-space"
+
+      - alert: HostDown # REQ-12-003, REQ-12-008
+        expr: up{job="node"} == 0
+        for: 1m
+        labels:
+          severity: critical # P1
+          component: system
+        annotations:
+          summary: "Host {{ $labels.instance }} is down"
+          description: "Host {{ $labels.instance }} has been unresponsive for more than 1 minute. (REQ-12-008)"
+          runbook_url: "http://internal.wiki/runbooks/host-down"
+
+      - alert: DatabaseDown # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: up{job="database"} == 0 # Assuming db_exporter or similar
+        for: 1m
+        labels:
+          severity: critical # P1
+          component: database
+        annotations:
+          summary: "Database instance {{ $labels.instance }} is down"
+          description: "Database instance {{ $labels.instance }} has been unresponsive for more than 1 minute. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/database-down"
+
+      - alert: SSLCertificateExpiresSoon # REQ-16-009
+        expr: probe_ssl_earliest_cert_expiry - time() < 14 * 24 * 3600 # Less than 14 days (assuming probe_success and probe_ssl_earliest_cert_expiry metrics are available)
+        for: 24h
+        labels:
+          severity: warning # P2
+          component: system
+          service: ssl_monitoring
+        annotations:
+          summary: "SSL Certificate for {{ $labels.instance }} expires soon"
+          description: "The SSL certificate for {{ $labels.instance }} expires in less than {{ ($value / 86400) | printf \"%.0f\" }} days. (REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/ssl-cert-expiry"
+
+      # Placeholder for backup job failure metrics
+      # - alert: BackupJobFailed # REQ-16-009
+      #   expr: backup_job_status{status="failed"} == 1 # Assuming a metric exists
+      #   for: 5m
+      #   labels:
+      #     severity: critical # P1
+      #     component: system
+      #     service: backups
+      #   annotations:
+      #     summary: "Critical backup job failed on {{ $labels.instance }}"
+      #     description: "A critical backup job on {{ $labels.instance }} has reported failure. (REQ-16-009)"
+      #     runbook_url: "http://internal.wiki/runbooks/backup-failed"

@@ -1,0 +1,6 @@
+# Purpose: Placeholder for non-sensitive PagerDuty settings and documentation.
+# (REQ-12-009, REQ-16-010)
+{
+  "default_escalation_policy_id": "PXXXXXX", # Example, if needed for some custom logic or documentation
+  "notes": "Actual PagerDuty service/routing keys are sensitive and injected via environment variables (e.g., PAGERDUTY_SERVICE_KEY_CRITICAL) and used in alertmanager.yml. This file is for illustrative purposes or non-sensitive settings only."
+}

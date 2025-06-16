@@ -1,0 +1,91 @@
+# Purpose: Example Grafana Dashboard JSON for Odoo Overview. (REQ-12-004, REQ-12-007)
+# This is a simplified example structure. A real dashboard JSON is very large.
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Dashboard",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Overview of Odoo Application Health and Performance",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"}, # UID should match datasource
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "shared": true, "sort": 0, "wrap": false } },
+      "targets": [
+        {
+          "expr": "sum(rate(odoo_http_requests_total[5m])) by (instance)",
+          "refId": "A"
+        }
+      ],
+      "title": "Odoo Request Rate (per instance)",
+      "type": "timeseries"
+    },
+     {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "shared": true, "sort": 0, "wrap": false } },
+      "targets": [
+        {
+          "expr": "sum(rate(odoo_http_requests_total{status=~\"5..\"}[5m])) by (instance) / sum(rate(odoo_http_requests_total[5m])) by (instance) * 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Odoo HTTP 5xx Error Rate (per instance)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type":"elasticsearch","uid":"elasticsearch-logs-ds-uid"}, # UID should match datasource
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "id": 3,
+      "options": { "wrap": true, "colWidths": [], "showHeader": true, "showValue": false },
+      "pluginSpecificSettings": { "ds": { "uid": "elasticsearch-logs-ds-uid" } },
+      "targets": [
+        {
+          "query": "{ app_name: \"odoo\" }",
+          "refId": "A",
+          "datasource": {"type":"elasticsearch","uid":"elasticsearch-logs-ds-uid"},
+          "filterEditorMode": "builder",
+          "language": "lucene",
+          "metrics": [ { "type": "count", "id": "1" } ],
+          "bucketAggs": [ { "type": "date_histogram", "id": "2", "settings": { "interval": "auto" } } ]
+        }
+      ],
+      "title": "Odoo Log Entries Timeline",
+      "type": "timeseries"
+    }
+    # Add more panels for latency, worker saturation, business metrics, etc.
+  ],
+  "schemaVersion": 30,
+  "tags": ["odoo", "application", "overview"],
+  "templating": { "list": [] }, # Add template variables for instance, env if needed
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["15s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"], "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"] },
+  "timezone": "browser",
+  "title": "Odoo Overview",
+  "uid": "odoo-overview-dashboard",
+  "version": 1
+}

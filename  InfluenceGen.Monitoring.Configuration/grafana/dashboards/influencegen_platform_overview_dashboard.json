@@ -1,0 +1,88 @@
+# Purpose: Example Grafana Dashboard JSON for High-Level Platform Overview. (REQ-12-004, REQ-12-007)
+# This dashboard aggregates health status indicators.
+# This is a simplified example structure.
+{
+  "annotations": { "list": [] },
+  "description": "High-level overview of InfluenceGen platform health",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0, # Tooltip can be distracting on overview
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "limit": {} }, "showThresholdLabels": false, "showThresholdMarkers": true },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"odoo\"})", # Simple metric: count of up Odoo instances
+          "refId": "A"
+        }
+      ],
+      "thresholds": [ { "color": "red", "state": "critical", "value": null }, { "color": "green", "state": "ok", "value": 1 } ], # Example: Red if < 1
+      "title": "Odoo App Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "limit": {} }, "showThresholdLabels": false, "showThresholdMarkers": true },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"n8n\"})", # Simple metric: count of up N8N instances
+          "refId": "A"
+        }
+      ],
+      "thresholds": [ { "color": "red", "state": "critical", "value": null }, { "color": "green", "state": "ok", "value": 1 } ],
+      "title": "N8N Workflow Health",
+      "type": "stat"
+    },
+     {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "limit": {} }, "showThresholdLabels": false, "showThresholdMarkers": true },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"ai-service\"})", # Simple metric: count of up AI service instances
+          "refId": "A"
+        }
+      ],
+       "thresholds": [ { "color": "red", "state": "critical", "value": null }, { "color": "green", "state": "ok", "value": 1 } ],
+      "title": "AI Service Health",
+      "type": "stat"
+    },
+     {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": [ "lastNotNull" ], "fields": "", "limit": {} }, "showThresholdLabels": false, "showThresholdMarkers": true },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"node|database\"})", # Simple metric: count of up infra nodes/dbs
+          "refId": "A"
+        }
+      ],
+      "thresholds": [ { "color": "red", "state": "critical", "value": null }, { "color": "green", "state": "ok", "value": 1 } ],
+      "title": "Infrastructure Health",
+      "type": "stat"
+    }
+    # Add panels summarizing active alerts from Alertmanager (requires Alertmanager datasource or proxy)
+  ],
+  "schemaVersion": 30,
+  "tags": ["platform", "overview", "health"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "InfluenceGen Platform Overview",
+  "uid": "influencegen-platform-overview",
+  "version": 1
+}

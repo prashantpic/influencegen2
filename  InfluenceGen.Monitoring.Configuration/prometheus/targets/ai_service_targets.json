@@ -1,0 +1,9 @@
+[
+  {
+    "targets": ["ai-service-metrics-proxy:9100"],
+    "labels": {
+      "env": "production",
+      "app": "ai_service"
+    }
+  }
+]

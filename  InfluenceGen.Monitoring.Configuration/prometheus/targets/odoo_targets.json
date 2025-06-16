@@ -1,0 +1,18 @@
+[
+  {
+    "targets": ["odoo-prod-instance1:8069", "odoo-prod-instance2:8069"],
+    "labels": {
+      "env": "production",
+      "app": "odoo",
+      "service": "influencegen_app"
+    }
+  },
+  {
+    "targets": ["odoo-staging-instance1:8069"],
+    "labels": {
+      "env": "staging",
+      "app": "odoo",
+      "service": "influencegen_app"
+    }
+  }
+]

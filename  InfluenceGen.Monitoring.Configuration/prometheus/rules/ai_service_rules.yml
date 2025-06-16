@@ -1,0 +1,48 @@
+groups:
+  - name: AIServiceAlerts
+    rules:
+      - alert: AIServiceRequestLatencyHigh # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: histogram_quantile(0.95, sum(rate(ai_service_request_duration_seconds_bucket[5m])) by (le, instance)) > 5 # Example threshold (p95 > 5s)
+        for: 5m
+        labels:
+          severity: warning # P2
+          component: ai_service
+        annotations:
+          summary: "High request latency for AI service on instance {{ $labels.instance }}"
+          description: "AI service instance {{ $labels.instance }} p95 request latency is {{ $value | printf \"%.2f\" }}s for the last 5 minutes. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/ai-service-high-latency"
+
+      - alert: AIServiceErrorRateHigh # REQ-12-003, REQ-12-008, REQ-16-009
+        expr: sum(rate(ai_service_requests_total{status_code=~"5.."}[5m])) / sum(rate(ai_service_requests_total[5m])) * 100 > 5 # Example threshold (5% 5xx errors)
+        for: 5m
+        labels:
+          severity: critical # P1
+          component: ai_service
+        annotations:
+          summary: "High error rate for AI service on instance {{ $labels.instance }}"
+          description: "AI service instance {{ $labels.instance }} is experiencing an error rate of {{ $value | printf \"%.2f\" }}% for the last 5 minutes. (REQ-12-008, REQ-16-009)"
+          runbook_url: "http://internal.wiki/runbooks/ai-service-high-error-rate"
+
+      - alert: AIServiceUnavailable # REQ-12-003, REQ-12-008
+        expr: up{job="ai-service"} == 0
+        for: 1m
+        labels:
+          severity: critical # P1
+          component: ai_service
+        annotations:
+          summary: "AI service instance {{ $labels.instance }} is unavailable"
+          description: "AI service instance {{ $labels.instance }} has been unresponsive for more than 1 minute. (REQ-12-008)"
+          runbook_url: "http://internal.wiki/runbooks/ai-service-unavailable"
+
+      # Placeholder for specific AI business metrics if exported
+      # - alert: AIGenerationSuccessRateLow
+      #   expr: ...
+      #   for: ...
+      #   labels:
+      #     severity: critical
+      #     component: ai_service
+      #     service: generation
+      #   annotations:
+      #     summary: "Low success rate for AI image generation"
+      #     description: "..."
+      #     runbook_url: "..."

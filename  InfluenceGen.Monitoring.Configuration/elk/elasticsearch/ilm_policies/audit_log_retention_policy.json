@@ -1,0 +1,27 @@
+# Purpose: ILM policy for audit logs.
+# (REQ-12-006, REQ-ATEL-007)
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {
+          "rollover": {
+            "max_size": "20gb", # Smaller size/age for rollover due to strict retention
+            "max_age": "30d"
+          },
+          "set_priority": { "priority": 100 }
+        }
+      },
+       # Optional: Add warm/cold phases if needed for querying older audit data before deletion
+       # "warm": { ... },
+       # "cold": { ... },
+      "delete": {
+        "min_age": "365d", # Example: 1 year. Adjust to 1-7 years per SRS 7.3 / REQ-ATEL-007
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}

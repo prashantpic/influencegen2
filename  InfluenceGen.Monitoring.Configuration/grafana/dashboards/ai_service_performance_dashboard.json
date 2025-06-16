@@ -1,0 +1,53 @@
+# Purpose: Example Grafana Dashboard JSON for AI Service Performance. (REQ-12-004, REQ-12-007)
+# This is a simplified example structure.
+{
+  "annotations": { "list": [] },
+  "description": "Performance Monitoring for the AI Image Generation Service",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "shared": true, "sort": 0, "wrap": false } },
+      "targets": [
+        {
+          "expr": "sum(rate(ai_service_requests_total[5m])) by (instance)",
+          "refId": "A"
+        }
+      ],
+      "title": "AI Service Request Volume",
+      "type": "timeseries"
+    },
+     {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "shared": true, "sort": 0, "wrap": false } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ai_service_request_duration_seconds_bucket[5m])) by (le, instance))",
+          "refId": "A"
+        }
+      ],
+      "title": "AI Service Request Latency (p95)",
+      "type": "timeseries"
+    }
+    # Add panels for error rate, success rate, quota etc.
+  ],
+  "schemaVersion": 30,
+  "tags": ["ai", "service", "performance"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "AI Service Performance",
+  "uid": "ai-service-performance-dashboard",
+  "version": 1
+}

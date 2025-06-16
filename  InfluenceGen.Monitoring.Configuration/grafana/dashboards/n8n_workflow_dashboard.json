@@ -1,0 +1,59 @@
+# Purpose: Example Grafana Dashboard JSON for N8N Workflow Monitoring. (REQ-12-004, REQ-12-007, REQ-ATEL-010)
+# This is a simplified example structure.
+{
+  "annotations": { "list": [] },
+  "description": "Monitoring for N8N Workflows and Instances",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type":"prometheus","uid":"prometheus-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "shared": true, "sort": 0, "wrap": false } },
+      "targets": [
+        {
+          "expr": "sum by (workflowName, status) (rate(n8n_workflow_executions_total[5m]))",
+          "refId": "A"
+        }
+      ],
+      "title": "N8N Workflow Executions (per status)",
+      "type": "timeseries"
+    },
+     {
+      "datasource": {"type":"elasticsearch","uid":"elasticsearch-logs-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "id": 2,
+      "options": { "wrap": true, "colWidths": [], "showHeader": true, "showValue": false },
+      "pluginSpecificSettings": { "ds": { "uid": "elasticsearch-logs-ds-uid" } },
+      "targets": [
+        {
+          "query": "{ app_name: \"n8n\" }",
+          "refId": "A",
+          "datasource": {"type":"elasticsearch","uid":"elasticsearch-logs-ds-uid"},
+          "filterEditorMode": "builder",
+          "language": "lucene",
+          "metrics": [ { "type": "count", "id": "1" } ],
+          "bucketAggs": [ { "type": "date_histogram", "id": "2", "settings": { "interval": "auto" } } ]
+        }
+      ],
+      "title": "N8N Log Entries Timeline",
+      "type": "timeseries"
+    }
+    # Add panels for duration, queue depth, errors, Odoo callback failures etc.
+  ],
+  "schemaVersion": 30,
+  "tags": ["n8n", "workflow", "automation"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "N8N Workflow Dashboard",
+  "uid": "n8n-workflow-dashboard",
+  "version": 1
+}

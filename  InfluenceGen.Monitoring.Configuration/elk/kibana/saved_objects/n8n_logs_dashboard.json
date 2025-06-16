@@ -1,0 +1,78 @@
+# Purpose: Example Kibana Saved Objects JSON for N8N Logs Dashboard. (REQ-12-002, REQ-12-007, REQ-ATEL-010)
+# This is a simplified example structure.
+[
+  {
+    "id": "n8n-logs-dashboard",
+    "type": "dashboard",
+    "updated_at": "2023-10-27T10:00:00.000Z",
+    "version": 1,
+    "attributes": {
+      "title": "N8N Logs Overview",
+      "description": "Dashboard for exploring and analyzing N8N workflow logs.",
+      "hits": 0,
+      "panelsJSON": "[{\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":10},\"id\":\"n8n-log-entries-timeline\",\"type\":\"visualization\",\"panelIndex\":1,\"embeddableConfig\":{}},{\"gridData\":{\"x\":0,\"y\":10,\"w\":12,\"h\":8},\"id\":\"n8n-workflow-execution-status\",\"type\":\"visualization\",\"panelIndex\":2,\"embeddableConfig\":{}},{\"gridData\":{\"x\":0,\"y\":18,\"w\":24,\"h\":15},\"id\":\"n8n-log-entries-table\",\"type\":\"search\",\"panelIndex\":3,\"embeddableConfig\":{}}]",
+      "optionsJSON": "{\"darkTheme\":false,\"hidePanelTitles\":false,\"useMargins\":true}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": {
+        "time": { "from": "now-1h", "to": "now" },
+        "refreshInterval": { "display": "5 seconds", "pause": false, "value": 5000 }
+      },
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"app_name : \\\"n8n\\\"\"},\"filter\":[]}"
+      }
+    }
+  },
+   {
+    "id": "n8n-log-entries-timeline",
+    "type": "visualization",
+     "updated_at": "2023-10-27T10:00:00.000Z",
+    "version": 1,
+    "attributes": {
+       "title": "N8N Log Entries Timeline",
+       "description": "",
+       "uiStateJSON": "{}",
+       "version": 1,
+       "visState": "{\"title\":\"N8N Log Entries Timeline\",\"type\":\"histogram\",\"params\":{\"addLegend\":true,\"addTimeMarker\":false,\"addTooltip\":true,\"categoryAxes\":[{\"id\":\"CategoryAxis-1\",\"labels\":{},\"position\":\"bottom\",\"scale\":{\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"@timestamp per \"+kibanaDefaultAppTimeZone+\"\"},\"type\":\"date\"}],\"grid\":{},\"indexpattern\":\"influencegen-n8n-logs-*\",\"labels\":{},\"listenFilters\":true,\"seriesParams\":[{\"data\":{\"id\":\"1\",\"label\":\"Count\"},\"drawLinesBehindDots\":false,\"mode\":\"normal\",\"type\":\"area\",\"valueAxis\":\"ValueAxis-1\",\"stack\":\"normal\"}],\"shareYAxis\":true,\"times\":[],\"valueAxes\":[{\"id\":\"ValueAxis-1\",\"labels\":{\"filter\":false,\"rotate\":0,\"show\":true},\"name\":\"LeftAxis-1\",\"position\":\"left\",\"scale\":{\"mode\":\"normal\",\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"Count\"},\"type\":\"value\"}]},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"fixed_interval\":\"auto\",\"custom_interval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+       "kibanaSavedObjectMeta": {
+         "searchSourceJSON": "{\"indexref\":\"n8n-logs-index\",\"query\":{\"language\":\"kuery\",\"query\":\"app_name : \\\"n8n\\\"\"},\"filter\":[]}"
+       }
+    },
+    "references": [ { "name": "n8n-logs-index", "type": "index-pattern", "id": "influencegen-n8n-logs-*" } ]
+  },
+  {
+    "id": "n8n-workflow-execution-status",
+    "type": "visualization",
+     "updated_at": "2023-10-27T10:00:00.000Z",
+    "version": 1,
+    "attributes": {
+       "title": "N8N Workflow Execution Status",
+       "description": "Distribution of N8N workflow executions by status (success/failure).",
+       "uiStateJSON": "{}",
+       "version": 1,
+       "visState": "{\"title\":\"N8N Workflow Execution Status\",\"type\":\"partition\",\"params\":{\"addTooltip\":true,\"indexpattern\":\"influencegen-n8n-logs-*\",\"percentageMode\":false,\"type\":\"pie\",\"thresholdHeaderColor\":\"#cccccc\",\"thresholdLineColor\":\"#dddddd\",\"isDonut\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"n8n_log.status.keyword\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+        "kibanaSavedObjectMeta": {
+         "searchSourceJSON": "{\"indexref\":\"n8n-logs-index\",\"query\":{\"language\":\"kuery\",\"query\":\"app_name : \\\"n8n\\\"\"},\"filter\":[]}"
+       }
+    },
+     "references": [ { "name": "n8n-logs-index", "type": "index-pattern", "id": "influencegen-n8n-logs-*" } ]
+  },
+   {
+    "id": "n8n-log-entries-table",
+    "type": "search", # Saved Search type for a table view
+    "updated_at": "2023-10-27T10:00:00.000Z",
+    "version": 1,
+    "attributes": {
+       "title": "N8N Recent Log Entries",
+       "description": "Table view of recent N8N log messages.",
+       "hits": 0,
+       "columns": ["@timestamp", "log.level", "host.name", "n8n_log.workflowId", "n8n_log.executionId", "n8n_log.nodeName", "message"], # Example columns
+       "sort": [["@timestamp","desc"]],
+       "kibanaSavedObjectMeta": {
+         "searchSourceJSON": "{\"indexref\":\"n8n-logs-index\",\"query\":{\"language\":\"kuery\",\"query\":\"app_name : \\\"n8n\\\"\"},\"filter\":[]}"
+       }
+    },
+     "references": [ { "name": "n8n-logs-index", "type": "index-pattern", "id": "influencegen-n8n-logs-*" } ]
+  }
+  # Add other visualizations for workflow duration, specific errors etc.
+]

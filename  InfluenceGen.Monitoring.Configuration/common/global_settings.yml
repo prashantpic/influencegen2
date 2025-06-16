@@ -1,0 +1,32 @@
+# Purpose: Centralized common configuration values (primarily for documentation or templating).
+# (REQ-12-009, REQ-16-010)
+
+# Environment Specifics (can be overridden by deployment process)
+environment_name: "production" # or "staging", "development"
+platform_domain: "influencegen.com"
+
+# Default Alerting Contacts (can be overridden in Alertmanager routes or used for templating)
+default_ops_email: "ops-alerts@influencegen.com"
+default_security_email: "security-alerts@influencegen.com"
+default_pagerduty_routing_key: "${PAGERDUTY_DEFAULT_ROUTING_KEY}" # Placeholder for env var/secrets
+default_slack_channel: "#general-alerts"
+default_slack_webhook_url: "${SLACK_DEFAULT_WEBHOOK_URL}" # Placeholder for env var/secrets
+
+# Severity Labels Mapping (as used in Prometheus rules and Alertmanager)
+severity_critical: "critical" # Corresponds to P1 in some schemes, using explicit level here
+severity_warning: "warning"   # Corresponds to P2
+severity_info: "info"         # Corresponds to P3
+
+# Common Labels for Prometheus/Alertmanager (can be added to scrape configs or rules via templating)
+common_labels:
+  platform: "InfluenceGen"
+  # region: "us-east-1" # If multi-region, add here
+
+# Log Retention Periods (examples, actual values from SRS 7.3)
+# These values are used to configure ILM policies in Elasticsearch.
+operational_logs_retention_days: 180 # Example from SDS
+audit_logs_retention_days: 1095 # Example: 3 years (Adjust to 1-7 years or specific policy from SRS 7.3 / REQ-ATEL-007)
+
+# Other global settings as needed for configuration management/templating
+scrape_interval_seconds: 15
+evaluation_interval_seconds: 15

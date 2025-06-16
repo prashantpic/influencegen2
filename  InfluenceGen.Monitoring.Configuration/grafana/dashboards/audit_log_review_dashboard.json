@@ -1,0 +1,109 @@
+# Purpose: Example Grafana Dashboard JSON for Audit Log Review. (REQ-12-004, REQ-12-007, REQ-ATEL-008)
+# This dashboard connects to the Elasticsearch Audit Logs datasource.
+# This is a simplified example structure.
+{
+  "annotations": { "list": [] },
+  "description": "Review and Analyze InfluenceGen Audit Logs",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type":"elasticsearch","uid":"elasticsearch-audit-logs-ds-uid"}, # UID should match datasource
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "wrap": true, "colWidths": [], "showHeader": true, "showValue": false },
+      "pluginSpecificSettings": { "ds": { "uid": "elasticsearch-audit-logs-ds-uid" } },
+      "targets": [
+        {
+          "query": "{ app_name: \"audit\" }",
+          "refId": "A",
+          "datasource": {"type":"elasticsearch","uid":"elasticsearch-audit-logs-ds-uid"},
+          "filterEditorMode": "builder",
+          "language": "lucene",
+          "metrics": [ { "type": "count", "id": "1" } ],
+          "bucketAggs": [ { "type": "date_histogram", "id": "2", "settings": { "interval": "auto" } } ]
+        }
+      ],
+      "title": "Audit Events Timeline",
+      "type": "timeseries"
+    },
+     {
+      "datasource": {"type":"elasticsearch","uid":"elasticsearch-audit-logs-ds-uid"},
+      "fieldConfig": { "defaults": { "custom": {} }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 2,
+      "options": { "map": { "red": 10, "yellow": 70 } },
+      "targets": [
+        {
+          "query": "{ app_name: \"audit\" }",
+          "refId": "A",
+          "datasource": {"type":"elasticsearch","uid":"elasticsearch-audit-logs-ds-uid"},
+          "filterEditorMode": "builder",
+          "language": "lucene",
+          "metrics": [ { "type": "count", "id": "1" } ],
+          "bucketAggs": [ { "type": "terms", "id": "2", "settings": { "field": "eventType.keyword" } } ]
+        }
+      ],
+      "title": "Top Event Types",
+      "type": "piechart"
+    },
+    {
+      "datasource": {"type":"elasticsearch","uid":"elasticsearch-audit-logs-ds-uid"},
+      "fieldConfig": {
+          "defaults": {
+              "custom": {},
+              "mappings": [],
+              "unit": "short"
+          },
+          "overrides": []
+      },
+      "gridPos": { "h": 15, "w": 24, "x": 0, "y": 16 },
+      "id": 3,
+      "options": {
+          "frameIndex": 0,
+          "showHeader": true,
+          "showTypeIcons": true
+      },
+      "pluginSpecificSettings": { "ds": { "uid": "elasticsearch-audit-logs-ds-uid" } },
+      "targets": [
+          {
+              "query": "{ app_name: \"audit\" }",
+              "refId": "A",
+              "datasource": {"type":"elasticsearch","uid":"elasticsearch-audit-logs-ds-uid"},
+              "filterEditorMode": "builder",
+              "language": "lucene",
+              "metrics": [ { "type": "count", "id": "1" } ],
+              "bucketAggs": [],
+              "alias": "Audit Logs",
+              "columns": [ # Columns based on REQ-ATEL-006 fields
+                  { "text": "Time", "value": "@timestamp" },
+                  { "text": "Actor User ID", "value": "actorUserId.keyword" },
+                  { "text": "Event Type", "value": "eventType.keyword" },
+                  { "text": "Action", "value": "action.keyword" },
+                  { "text": "Target Entity", "value": "targetEntity.keyword" },
+                  { "text": "Target ID", "value": "targetId.keyword" },
+                  { "text": "IP Address", "value": "ipAddress" },
+                  { "text": "Outcome", "value": "outcome.keyword" },
+                  { "text": "Details", "value": "details" }
+              ]
+          }
+      ],
+      "title": "Recent Audit Log Entries",
+      "type": "table"
+    }
+    # Add panels for failed logins, admin actions, etc.
+  ],
+  "schemaVersion": 30,
+  "tags": ["audit", "security", "logs"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" }, # Default to a wider time range for audit
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Audit Log Review",
+  "uid": "audit-log-review-dashboard",
+  "version": 1
+}

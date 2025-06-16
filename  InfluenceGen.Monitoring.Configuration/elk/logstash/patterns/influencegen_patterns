@@ -1,0 +1,10 @@
+# Purpose: Custom Grok patterns for InfluenceGen specific log formats.
+# (REQ-12-001, REQ-ATEL-002)
+
+# Example Odoo log line pattern (adjust based on actual log format)
+# Example: 2023-10-27 10:00:00,123 1234 INFO my_dbname werkzeug: 192.168.1.1 - - [27/Oct/2023 10:00:00] "GET /web?db=my_dbname HTTP/1.1" 200 -
+# Or simpler: 2023-10-27 10:00:00,123 1234 INFO my_dbname Some log message here
+ODOO_TIMESTAMP %{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{HOUR}:%{MINUTE}:%{SECOND},%{INT}
+ODOO_LOG_LINE %{ODOO_TIMESTAMP:odoo_timestamp} %{NUMBER:pid} %{LOGLEVEL:loglevel} %{DATA:dbname} %{GREEDYDATA:message}
+
+# Add other custom patterns here if needed for N8N, AI service, etc., if they don't log JSON or standard formats.

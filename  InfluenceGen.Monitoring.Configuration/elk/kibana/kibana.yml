@@ -1,0 +1,22 @@
+# Purpose: Core Kibana configuration.
+server.port: 5601
+server.host: "0.0.0.0"
+elasticsearch.hosts: ["http://elasticsearch:9200"] # Elasticsearch service name and port
+
+# Security settings (recommended for production)
+# elasticsearch.username: "kibana_system" # If ES security is enabled
+# elasticsearch.password: "${KIBANA_SYSTEM_PASSWORD}" # Injected from environment/secrets
+# elasticsearch.ssl.verificationMode: full # Enable SSL verification
+# elasticsearch.ssl.certificateAuthorities: ["/usr/share/kibana/config/certs/ca.crt"]
+
+# Logging settings
+# logging.dest: stdout
+
+# Server settings if exposed externally
+# server.publicBaseUrl: "https://kibana.influencegen.com"
+
+# Enable Dashboard and Visualization import via API if not using saved_objects files provisioning
+# kibana.development.ui.allowJsonImport: true # Only for development/manual import
+
+# Configure path for loading saved object files if using file-based provisioning (requires a plugin or manual setup in older Kibana versions)
+# xpack.savedObjectsManagement.import.autoImportDir: /usr/share/kibana/import # Example if such a feature/plugin is used

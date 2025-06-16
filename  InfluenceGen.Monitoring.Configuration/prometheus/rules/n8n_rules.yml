@@ -1,0 +1,59 @@
+groups:
+  - name: N8NWorkflowAlerts
+    rules:
+      - alert: N8NWorkflowExecutionFailureRateHigh # REQ-12-003, REQ-12-008, REQ-16-009, REQ-ATEL-010
+        expr: sum(rate(n8n_workflow_executions_total{status="failed"}[5m])) by (workflowName, instance) / sum(rate(n8n_workflow_executions_total[5m])) by (workflowName, instance) * 100 > 10 # Example threshold (10% failure rate per workflow)
+        for: 5m
+        labels:
+          severity: critical # P1
+          component: n8n
+        annotations:
+          summary: "High failure rate for N8N workflow '{{ $labels.workflowName }}' on instance {{ $labels.instance }}"
+          description: "N8N workflow '{{ $labels.workflowName }}' on instance {{ $labels.instance }} has a failure rate of {{ $value | printf \"%.2f\" }}% for the last 5 minutes. (REQ-12-008, REQ-16-009, REQ-ATEL-010)"
+          runbook_url: "http://internal.wiki/runbooks/n8n-workflow-failure"
+
+      - alert: N8NWorkflowExecutionDurationHigh # REQ-12-003, REQ-12-008, REQ-ATEL-010
+        expr: histogram_quantile(0.95, sum(rate(n8n_workflow_execution_duration_seconds_bucket[5m])) by (le, workflowName, instance)) > 60 # Example threshold (95th percentile > 60 seconds)
+        for: 10m
+        labels:
+          severity: warning # P2
+          component: n8n
+        annotations:
+          summary: "High execution duration for N8N workflow '{{ $labels.workflowName }}' on instance {{ $labels.instance }}"
+          description: "N8N workflow '{{ $labels.workflowName }}' on instance {{ $labels.instance }} 95th percentile execution duration is {{ $value | printf \"%.2f\" }}s for the last 10 minutes. (REQ-12-008, REQ-ATEL-010)"
+          runbook_url: "http://internal.wiki/runbooks/n8n-workflow-duration"
+
+      - alert: N8NQueueDepthHigh # REQ-12-003, REQ-12-008, REQ-ATEL-010
+        expr: n8n_queue_depth > 100 # Example threshold
+        for: 5m
+        labels:
+          severity: warning # P2
+          component: n8n
+        annotations:
+          summary: "N8N execution queue depth high on instance {{ $labels.instance }}"
+          description: "N8N instance {{ $labels.instance }} has a queue depth of {{ $value }}. (REQ-12-008, REQ-ATEL-010)"
+          runbook_url: "http://internal.wiki/runbooks/n8n-queue-depth"
+
+      - alert: N8NInstanceDown # REQ-12-003, REQ-12-008
+        expr: up{job="n8n"} == 0
+        for: 1m
+        labels:
+          severity: critical # P1
+          component: n8n
+        annotations:
+          summary: "N8N instance {{ $labels.instance }} is down"
+          description: "N8N instance {{ $labels.instance }} has been unresponsive for more than 1 minute. (REQ-12-008)"
+          runbook_url: "http://internal.wiki/runbooks/n8n-instance-down"
+
+      # Placeholder for Odoo callback failures if exportable from N8N or logs
+      # - alert: N8NOdooCallbackFailureHigh
+      #   expr: ...
+      #   for: ...
+      #   labels:
+      #     severity: critical
+      #     component: n8n
+      #     service: odoo_integration
+      #   annotations:
+      #     summary: "High rate of N8N calls failing to Odoo"
+      #     description: "..."
+      #     runbook_url: "..."

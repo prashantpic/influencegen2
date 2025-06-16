@@ -1,0 +1,39 @@
+# Purpose: Elasticsearch index template for audit logs.
+# (REQ-12-001, REQ-12-002, REQ-12-006, REQ-ATEL-004, REQ-ATEL-005, REQ-ATEL-006)
+{
+  "index_patterns": ["influencegen-audit-logs-*"],
+  "template": {
+    "settings": {
+      "index": {
+        "lifecycle": {
+          "name": "audit_log_retention_policy",
+          "rollover_alias": "influencegen-audit-logs"
+        },
+        "number_of_shards": 3,
+        "number_of_replicas": 1,
+        "refresh_interval": "5s"
+      }
+    },
+    "mappings": {
+      "_source": { "enabled": true },
+      "properties": {
+        "@timestamp": { "type": "date" },
+        # Ensure 'timestamp' field exists and is mapped correctly if not using @timestamp directly from source
+        "timestamp": { "type": "date" }, # As per AuditLog table (REQ-ATEL-006) - will likely be copied to @timestamp by Logstash
+        "app_name": { "type": "keyword" },
+        "host": { "properties": { "name": { "type": "keyword" } } },
+        # Fields based on REQ-ATEL-006
+        "eventType": { "type": "keyword", "ignore_above": 256 },
+        "actorUserId": { "type": "keyword", "ignore_above": 256 },
+        "targetEntity": { "type": "keyword", "ignore_above": 256 },
+        "targetId": { "type": "keyword", "ignore_above": 256 },
+        "action": { "type": "keyword", "ignore_above": 256 },
+        "details": { "type": "object", "enabled": true }, # Map as object for flexible JSON details
+        "ipAddress": { "type": "ip" },
+        "outcome": { "type": "keyword", "ignore_above": 256 }, # Success/Failure
+        # Add other relevant audit-specific fields
+        "audit_event": { "type": "object", "enabled": true } # Keep original parsed JSON if needed
+      }
+    }
+  }
+}

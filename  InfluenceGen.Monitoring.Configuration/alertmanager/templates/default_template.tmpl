@@ -1,0 +1,33 @@
+{{/*
+  alertmanager/templates/default_template.tmpl
+  Purpose: Formats alert notifications for email, Slack, PagerDuty details.
+  (REQ-12-009, REQ-16-010)
+*/}}
+
+{{ define "default_template.tmpl" }}
+{{ range .Alerts }}
+<b>Alert:</b> {{ .Labels.alertname }} ({{ .Status }})<br>
+<b>Severity:</b> {{ .Labels.severity | default "N/A" }}<br>
+<b>Component:</b> {{ .Labels.component | default "N/A" }}<br>
+{{ if .Labels.service }}<b>Service:</b> {{ .Labels.service }}<br>{{ end }}
+{{ if .Labels.instance }}<b>Instance:</b> {{ .Labels.instance }}<br>{{ end }}
+<b>Summary:</b> {{ .Annotations.summary }}<br>
+<b>Description:</b> {{ .Annotations.description }}<br>
+<b>Starts At:</b> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}<br>
+{{ if .EndsAt.IsZero | not }}<b>Ends At:</b> {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}<br>{{ end }}
+<hr>
+{{ end }}
+{{ end }}
+
+{{ define "slack.default.text" }}
+{{ range .Alerts }}
+*Summary:* {{ .Annotations.summary }}
+*Description:* {{ .Annotations.description }}
+{{ end }}
+{{ end }}
+
+{{ define "pagerduty.default.description" }}
+{{ range .Alerts }}
+{{ .Annotations.summary }} - {{ .Annotations.description }}
+{{ end }}
+{{ end }}

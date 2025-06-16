@@ -1,0 +1,9 @@
+[
+  {
+    "targets": ["n8n-prod-instance1:5678"],
+    "labels": {
+      "env": "production",
+      "app": "n8n"
+    }
+  }
+]

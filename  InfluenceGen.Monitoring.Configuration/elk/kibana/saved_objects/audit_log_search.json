@@ -1,0 +1,29 @@
+# Purpose: Example Kibana Saved Objects JSON for an Audit Log Saved Search/Dashboard. (REQ-12-007, REQ-ATEL-008)
+# This is a simplified example structure for a Saved Search.
+[
+  {
+    "id": "audit-log-saved-search",
+    "type": "search",
+    "updated_at": "2023-10-27T10:00:00.000Z",
+    "version": 1,
+    "attributes": {
+      "title": "Recent Audit Log Events",
+      "description": "Saved search for reviewing raw audit log entries.",
+      "hits": 0,
+      "columns": ["@timestamp", "actorUserId", "eventType", "action", "targetEntity", "targetId", "ipAddress", "outcome", "details"], # Columns based on REQ-ATEL-006
+      "sort": [["@timestamp","desc"]],
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"indexref\":\"audit-logs-index\",\"query\":{\"language\":\"kuery\",\"query\":\"app_name : \\\"audit\\\"\"},\"filter\":[]}"
+      }
+    },
+    "references": [ { "name": "audit-logs-index", "type": "index-pattern", "id": "influencegen-audit-logs-*" } ]
+  }
+  # A full audit log review might be a dashboard containing this search plus visualizations.
+  # Example for a dashboard combining elements:
+  # {
+  #   "id": "audit-log-review-dashboard",
+  #   "type": "dashboard",
+  #   ... attributes (panelsJSON referring to other visualizations and this search)
+  # }
+  # Need corresponding visualization objects for timeline, breakdowns etc. as described in SDS 5.3.2 / 5.4.7.
+]
