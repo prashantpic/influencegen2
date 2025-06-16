@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-IOKYC-011: KYC Submission Review UI -->
+
+    <!-- KYC Data Search View -->
+    <record id="view_kyc_data_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.kyc_data.search.admin</field>
+        <field name="model">influence_gen.kyc_data</field>
+        <field name="arch" type="xml">
+            <search string="Search KYC Submissions">
+                <field name="influencerProfileId"/>
+                <field name="documentType"/>
+                <field name="verificationStatus"/>
+                <field name="reviewerUserId"/>
+                <filter string="Pending Review" name="filter_status_pending" domain="[('verificationStatus', '=', 'pending')]"/>
+                <filter string="In Review" name="filter_status_in_review" domain="[('verificationStatus', '=', 'in_review')]"/>
+                <filter string="Approved" name="filter_status_approved" domain="[('verificationStatus', '=', 'approved')]"/>
+                <filter string="Rejected" name="filter_status_rejected" domain="[('verificationStatus', '=', 'rejected')]"/>
+                <filter string="Needs More Info" name="filter_status_needs_info" domain="[('verificationStatus', '=', 'needs_more_info')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'verificationStatus'}"/>
+                    <filter string="Document Type" name="group_by_doc_type" context="{'group_by': 'documentType'}"/>
+                    <filter string="Reviewer" name="group_by_reviewer" context="{'group_by': 'reviewerUserId'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- KYC Data Tree View -->
+    <record id="view_kyc_data_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.kyc_data.tree.admin</field>
+        <field name="model">influence_gen.kyc_data</field>
+        <field name="arch" type="xml">
+            <tree string="KYC Submissions" decoration-info="verificationStatus=='in_review'" decoration-success="verificationStatus=='approved'" decoration-danger="verificationStatus=='rejected'" decoration-warning="verificationStatus=='needs_more_info' or verificationStatus=='pending'">
+                <field name="influencerProfileId"/>
+                <field name="documentType"/>
+                <field name="verificationStatus"/>
+                <field name="reviewerUserId" optional="show"/>
+                <field name="reviewedAt" optional="show"/>
+                <field name="createdAt" optional="hide"/>
+                <field name="updatedAt" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- KYC Data Form View -->
+    <record id="view_kyc_data_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.kyc_data.form.admin</field>
+        <field name="model">influence_gen.kyc_data</field>
+        <field name="arch" type="xml">
+            <form string="KYC Submission">
+                <header>
+                    <!-- REQ-IOKYC-011 -->
+                    <button name="action_approve_kyc" string="Approve KYC" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('verificationStatus', 'in', ['approved', 'rejected'])]}"
+                            confirm="Are you sure you want to approve this KYC submission?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="%(influence_gen_admin.action_kyc_rejection_wizard)d" string="Reject KYC" type="action"
+                            class="oe_highlight"
+                            attrs="{'invisible': [('verificationStatus', 'in', ['approved', 'rejected'])]}"
+                            context="{'default_kyc_data_id': active_id}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="%(influence_gen_admin.action_kyc_request_info_wizard)d" string="Request More Info" type="action"
+                            attrs="{'invisible': [('verificationStatus', 'in', ['approved', 'rejected'])]}"
+                            context="{'default_kyc_data_id': active_id}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_set_in_review" string="Mark as In Review" type="object"
+                            attrs="{'invisible': [('verificationStatus', '!=', 'pending')]}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="verificationStatus" widget="statusbar" statusbar_visible="pending,in_review,approved,rejected,needs_more_info"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Submission Details">
+                            <field name="influencerProfileId" options="{'no_open': True, 'no_create': True}" required="1" readonly="1" force_save="1"/>
+                            <field name="documentType" readonly="[('verificationStatus', '!=', 'pending')]" required="1"/>
+                            <field name="verificationMethod" readonly="[('verificationStatus', '!=', 'pending')]" required="1"/>
+                        </group>
+                        <group string="Review Information">
+                            <field name="reviewerUserId" readonly="1" options="{'no_open': True}"/>
+                            <field name="reviewedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Documents">
+                            <group>
+                                <field name="documentFrontUrl" widget="url" string="Document Front" readonly="1"
+                                       attrs="{'required': [('documentType', '!=', False)]}"/>
+                                <field name="documentBackUrl" widget="url" string="Document Back (if applicable)" readonly="1"/>
+                                <!-- Add binary fields if direct upload is preferred and previews are desired -->
+                                <!--
+                                <field name="documentFrontFile" widget="image" string="Document Front Preview" options="{'size': [300, 200]}" readonly="1"/>
+                                <field name="documentBackFile" widget="image" string="Document Back Preview" options="{'size': [300, 200]}" readonly="1"/>
+                                -->
+                            </group>
+                        </page>
+                        <page string="Review Notes">
+                            <field name="notes" placeholder="Internal notes for this KYC submission..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- KYC Data Action Window -->
+    <record id="action_kyc_data_admin" model="ir.actions.act_window">
+        <field name="name">KYC Submissions</field>
+        <field name="res_model">influence_gen.kyc_data</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_kyc_data_admin_search"/>
+        <field name="context">{'search_default_filter_status_pending': 1, 'search_default_filter_status_in_review': 1, 'search_default_filter_status_needs_info': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No KYC submissions found.
+            </p><p>
+                Review and manage influencer KYC submissions here.
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-PAC-003, REQ-PAC-007, REQ-AIGS-002, REQ-AIGS-003, REQ-AIGS-004, REQ-PAC-005, REQ-PAC-006, REQ-PAC-004, REQ-PAC-009, REQ-PAC-010, REQ-PAC-011, REQ-PAC-015, REQ-PAC-017, REQ-UIUX-022 -->
+    <record id="res_config_settings_view_form_influence_gen" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.influencegen</field>
+        <field name="model">influence_gen.config.settings</field> <!-- Ensure this model exists and inherits res.config.settings -->
+        <field name="priority" eval="90"/> <!-- Adjust priority as needed -->
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <div class="app_settings_block" data-string="InfluenceGen Platform" string="InfluenceGen Platform" data-key="influence_gen_admin" groups="influence_gen_admin.group_influence_gen_platform_admin">
+                    <!-- User & Security Settings -->
+                    <h2>User &amp; Security</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_user_security">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_influence_gen_user_security"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_user_security"/>
+                                <div class="text-muted">
+                                    Configure user authentication and security policies.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_user_security', '=', False)]}">
+                                    <div class="mt16">
+                                        <label for="influence_gen_password_min_length" string="Password Min Length"/>
+                                        <field name="influence_gen_password_min_length"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <field name="influence_gen_password_require_uppercase" class="o_light_label"/>
+                                        <label for="influence_gen_password_require_uppercase"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <field name="influence_gen_password_require_lowercase" class="o_light_label"/>
+                                        <label for="influence_gen_password_require_lowercase"/>
+                                    </div>
+                                     <div class="mt8">
+                                        <field name="influence_gen_password_require_numeric" class="o_light_label"/>
+                                        <label for="influence_gen_password_require_numeric"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <field name="influence_gen_password_require_special" class="o_light_label"/>
+                                        <label for="influence_gen_password_require_special"/>
+                                    </div>
+                                    <!-- TODO: Add MFA Link if applicable: <button name="action_mfa_settings" string="Configure MFA" type="object" class="oe_link"/> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KYC Configuration -->
+                    <h2>KYC Configuration</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_kyc_config">
+                         <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_influence_gen_kyc_config"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_kyc_config"/>
+                                <div class="text-muted">
+                                    Manage Know Your Customer (KYC) verification settings.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_kyc_config', '=', False)]}">
+                                    <div class="mt16">
+                                        <label for="influence_gen_kyc_accepted_id_types" string="Accepted ID Types"/>
+                                        <field name="influence_gen_kyc_accepted_id_types" placeholder="e.g., Passport,Driver License,National ID"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <label for="influence_gen_kyc_social_verification_params" string="Social Verification Parameters (JSON)"/>
+                                        <field name="influence_gen_kyc_social_verification_params" widget="text" placeholder='{"min_followers": 1000, "min_engagement_rate": 0.02}'/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Image Generation -->
+                    <h2>AI Image Generation</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_ai_config">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                 <field name="group_influence_gen_ai_config"/>
+                            </div>
+                             <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_ai_config"/>
+                                <div class="text-muted">
+                                   Configure AI image generation services, models, and rules.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_ai_config', '=', False)]}">
+                                    <div class="mt16">
+                                        <label for="influence_gen_ai_enabled_roles" string="AI Enabled User Roles"/>
+                                        <field name="influence_gen_ai_enabled_roles" widget="many2many_tags" options="{'no_create_edit': True}"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <label for="influence_gen_ai_default_quota_per_user" string="Default Monthly Quota/User"/>
+                                        <field name="influence_gen_ai_default_quota_per_user"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <label for="influence_gen_ai_default_params" string="Default AI Parameters (JSON)"/>
+                                        <field name="influence_gen_ai_default_params" widget="text" placeholder='{"size": "1024x1024", "quality": "hd"}'/>
+                                    </div>
+                                    <div class="mt16">
+                                        <button name="%(influence_gen_admin.action_ai_model_admin)d" icon="fa-cogs" type="action" string="Manage AI Models" class="oe_link"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <button name="%(influence_gen_admin.action_ai_prompt_template_admin)d" icon="fa-file-text-o" type="action" string="Manage Prompt Templates" class="oe_link"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <button name="%(influence_gen_admin.action_ai_moderation_rule_admin)d" icon="fa-ban" type="action" string="Manage Moderation Rules" class="oe_link"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legal & Compliance -->
+                    <h2>Legal &amp; Compliance</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_legal_compliance">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_influence_gen_legal_compliance"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_legal_compliance"/>
+                                <div class="text-muted">
+                                    Manage legal documents, data retention, and holds.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_legal_compliance', '=', False)]}">
+                                    <div class="mt16">
+                                        <button name="%(influence_gen_admin.action_terms_version_admin)d" icon="fa-gavel" type="action" string="Manage Terms &amp; Policies" class="oe_link"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <button name="%(influence_gen_admin.action_data_retention_policy_admin)d" icon="fa-history" type="action" string="Manage Data Retention Policies" class="oe_link"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <button name="%(influence_gen_admin.action_legal_hold_admin)d" icon="fa-lock" type="action" string="Manage Legal Holds" class="oe_link"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications & Email -->
+                    <h2>Notifications &amp; Email</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_notifications">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_influence_gen_notifications"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_notifications"/>
+                                <div class="text-muted">
+                                    Configure system email and notification settings.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_notifications', '=', False)]}">
+                                    <!-- Odoo's standard "Outgoing Email Servers" link is usually under General Settings / Technical -->
+                                    <div class="mt16">
+                                         <button name="action_open_outgoing_mail_servers" string="Configure Outgoing Email Servers" type="object" class="oe_link" icon="fa-envelope"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <button name="%(mail.action_email_template_form)d" type="action" string="Manage All Email Templates" class="oe_link" icon="fa-files-o"/>
+                                        <!-- Or use the filtered one if 'mail_template_action_id' is reliably computed to a specific filtered action -->
+                                        <!-- <button name="%(mail_template_action_id)d" type="action" string="Manage InfluenceGen Email Templates" class="oe_link"/> -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operational Settings -->
+                    <h2>Operational Settings</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_operations">
+                         <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_influence_gen_operations"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_operations"/>
+                                <div class="text-muted">
+                                    Configure logging, alerts, and maintenance settings.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_operations', '=', False)]}">
+                                    <!-- Link to log level if needed (usually a system param or technical setting) -->
+                                    <div class="mt16">
+                                        <button name="%(influence_gen_admin.action_alert_rule_admin)d" icon="fa-bell-o" type="action" string="Manage Alert Rules" class="oe_link"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <button name="%(influence_gen_admin.action_maintenance_window_admin)d" icon="fa-wrench" type="action" string="Manage Maintenance Windows" class="oe_link"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Processing -->
+                    <h2>Payment Processing</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_payments">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                 <field name="group_influence_gen_payments"/>
+                            </div>
+                             <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_payments"/>
+                                <div class="text-muted">
+                                   Configure default accounting settings for payments.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_payments', '=', False)]}">
+                                    <div class="mt16">
+                                        <label for="influence_gen_payment_default_journal" string="Default Payment Journal"/>
+                                        <field name="influence_gen_payment_default_journal" options="{'no_create_edit': True}"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <label for="influence_gen_payment_default_expense_account" string="Default Payment Expense Account"/>
+                                        <field name="influence_gen_payment_default_expense_account" options="{'no_create_edit': True}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Integration Settings -->
+                    <h2>Integration Settings</h2>
+                    <div class="row mt16 o_settings_container" id="influence_gen_integrations">
+                         <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_influence_gen_integrations"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_influence_gen_integrations"/>
+                                <div class="text-muted">
+                                    Manage API keys and webhook URLs for external services.
+                                </div>
+                                <div class="content-group" attrs="{'invisible': [('group_influence_gen_integrations', '=', False)]}">
+                                    <div class="mt16">
+                                        <label for="influence_gen_integration_service_api_key" string="Service API Key"/>
+                                        <field name="influence_gen_integration_service_api_key" password="True"/>
+                                    </div>
+                                    <div class="mt8">
+                                        <label for="influence_gen_integration_service_webhook_url" string="Service Webhook URL"/>
+                                        <field name="influence_gen_integration_service_webhook_url"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_influence_gen_config_settings" model="ir.actions.act_window">
+        <field name="name">InfluenceGen Settings</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">influence_gen.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module' : 'influence_gen_admin', 'bin_size': False}</field>
+    </record>
+
+</odoo>

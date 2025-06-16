@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-AIGS-003, REQ-PAC-009: AI Prompt Moderation Rule UI -->
+
+    <!-- AI Moderation Rule Search View -->
+    <record id="view_ai_moderation_rule_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.ai_moderation_rule.search.admin</field>
+        <field name="model">influence_gen.ai_moderation_rule</field>
+        <field name="arch" type="xml">
+            <search string="Search AI Moderation Rules">
+                <field name="name"/>
+                <field name="ruleType"/>
+                <field name="value"/>
+                <field name="description"/>
+                <filter string="Active" name="filter_active" domain="[('isActive', '=', True)]"/>
+                <filter string="Inactive" name="filter_inactive" domain="[('isActive', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Rule Type" name="group_by_rule_type" context="{'group_by': 'ruleType'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'isActive'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- AI Moderation Rule Tree View -->
+    <record id="view_ai_moderation_rule_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.ai_moderation_rule.tree.admin</field>
+        <field name="model">influence_gen.ai_moderation_rule</field>
+        <field name="arch" type="xml">
+            <tree string="AI Moderation Rules">
+                <field name="name"/>
+                <field name="ruleType"/>
+                <field name="value" string="Rule Pattern/Keyword"/>
+                <field name="description" optional="hide"/>
+                <field name="isActive" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- AI Moderation Rule Form View -->
+    <record id="view_ai_moderation_rule_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.ai_moderation_rule.form.admin</field>
+        <field name="model">influence_gen.ai_moderation_rule</field>
+        <field name="arch" type="xml">
+            <form string="AI Moderation Rule">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Rule Name (e.g., Prohibited Keywords)" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Rule Configuration">
+                            <field name="ruleType" required="1"/>
+                            <field name="value" string="Pattern / Keyword(s)" required="1" placeholder="e.g., nsfw_term or /regex_pattern/gi (for Regex type)"/>
+                            <field name="isActive"/>
+                        </group>
+                         <group string="Timestamps">
+                            <field name="createdAt" readonly="1"/>
+                            <field name="updatedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Description / Purpose">
+                        <field name="description" nolabel="1" placeholder="Explain what this rule does and why it's in place..."/>
+                    </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- AI Moderation Rule Action Window -->
+    <record id="action_ai_moderation_rule_admin" model="ir.actions.act_window">
+        <field name="name">AI Moderation Rules</field>
+        <field name="res_model">influence_gen.ai_moderation_rule</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_ai_moderation_rule_admin_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No AI moderation rules defined yet.
+            </p><p>
+                Create rules to moderate AI image generation prompts for safety and compliance.
+            </p>
+        </field>
+    </record>
+
+</odoo>

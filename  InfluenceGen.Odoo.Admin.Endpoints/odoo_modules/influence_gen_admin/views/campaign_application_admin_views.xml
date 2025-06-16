@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-2-007: Campaign Application Review UI -->
+
+    <!-- Campaign Application Search View -->
+    <record id="view_campaign_application_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.campaign_application.search.admin</field>
+        <field name="model">influence_gen.campaign_application</field>
+        <field name="arch" type="xml">
+            <search string="Search Campaign Applications">
+                <field name="campaignId"/>
+                <field name="influencerProfileId"/>
+                <field name="status"/>
+                <filter string="Submitted" name="filter_status_submitted" domain="[('status', '=', 'submitted')]"/>
+                <filter string="Approved" name="filter_status_approved" domain="[('status', '=', 'approved')]"/>
+                <filter string="Rejected" name="filter_status_rejected" domain="[('status', '=', 'rejected')]"/>
+                <filter string="Withdrawn" name="filter_status_withdrawn" domain="[('status', '=', 'withdrawn')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Campaign" name="group_by_campaign" context="{'group_by': 'campaignId'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Influencer" name="group_by_influencer" context="{'group_by': 'influencerProfileId'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Campaign Application Tree View -->
+    <record id="view_campaign_application_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.campaign_application.tree.admin</field>
+        <field name="model">influence_gen.campaign_application</field>
+        <field name="arch" type="xml">
+            <tree string="Campaign Applications" decoration-info="status=='submitted'" decoration-success="status=='approved'" decoration-danger="status=='rejected'" decoration-muted="status=='withdrawn'">
+                <field name="campaignId"/>
+                <field name="influencerProfileId"/>
+                <field name="status"/>
+                <field name="submittedAt"/>
+                <field name="reviewedAt" optional="show"/>
+                <field name="reviewerUserId" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Campaign Application Form View -->
+    <record id="view_campaign_application_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.campaign_application.form.admin</field>
+        <field name="model">influence_gen.campaign_application</field>
+        <field name="arch" type="xml">
+            <form string="Campaign Application">
+                <header>
+                    <!-- REQ-2-007 -->
+                    <button name="action_approve_application" string="Approve Application" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('status', '!=', 'submitted')]}"
+                            confirm="Are you sure you want to approve this application?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="%(influence_gen_admin.action_campaign_app_rejection_wizard)d" string="Reject Application" type="action"
+                            class="oe_highlight"
+                            attrs="{'invisible': [('status', '!=', 'submitted')]}"
+                            context="{'default_application_id': active_id}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="status" widget="statusbar" statusbar_visible="submitted,approved,rejected,withdrawn"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Application Details">
+                            <field name="campaignId" options="{'no_open': True, 'no_create': True}" required="1" readonly="1" force_save="1"/>
+                            <field name="influencerProfileId" options="{'no_open': True, 'no_create': True}" required="1" readonly="1" force_save="1"/>
+                            <field name="submittedAt" readonly="1"/>
+                        </group>
+                        <group string="Review Information">
+                            <field name="reviewedAt" readonly="1"/>
+                            <field name="reviewerUserId" readonly="1" options="{'no_open': True}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Proposal">
+                            <field name="proposal" readonly="1" placeholder="Influencer's proposal for the campaign..."/>
+                        </page>
+                        <page string="Rejection Reason" attrs="{'invisible': [('status', '!=', 'rejected')]}">
+                             <field name="rejectionReason" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Campaign Application Action Window -->
+    <record id="action_campaign_application_admin" model="ir.actions.act_window">
+        <field name="name">Campaign Applications</field>
+        <field name="res_model">influence_gen.campaign_application</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_campaign_application_admin_search"/>
+        <field name="context">{'search_default_filter_status_submitted': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No campaign applications found.
+            </p><p>
+                Review and manage influencer applications to campaigns.
+            </p>
+        </field>
+    </record>
+
+</odoo>

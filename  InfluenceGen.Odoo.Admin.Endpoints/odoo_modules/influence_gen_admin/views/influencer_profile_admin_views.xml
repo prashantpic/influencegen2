@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-IOKYC-011: Influencer Profile Management UI (Admin) -->
+
+    <!-- Influencer Profile Search View -->
+    <record id="view_influencer_profile_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.influencer_profile.search.admin</field>
+        <field name="model">influence_gen.influencer_profile</field>
+        <field name="arch" type="xml">
+            <search string="Search Influencer Profiles">
+                <field name="fullName"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="kycStatus"/>
+                <field name="accountStatus"/>
+                <field name="areasOfInfluence"/>
+                <filter string="Pending KYC" name="filter_kyc_pending" domain="[('kycStatus', '=', 'pending')]"/>
+                <filter string="KYC Approved" name="filter_kyc_approved" domain="[('kycStatus', '=', 'approved')]"/>
+                <filter string="KYC Rejected" name="filter_kyc_rejected" domain="[('kycStatus', '=', 'rejected')]"/>
+                <filter string="Active Accounts" name="filter_account_active" domain="[('accountStatus', '=', 'active')]"/>
+                <filter string="Suspended Accounts" name="filter_account_suspended" domain="[('accountStatus', '=', 'suspended')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="KYC Status" name="group_by_kyc_status" context="{'group_by': 'kycStatus'}"/>
+                    <filter string="Account Status" name="group_by_account_status" context="{'group_by': 'accountStatus'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Influencer Profile Tree View -->
+    <record id="view_influencer_profile_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.influencer_profile.tree.admin</field>
+        <field name="model">influence_gen.influencer_profile</field>
+        <field name="arch" type="xml">
+            <tree string="Influencer Profiles">
+                <field name="fullName"/>
+                <field name="email"/>
+                <field name="kycStatus"
+                       decoration-success="kycStatus == 'approved'"
+                       decoration-warning="kycStatus in ('pending', 'in_review', 'needs_more_info')"
+                       decoration-danger="kycStatus == 'rejected'"/>
+                <field name="accountStatus"
+                       decoration-success="accountStatus == 'active'"
+                       decoration-muted="accountStatus == 'inactive'"
+                       decoration-danger="accountStatus == 'suspended'"/>
+                <field name="createdAt" optional="hide"/>
+                <field name="updatedAt" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Influencer Profile Form View -->
+    <record id="view_influencer_profile_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.influencer_profile.form.admin</field>
+        <field name="model">influence_gen.influencer_profile</field>
+        <field name="arch" type="xml">
+            <form string="Influencer Profile">
+                <header>
+                    <!-- REQ-IOKYC-011: Buttons to call server actions -->
+                    <!-- These buttons would call methods on influence_gen.influencer_profile model -->
+                    <!-- which in turn might call service layer methods -->
+                    <button name="action_activate_account" string="Activate Account" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('accountStatus', '=', 'active')]}"
+                            confirm="Are you sure you want to activate this account?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_suspend_account" string="Suspend Account" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('accountStatus', '=', 'suspended')]}"
+                            confirm="Are you sure you want to suspend this account?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_view_kyc_submissions" string="View KYC Submissions" type="object"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="kycStatus" widget="statusbar" statusbar_visible="pending,in_review,approved,rejected,needs_more_info" readonly="1"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="fullName" placeholder="Full Name" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Contact Information">
+                            <field name="email" widget="email" required="1"/>
+                            <field name="phone" widget="phone"/>
+                            <field name="residentialAddress"/>
+                        </group>
+                        <group string="Account Details">
+                            <field name="userId" readonly="1" options="{'no_open': True}"/>
+                             <field name="accountStatus" widget="selection" options="{'no_create_edit': True}"
+                                    groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                             <field name="createdAt" readonly="1"/>
+                             <field name="updatedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Profile Details">
+                            <group>
+                                <field name="areasOfInfluence" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}"/>
+                                <field name="audienceDemographics" widget="json" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="Social Media Profiles">
+                            <field name="socialMediaProfiles" readonly="1">
+                                <tree editable="bottom">
+                                    <field name="platform"/>
+                                    <field name="handle"/>
+                                    <field name="url" widget="url"/>
+                                    <field name="verificationStatus"/>
+                                    <field name="verifiedAt" readonly="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Bank Accounts">
+                            <field name="bankAccounts" readonly="1">
+                                 <tree>
+                                    <field name="accountHolderName"/>
+                                    <field name="bankName"/>
+                                    <field name="isPrimary"/>
+                                    <field name="verificationStatus"/>
+                                </tree>
+                            </field>
+                        </page>
+                         <page string="Terms Consent">
+                            <field name="termsConsents" readonly="1">
+                                <tree>
+                                    <field name="tosVersion"/>
+                                    <field name="privacyPolicyVersion"/>
+                                    <field name="consentDate"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Influencer Profile Action Window -->
+    <record id="action_influencer_profile_admin" model="ir.actions.act_window">
+        <field name="name">Influencers</field>
+        <field name="res_model">influence_gen.influencer_profile</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_influencer_profile_admin_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No influencer profiles found.
+            </p><p>
+                Manage influencer profiles, review their KYC status, and oversee their account activity.
+            </p>
+        </field>
+    </record>
+
+</odoo>

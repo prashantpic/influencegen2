@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-2-012, REQ-PAC-016, REQ-UIUX-019, REQ-12-007, REQ-PAC-014: Admin Dashboards -->
+
+    <!-- Main Admin Dashboard Client Action -->
+    <record id="action_admin_dashboard" model="ir.actions.client">
+        <field name="name">Admin Dashboard</field>
+        <field name="tag">influence_gen_admin.AdminDashboard</field>
+        <field name="target">main</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Welcome to the InfluenceGen Admin Dashboard!
+            </p><p>
+                Key platform metrics and quick links will be displayed here.
+            </p>
+        </field>
+    </record>
+
+    <!-- System Health Dashboard (Conceptual Client Action) -->
+    <!-- Data for this would come from dashboard_controller.py -> get_system_health_data -->
+    <record id="action_system_health_dashboard" model="ir.actions.client">
+        <field name="name">System Health Dashboard</field>
+        <field name="tag">influence_gen_admin.SystemHealthDashboard</field> <!-- Requires corresponding OWL component -->
+        <field name="target">main</field>
+        <field name="help" type="html">
+            <p>
+                View system health indicators, API status, and AI service health.
+            </p>
+        </field>
+    </record>
+
+    <!-- Campaign Performance Dashboard (Conceptual Client Action) -->
+    <!-- Data for this would come from dashboard_controller.py -> get_campaign_performance_summary -->
+    <record id="action_campaign_performance_dashboard" model="ir.actions.client">
+        <field name="name">Campaign Performance Dashboard</field>
+        <field name="tag">influence_gen_admin.CampaignPerformanceDashboard</field> <!-- Requires corresponding OWL component -->
+        <field name="target">main</field>
+        <field name="help" type="html">
+            <p>
+                Analyze aggregated campaign performance metrics.
+            </p>
+        </field>
+    </record>
+
+    <!-- Placeholder for a standard Odoo dashboard if needed, using board module -->
+    <record id="board_admin_dashboard_form" model="ir.ui.view">
+        <field name="name">influence_gen.admin.dashboard.form</field>
+        <field name="model">board.board</field>
+        <field name="arch" type="xml">
+            <form string="Admin Dashboard">
+                <board style="2-1">
+                    <column>
+                        <action name="%(influence_gen_admin.action_influencer_profile_admin)d" string="Recent Influencers" view_mode="tree" context="{'search_default_filter_latest_week':1}"/>
+                        <action name="%(influence_gen_admin.action_campaign_admin)d" string="Active Campaigns" view_mode="kanban" context="{'search_default_filter_active_campaigns':1}"/>
+                    </column>
+                    <column>
+                        <action name="%(influence_gen_admin.action_kyc_data_admin)d" string="Pending KYC Submissions" context="{'search_default_filter_status_pending':1, 'search_default_filter_status_in_review':1}"/>
+                        <action name="%(influence_gen_admin.action_content_submission_admin)d" string="Pending Content Review" context="{'search_default_filter_status_pending':1}"/>
+                    </column>
+                </board>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_admin_dashboard_board" model="ir.actions.act_window">
+        <field name="name">Overview Dashboard</field>
+        <field name="res_model">board.board</field>
+        <field name="view_mode">form</field>
+        <field name="usage">menu</field>
+        <field name="view_id" ref="board_admin_dashboard_form"/>
+    </record>
+
+</odoo>

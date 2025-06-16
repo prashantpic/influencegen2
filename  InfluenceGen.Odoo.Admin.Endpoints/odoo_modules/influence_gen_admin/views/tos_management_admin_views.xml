@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-PAC-006: ToS/Privacy Policy Version Management UI -->
+
+    <!-- Terms Version Search View -->
+    <record id="view_terms_version_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.terms_version.search.admin</field>
+        <field name="model">influence_gen.terms_version</field>
+        <field name="arch" type="xml">
+            <search string="Search Terms &amp; Policies">
+                <field name="documentType"/>
+                <field name="versionNumber"/>
+                <field name="effectiveDate"/>
+                <filter string="Active Documents" name="filter_active" domain="[('isActive', '=', True)]"/>
+                <filter string="Inactive Documents" name="filter_inactive" domain="[('isActive', '=', False)]"/>
+                <filter string="Terms of Service" name="filter_tos" domain="[('documentType', '=', 'tos')]"/>
+                <filter string="Privacy Policy" name="filter_privacy" domain="[('documentType', '=', 'privacy_policy')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Document Type" name="group_by_doc_type" context="{'group_by': 'documentType'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'isActive'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Terms Version Tree View -->
+    <record id="view_terms_version_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.terms_version.tree.admin</field>
+        <field name="model">influence_gen.terms_version</field>
+        <field name="arch" type="xml">
+            <tree string="Terms &amp; Policies Versions">
+                <field name="documentType"/>
+                <field name="versionNumber"/>
+                <field name="effectiveDate"/>
+                <field name="isActive" widget="boolean_toggle"/>
+                <field name="updatedAt" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Terms Version Form View -->
+    <record id="view_terms_version_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.terms_version.form.admin</field>
+        <field name="model">influence_gen.terms_version</field>
+        <field name="arch" type="xml">
+            <form string="Terms &amp; Policy Version">
+                <header>
+                     <button name="action_activate_version" string="Activate Version" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('isActive', '=', True)]}"
+                            confirm="Activating this version will make it the current live version for its document type. Proceed?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_deactivate_version" string="Deactivate Version" type="object"
+                            attrs="{'invisible': [('isActive', '=', False)]}"
+                             confirm="Deactivating this version means it will no longer be the live version. Ensure another active version exists if needed. Proceed?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="isActive" widget="statusbar" statusbar_visible="True,False" options="{'clickable': '0'}"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="documentType" class="oe_edit_only"/>
+                        <h1>
+                            <field name="documentType" required="1" options="{'no_create_edit': True}"/> - v<field name="versionNumber" required="1" class="oe_inline"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Version Details">
+                            <field name="effectiveDate" required="1"/>
+                        </group>
+                         <group string="Timestamps">
+                            <field name="createdAt" readonly="1"/>
+                            <field name="updatedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Document Content">
+                         <field name="content_type" widget="radio" required="1"/>
+                         <field name="content" nolabel="1" placeholder="Paste HTML content or type Markdown/Text content here..."
+                                attrs="{'invisible': [('content_type', '=', 'attachment')]}"/>
+                         <field name="attachment" filename="attachment_filename" nolabel="1"
+                                attrs="{'invisible': [('content_type', '!=', 'attachment')]}"/>
+                         <field name="attachment_filename" invisible="1"/>
+                    </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Terms Version Action Window -->
+    <record id="action_terms_version_admin" model="ir.actions.act_window">
+        <field name="name">Terms &amp; Policies</field>
+        <field name="res_model">influence_gen.terms_version</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_terms_version_admin_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Terms of Service or Privacy Policy versions found.
+            </p><p>
+                Manage versions of your platform's legal documents here.
+            </p>
+        </field>
+    </record>
+
+</odoo>

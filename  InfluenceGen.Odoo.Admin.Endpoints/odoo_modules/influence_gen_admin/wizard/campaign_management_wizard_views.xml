@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-2-007, REQ-2-010: Campaign and Content Management Wizards UI -->
+
+    <!-- Campaign Application Rejection Wizard Form View -->
+    <record id="view_campaign_app_rejection_wizard_form" model="ir.ui.view">
+        <field name="name">influence_gen.campaign_app_rejection_wizard.form</field>
+        <field name="model">influence_gen.campaign_app_rejection_wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Campaign Application">
+                <sheet>
+                    <group>
+                        <field name="application_id" invisible="1"/>
+                        <field name="rejection_reason" required="1" placeholder="Provide a reason for rejecting this campaign application..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_application_rejection" string="Confirm Rejection" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Campaign Application Rejection Wizard Action -->
+    <record id="action_campaign_app_rejection_wizard" model="ir.actions.act_window">
+        <field name="name">Reject Campaign Application</field>
+        <field name="res_model">influence_gen.campaign_app_rejection_wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="influence_gen_services.model_influence_gen_campaign_application"/>
+        <field name="binding_type">action</field>
+    </record>
+
+    <!-- Content Revision Request Wizard Form View -->
+    <record id="view_content_revision_wizard_form" model="ir.ui.view">
+        <field name="name">influence_gen.content_revision_wizard.form</field>
+        <field name="model">influence_gen.content_revision_wizard</field>
+        <field name="arch" type="xml">
+            <form string="Request Content Revision">
+                <sheet>
+                    <group>
+                        <field name="submission_id" invisible="1"/>
+                        <field name="revision_feedback" required="1" placeholder="Provide detailed feedback for the content revision..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_request_content_revision" string="Request Revision" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Content Revision Request Wizard Action -->
+    <record id="action_content_revision_wizard" model="ir.actions.act_window">
+        <field name="name">Request Content Revision</field>
+        <field name="res_model">influence_gen.content_revision_wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="influence_gen_services.model_influence_gen_content_submission"/>
+        <field name="binding_type">action</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-DRH-008: Data Retention Policy Management UI -->
+
+    <!-- Data Retention Policy Search View -->
+    <record id="view_data_retention_policy_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.data_retention_policy.search.admin</field>
+        <field name="model">influence_gen.data_retention_policy</field>
+        <field name="arch" type="xml">
+            <search string="Search Data Retention Policies">
+                <field name="name"/>
+                <field name="dataCategory"/>
+                <field name="retentionPeriodDays"/>
+                <field name="actionOnExpiry"/>
+                <filter string="Active" name="filter_active" domain="[('isActive', '=', True)]"/>
+                <filter string="Inactive" name="filter_inactive" domain="[('isActive', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Data Category" name="group_by_data_category" context="{'group_by': 'dataCategory'}"/>
+                    <filter string="Action on Expiry" name="group_by_action_on_expiry" context="{'group_by': 'actionOnExpiry'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'isActive'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Data Retention Policy Tree View -->
+    <record id="view_data_retention_policy_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.data_retention_policy.tree.admin</field>
+        <field name="model">influence_gen.data_retention_policy</field>
+        <field name="arch" type="xml">
+            <tree string="Data Retention Policies">
+                <field name="name"/>
+                <field name="dataCategory"/>
+                <field name="retentionPeriodDays"/>
+                <field name="actionOnExpiry"/>
+                <field name="isActive" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Data Retention Policy Form View -->
+    <record id="view_data_retention_policy_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.data_retention_policy.form.admin</field>
+        <field name="model">influence_gen.data_retention_policy</field>
+        <field name="arch" type="xml">
+            <form string="Data Retention Policy">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Policy Name (e.g., KYC Data Retention)" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Policy Configuration">
+                            <field name="dataCategory" required="1" help="The category of data this policy applies to (e.g., 'kyc_documents', 'user_activity_logs', 'generated_images_personal'). This should map to how data is categorized in the system."/>
+                            <field name="retentionPeriodDays" required="1" help="Number of days data in this category will be retained after its creation or last modification, as applicable."/>
+                            <field name="actionOnExpiry" required="1" help="'delete' for permanent deletion, 'anonymize' for data anonymization."/>
+                            <field name="isActive"/>
+                        </group>
+                         <group string="Timestamps">
+                            <field name="createdAt" readonly="1"/>
+                            <field name="updatedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Description / Scope">
+                        <field name="description" nolabel="1" placeholder="Detailed description of the policy, its scope, and any legal or business justifications..."/>
+                    </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Data Retention Policy Action Window -->
+    <record id="action_data_retention_policy_admin" model="ir.actions.act_window">
+        <field name="name">Data Retention Policies</field>
+        <field name="res_model">influence_gen.data_retention_policy</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_data_retention_policy_admin_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No data retention policies defined yet.
+            </p><p>
+                Define policies to manage the lifecycle of different data categories for compliance and data minimization.
+            </p>
+        </field>
+    </record>
+
+</odoo>

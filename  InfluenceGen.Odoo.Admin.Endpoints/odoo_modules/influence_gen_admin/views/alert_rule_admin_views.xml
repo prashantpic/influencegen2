@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-PAC-011: System Alert Rule Configuration UI -->
+
+    <!-- Alert Rule Search View -->
+    <record id="view_alert_rule_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.alert_rule.search.admin</field>
+        <field name="model">influence_gen.alert_rule</field>
+        <field name="arch" type="xml">
+            <search string="Search Alert Rules">
+                <field name="name"/>
+                <field name="monitoredMetric"/>
+                <field name="severity"/>
+                <field name="notificationChannels"/>
+                <field name="recipients"/>
+                <filter string="Active" name="filter_active" domain="[('isActive', '=', True)]"/>
+                <filter string="Inactive" name="filter_inactive" domain="[('isActive', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Severity" name="group_by_severity" context="{'group_by': 'severity'}"/>
+                    <filter string="Monitored Metric" name="group_by_metric" context="{'group_by': 'monitoredMetric'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'isActive'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Alert Rule Tree View -->
+    <record id="view_alert_rule_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.alert_rule.tree.admin</field>
+        <field name="model">influence_gen.alert_rule</field>
+        <field name="arch" type="xml">
+            <tree string="Alert Rules">
+                <field name="name"/>
+                <field name="monitoredMetric"/>
+                <field name="condition"/>
+                <field name="thresholdValue"/>
+                <field name="severity" decoration-danger="severity=='critical'" decoration-warning="severity=='high'" decoration-info="severity=='medium'"/>
+                <field name="notificationChannels" optional="show"/>
+                <field name="isActive" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Alert Rule Form View -->
+    <record id="view_alert_rule_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.alert_rule.form.admin</field>
+        <field name="model">influence_gen.alert_rule</field>
+        <field name="arch" type="xml">
+            <form string="Alert Rule">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Rule Name (e.g., High KYC Rejection Rate)" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Rule Definition">
+                            <field name="monitoredMetric" required="1" placeholder="e.g., kyc_rejection_rate, api_error_count, disk_space_usage_percent"/>
+                            <field name="condition" required="1" placeholder="e.g., &gt;, &lt;, =, contains, regex_match"/>
+                            <field name="thresholdValue" required="1" placeholder="e.g., 0.1 (for 10%), 100, critical_keyword"/>
+                            <field name="evaluationInterval" placeholder="e.g., 5m, 1h, 1d (how often to check)"/>
+                            <field name="isActive"/>
+                        </group>
+                        <group string="Alert Details & Notification">
+                            <field name="severity" required="1"/>
+                            <field name="notificationChannels" widget="many2many_tags" placeholder="e.g., email, webhook, sms_gateway_integration_id"/>
+                            <field name="recipients" placeholder="Comma-separated emails, user IDs, or group names"/>
+                            <field name="messageTemplate" placeholder="Template for the alert message. Use placeholders like {{metric}}, {{value}}, {{threshold}}."/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" placeholder="Detailed description of the alert rule, what it monitors, and potential impact or remediation steps..."/>
+                    </group>
+                     <group string="Timestamps">
+                        <field name="createdAt" readonly="1"/>
+                        <field name="updatedAt" readonly="1"/>
+                    </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Alert Rule Action Window -->
+    <record id="action_alert_rule_admin" model="ir.actions.act_window">
+        <field name="name">Alert Rules</field>
+        <field name="res_model">influence_gen.alert_rule</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_alert_rule_admin_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No alert rules configured yet.
+            </p><p>
+                Define rules to monitor system metrics and events, and trigger alerts for important conditions.
+            </p>
+        </field>
+    </record>
+
+</odoo>

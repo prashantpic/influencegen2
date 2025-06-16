@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-AIGS-003, REQ-PAC-005, REQ-UIUX-021: AI Prompt Template Management UI -->
+
+    <!-- AI Prompt Template Search View -->
+    <record id="view_ai_prompt_template_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.ai_prompt_template.search.admin</field>
+        <field name="model">influence_gen.ai_prompt_template</field>
+        <field name="arch" type="xml">
+            <search string="Search AI Prompt Templates">
+                <field name="name"/>
+                <field name="category"/>
+                <field name="promptText"/>
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="group_by_category" context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- AI Prompt Template Tree View -->
+    <record id="view_ai_prompt_template_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.ai_prompt_template.tree.admin</field>
+        <field name="model">influence_gen.ai_prompt_template</field>
+        <field name="arch" type="xml">
+            <tree string="AI Prompt Templates">
+                <field name="name"/>
+                <field name="category" optional="show"/>
+                <field name="promptText" string="Prompt Snippet" optional="hide"/> <!-- Show a snippet or full text if short -->
+                <field name="updatedAt" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- AI Prompt Template Form View -->
+    <record id="view_ai_prompt_template_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.ai_prompt_template.form.admin</field>
+        <field name="model">influence_gen.ai_prompt_template</field>
+        <field name="arch" type="xml">
+            <form string="AI Prompt Template">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Template Name (e.g., Cinematic Portrait)" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category" placeholder="e.g., Photography, Fantasy Art, Product Shot"/>
+                        </group>
+                         <group string="Timestamps">
+                            <field name="createdAt" readonly="1"/>
+                            <field name="updatedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Prompt Text">
+                        <field name="promptText" nolabel="1" placeholder="Enter the prompt template. Use placeholders like {{subject}} or {{style}} if applicable."/>
+                    </group>
+                    <group string="Usage Notes / Guidelines">
+                        <field name="description" nolabel="1" placeholder="Describe when and how to use this template, and any important considerations or example placeholder values."/>
+                    </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- AI Prompt Template Action Window -->
+    <record id="action_ai_prompt_template_admin" model="ir.actions.act_window">
+        <field name="name">AI Prompt Templates</field>
+        <field name="res_model">influence_gen.ai_prompt_template</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_ai_prompt_template_admin_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No AI prompt templates created yet.
+            </p><p>
+                Create and manage reusable prompt templates to help users generate AI images more effectively.
+            </p>
+        </field>
+    </record>
+
+</odoo>

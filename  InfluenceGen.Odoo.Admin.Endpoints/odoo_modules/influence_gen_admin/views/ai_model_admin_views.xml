@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-AIGS-004, REQ-PAC-005: AI Model Management UI -->
+
+    <!-- AI Image Model Search View -->
+    <record id="view_ai_image_model_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.ai_image_model.search.admin</field>
+        <field name="model">influence_gen.ai_image_model</field>
+        <field name="arch" type="xml">
+            <search string="Search AI Image Models">
+                <field name="name"/>
+                <field name="description"/>
+                <field name="triggerKeywords"/>
+                <field name="externalModelId"/>
+                <filter string="Active" name="filter_active" domain="[('isActive', '=', True)]"/>
+                <filter string="Inactive" name="filter_inactive" domain="[('isActive', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'isActive'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- AI Image Model Tree View -->
+    <record id="view_ai_image_model_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.ai_image_model.tree.admin</field>
+        <field name="model">influence_gen.ai_image_model</field>
+        <field name="arch" type="xml">
+            <tree string="AI Image Models">
+                <field name="name"/>
+                <field name="description" optional="hide"/>
+                <field name="triggerKeywords" optional="show"/>
+                <field name="externalModelId" optional="show"/>
+                <field name="isActive" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- AI Image Model Form View -->
+    <record id="view_ai_image_model_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.ai_image_model.form.admin</field>
+        <field name="model">influence_gen.ai_image_model</field>
+        <field name="arch" type="xml">
+            <form string="AI Image Model">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Model Name (e.g., Stable Diffusion XL)" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Model Details">
+                            <field name="isActive"/>
+                            <field name="externalModelId" placeholder="e.g., sdxl-v1.0 (ID from AI Provider)"/>
+                            <field name="triggerKeywords" placeholder="Comma-separated keywords, e.g., photo, realistic, art"/>
+                        </group>
+                         <group string="Timestamps">
+                            <field name="createdAt" readonly="1"/>
+                            <field name="updatedAt" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" placeholder="Detailed description of the model, its capabilities, and recommended use cases..."/>
+                    </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- AI Image Model Action Window -->
+    <record id="action_ai_model_admin" model="ir.actions.act_window">
+        <field name="name">AI Models</field>
+        <field name="res_model">influence_gen.ai_image_model</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_ai_image_model_admin_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No AI image models configured yet.
+            </p><p>
+                Add and manage AI models available for image generation in the platform.
+            </p>
+        </field>
+    </record>
+
+</odoo>

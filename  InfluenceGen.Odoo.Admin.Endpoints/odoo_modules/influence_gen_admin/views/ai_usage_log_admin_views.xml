@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-AIGS-007: AI Usage Log Viewing UI -->
+
+    <!-- AI Usage Tracking Log Search View -->
+    <record id="view_ai_usage_log_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.usage_tracking_log.search.admin</field>
+        <field name="model">influence_gen.usage_tracking_log</field>
+        <field name="arch" type="xml">
+            <search string="Search AI Usage Logs">
+                <field name="userId" string="User (Initiator)"/>
+                <field name="influencerProfileId" string="Influencer Profile"/>
+                <field name="campaignId"/>
+                <field name="modelId" string="AI Model"/>
+                <field name="timestamp" string="Date"/>
+                <field name="status"/>
+                <filter string="Successful Generations" name="filter_status_completed" domain="[('status', '=', 'completed')]"/>
+                <filter string="Failed Generations" name="filter_status_failed" domain="[('status', '=', 'failed')]"/>
+                <filter string="Today" name="filter_today" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')), ('timestamp', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                <filter string="This Month" name="filter_this_month" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-01 00:00:00')), ('timestamp', '&lt;=', (context_today().replace(day=1) + relativedelta(months=1, days=-1)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="User" name="group_by_user" context="{'group_by': 'userId'}"/>
+                    <filter string="Influencer" name="group_by_influencer" context="{'group_by': 'influencerProfileId'}"/>
+                    <filter string="Campaign" name="group_by_campaign" context="{'group_by': 'campaignId'}"/>
+                    <filter string="AI Model" name="group_by_model" context="{'group_by': 'modelId'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'timestamp:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- AI Usage Tracking Log Tree View -->
+    <record id="view_ai_usage_log_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.usage_tracking_log.tree.admin</field>
+        <field name="model">influence_gen.usage_tracking_log</field>
+        <field name="arch" type="xml">
+            <!-- Set create, edit, delete to false as logs should be immutable for admins -->
+            <tree string="AI Usage Logs" create="false" edit="false" delete="false">
+                <field name="timestamp"/>
+                <field name="userId" string="User (Initiator)"/>
+                <field name="influencerProfileId" optional="show"/>
+                <field name="campaignId" optional="show"/>
+                <field name="modelId" string="AI Model"/>
+                <field name="imagesGenerated" sum="Total Images"/>
+                <field name="apiCalls" sum="Total API Calls"/>
+                <field name="status" optional="show"/>
+                <field name="cost" optional="show" sum="Total Cost" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="True"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- AI Usage Tracking Log Form View (Read-only) -->
+    <record id="view_ai_usage_log_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.usage_tracking_log.form.admin</field>
+        <field name="model">influence_gen.usage_tracking_log</field>
+        <field name="arch" type="xml">
+            <form string="AI Usage Log Entry" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group string="Log Details">
+                            <field name="timestamp" readonly="1"/>
+                            <field name="userId" string="User (Initiator)" readonly="1" options="{'no_open': True}"/>
+                            <field name="influencerProfileId" readonly="1" options="{'no_open': True}"/>
+                            <field name="campaignId" readonly="1" options="{'no_open': True}"/>
+                            <field name="requestId" readonly="1" options="{'no_open':True}"/>
+                        </group>
+                        <group string="Usage Metrics">
+                            <field name="modelId" string="AI Model" readonly="1" options="{'no_open': True}"/>
+                            <field name="imagesGenerated" readonly="1"/>
+                            <field name="apiCalls" readonly="1"/>
+                            <field name="cost" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" readonly="1" column_invisible="True"/>
+                            <field name="status" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Request & Response (If Applicable)">
+                        <field name="prompt" readonly="1"/>
+                        <field name="negativePrompt" readonly="1" attrs="{'invisible': [('negativePrompt', '=', False)]}"/>
+                        <field name="parameters" widget="json" readonly="1"/>
+                        <field name="errorDetails" readonly="1" attrs="{'invisible': [('status', '!=', 'failed')]}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- AI Usage Tracking Log Graph View -->
+    <record id="view_ai_usage_log_admin_graph" model="ir.ui.view">
+        <field name="name">influence_gen.usage_tracking_log.graph.admin</field>
+        <field name="model">influence_gen.usage_tracking_log</field>
+        <field name="arch" type="xml">
+            <graph string="AI Usage Analysis" type="bar" sample="1">
+                <field name="modelId" type="row"/>
+                <field name="imagesGenerated" type="measure"/>
+                <field name="apiCalls" type="measure"/>
+                <field name="cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+
+    <!-- AI Usage Log Action Window -->
+    <record id="action_ai_usage_log_admin" model="ir.actions.act_window">
+        <field name="name">AI Usage Logs</field>
+        <field name="res_model">influence_gen.usage_tracking_log</field>
+        <field name="view_mode">tree,form,graph,search</field>
+        <field name="search_view_id" ref="view_ai_usage_log_admin_search"/>
+        <field name="context">{'search_default_filter_this_month': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No AI usage logs found for the selected period.
+            </p><p>
+                Review logs of AI image generation activities, including usage metrics and costs.
+            </p>
+        </field>
+    </record>
+
+</odoo>

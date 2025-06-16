@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-2-001, REQ-2-002, REQ-2-003: Campaign Creation & Management UI -->
+
+    <!-- Campaign Search View -->
+    <record id="view_campaign_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.campaign.search.admin</field>
+        <field name="model">influence_gen.campaign</field>
+        <field name="arch" type="xml">
+            <search string="Search Campaigns">
+                <field name="name"/>
+                <field name="brandClient"/>
+                <field name="status"/>
+                <field name="compensationModel"/>
+                <filter string="Draft" name="filter_status_draft" domain="[('status', '=', 'draft')]"/>
+                <filter string="Published" name="filter_status_published" domain="[('status', '=', 'published')]"/>
+                <filter string="Open for Applications" name="filter_status_open" domain="[('status', '=', 'open')]"/>
+                <filter string="Closed" name="filter_status_closed" domain="[('status', '=', 'closed')]"/>
+                <filter string="Completed" name="filter_status_completed" domain="[('status', '=', 'completed')]"/>
+                <separator/>
+                <filter string="Active Campaigns" name="filter_active_campaigns" domain="[('status', 'in', ['published', 'open'])]"/>
+                <filter string="Archived Campaigns" name="filter_archived_campaigns" domain="[('status', 'in', ['closed', 'completed'])]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Brand/Client" name="group_by_brand" context="{'group_by': 'brandClient'}"/>
+                    <filter string="Compensation Model" name="group_by_compensation" context="{'group_by': 'compensationModel'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Campaign Tree View -->
+    <record id="view_campaign_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.campaign.tree.admin</field>
+        <field name="model">influence_gen.campaign</field>
+        <field name="arch" type="xml">
+            <tree string="Campaigns">
+                <field name="name"/>
+                <field name="brandClient"/>
+                <field name="startDate"/>
+                <field name="endDate"/>
+                <field name="submissionDeadline"/>
+                <field name="budget" sum="Total Budget" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="status" widget="badge" decoration-info="status == 'draft'"
+                       decoration-success="status in ('published', 'open')"
+                       decoration-warning="status == 'closed'"
+                       decoration-muted="status == 'completed'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Campaign Kanban View -->
+    <record id="view_campaign_admin_kanban" model="ir.ui.view">
+        <field name="name">influence_gen.campaign.kanban.admin</field>
+        <field name="model">influence_gen.campaign</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="brandClient"/>
+                <field name="startDate"/>
+                <field name="endDate"/>
+                <field name="status"/>
+                <field name="budget"/>
+                <field name="currency_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div>
+                                    <strong><field name="name"/></strong>
+                                </div>
+                                <div><field name="brandClient"/></div>
+                                <div>
+                                    <span class="oe_kanban_text_grey">Budget: </span>
+                                    <field name="budget" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </div>
+                                <div>
+                                    <span class="oe_kanban_text_grey">Start: </span><field name="startDate" widget="date"/>
+                                </div>
+                                <div>
+                                    <span class="oe_kanban_text_grey">End: </span><field name="endDate" widget="date"/>
+                                </div>
+                            </div>
+                            <div class="oe_kanban_footer_left">
+                                <field name="status" widget="badge" decoration-info="status == 'draft'"
+                                       decoration-success="status in ('published', 'open')"
+                                       decoration-warning="status == 'closed'"
+                                       decoration-muted="status == 'completed'"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Campaign Form View -->
+    <record id="view_campaign_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.campaign.form.admin</field>
+        <field name="model">influence_gen.campaign</field>
+        <field name="arch" type="xml">
+            <form string="Campaign">
+                <header>
+                    <!-- Add buttons for state transitions e.g. Publish, Close, Complete -->
+                    <button name="action_publish_campaign" string="Publish" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('status', '!=', 'draft')]}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_open_applications" string="Open for Applications" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('status', '!=', 'published')]}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_close_applications" string="Close for Applications" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('status', '!=', 'open')]}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                     <button name="action_complete_campaign" string="Mark as Completed" type="object"
+                            attrs="{'invisible': [('status', '!=', 'closed')]}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="status" widget="statusbar" statusbar_visible="draft,published,open,closed,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Campaign Name" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Campaign Overview">
+                            <field name="brandClient" required="1"/>
+                            <field name="goals" placeholder="Describe campaign goals and KPIs..."/>
+                        </group>
+                        <group string="Financials & Timeline">
+                            <field name="budget" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" required="1"/>
+                            <field name="compensationModel" required="1"/>
+                            <field name="startDate" required="1"/>
+                            <field name="endDate" required="1"/>
+                            <field name="submissionDeadline" required="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Details">
+                            <group>
+                                <group string="Targeting & Requirements">
+                                    <field name="targetCriteria" widget="json" placeholder='{"audience_niche": "fashion", "location": "US"}'/>
+                                    <field name="contentRequirements" placeholder="Detail specific content requirements..."/>
+                                    <field name="usageRights" placeholder="Describe usage rights for submitted content..."/>
+                                </group>
+                                <group string="Administrative">
+                                    <field name="createdAt" readonly="1"/>
+                                    <field name="updatedAt" readonly="1"/>
+                                </group>
+                            </group>
+                            <field name="description" placeholder="Full campaign description..."/>
+                        </page>
+                        <page string="Applications">
+                            <field name="campaignApplicationIds" readonly="1">
+                                <tree>
+                                    <field name="influencerProfileId"/>
+                                    <field name="status"/>
+                                    <field name="submittedAt"/>
+                                    <field name="reviewedAt"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Content Submissions">
+                            <field name="contentSubmissionIds" readonly="1">
+                                 <tree>
+                                    <field name="campaignApplicationId" column_invisible="1"/>
+                                    <field name="influencer_name" string="Influencer"/> <!-- Assuming a related field on content_submission -->
+                                    <field name="contentUrl" widget="url"/>
+                                    <field name="reviewStatus"/>
+                                    <field name="submissionDate"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Performance Summary">
+                            <!-- Data can be fetched via related fields or a computed field from campaign_performance_mv -->
+                            <group>
+                                <field name="actualPerformanceMetrics" widget="json" readonly="1" placeholder='{"total_reach": 0, "total_engagement": 0}'/>
+                                <!-- Direct link to campaign performance view if it exists -->
+                                <!-- <button name="action_view_performance" string="View Detailed Performance" type="object"/> -->
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Campaign Action Window -->
+    <record id="action_campaign_admin" model="ir.actions.act_window">
+        <field name="name">Campaigns</field>
+        <field name="res_model">influence_gen.campaign</field>
+        <field name="view_mode">kanban,tree,form,search</field>
+        <field name="search_view_id" ref="view_campaign_admin_search"/>
+        <field name="context">{'search_default_filter_active_campaigns': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No campaigns found.
+            </p><p>
+                Create and manage marketing campaigns here.
+            </p>
+        </field>
+    </record>
+
+</odoo>

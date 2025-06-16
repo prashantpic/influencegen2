@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-IOKYC-011: KYC Management Wizards UI -->
+
+    <!-- KYC Rejection Wizard Form View -->
+    <record id="view_kyc_rejection_wizard_form" model="ir.ui.view">
+        <field name="name">influence_gen.kyc_rejection_wizard.form</field>
+        <field name="model">influence_gen.kyc_rejection_wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject KYC Submission">
+                <sheet>
+                    <group>
+                        <field name="kyc_data_id" invisible="1"/>
+                        <field name="rejection_reason" required="1" placeholder="Provide a clear reason for rejecting this KYC submission..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_rejection" string="Confirm Rejection" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- KYC Rejection Wizard Action -->
+    <record id="action_kyc_rejection_wizard" model="ir.actions.act_window">
+        <field name="name">Reject KYC Submission</field>
+        <field name="res_model">influence_gen.kyc_rejection_wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="influence_gen_services.model_influence_gen_kyc_data"/>
+        <field name="binding_type">action</field>
+    </record>
+
+    <!-- KYC Request More Info Wizard Form View -->
+    <record id="view_kyc_request_info_wizard_form" model="ir.ui.view">
+        <field name="name">influence_gen.kyc_request_info_wizard.form</field>
+        <field name="model">influence_gen.kyc_request_info_wizard</field>
+        <field name="arch" type="xml">
+            <form string="Request More Information for KYC">
+                <sheet>
+                    <group>
+                        <field name="kyc_data_id" invisible="1"/>
+                        <field name="info_request_message" required="1" placeholder="Clearly state what additional information or clarification is needed from the influencer..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_send_info_request" string="Send Request" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- KYC Request More Info Wizard Action -->
+    <record id="action_kyc_request_info_wizard" model="ir.actions.act_window">
+        <field name="name">Request More Information for KYC</field>
+        <field name="res_model">influence_gen.kyc_request_info_wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="influence_gen_services.model_influence_gen_kyc_data"/>
+        <field name="binding_type">action</field>
+    </record>
+
+</odoo>

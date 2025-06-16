@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-PAC-016, REQ-ATEL-008, REQ-UIUX-016: Audit Log Review UI -->
+
+    <!-- Audit Log Search View -->
+    <record id="view_audit_log_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.audit_log.search.admin</field>
+        <field name="model">influence_gen.audit_log</field>
+        <field name="arch" type="xml">
+            <search string="Search Audit Logs">
+                <field name="timestamp" string="Date"/>
+                <field name="eventType"/>
+                <field name="actorUserId" string="Performed By"/>
+                <field name="targetEntity" string="Affected Entity"/>
+                <field name="targetId" string="Affected Record ID"/>
+                <field name="action"/>
+                <field name="ipAddress"/>
+                <field name="details" string="Details (JSON Search)"/> <!-- Odoo might not have good JSON search by default, but field can be included for manual string match -->
+                <filter string="Today" name="filter_today" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')), ('timestamp', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                <filter string="This Week" name="filter_this_week" domain="[('timestamp', '&gt;=', (context_today() - datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00')), ('timestamp', '&lt;=', (context_today() + datetime.timedelta(days=6-context_today().weekday())).strftime('%Y-%m-%d 23:59:59'))]"/>
+                <filter string="This Month" name="filter_this_month" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-01 00:00:00')), ('timestamp', '&lt;=', (context_today().replace(day=1) + relativedelta(months=1, days=-1)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Event Type" name="group_by_event_type" context="{'group_by': 'eventType'}"/>
+                    <filter string="Actor" name="group_by_actor" context="{'group_by': 'actorUserId'}"/>
+                    <filter string="Target Entity" name="group_by_target_entity" context="{'group_by': 'targetEntity'}"/>
+                    <filter string="Action" name="group_by_action" context="{'group_by': 'action'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'timestamp:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Audit Log Tree View -->
+    <record id="view_audit_log_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.audit_log.tree.admin</field>
+        <field name="model">influence_gen.audit_log</field>
+        <field name="arch" type="xml">
+            <!-- Set create, edit, delete to false as logs should be immutable for admins -->
+            <tree string="Audit Logs" create="false" edit="false" delete="false">
+                <field name="timestamp"/>
+                <field name="eventType"/>
+                <field name="actorUserId"/>
+                <field name="targetEntity"/>
+                <field name="targetId"/>
+                <field name="action"/>
+                <field name="ipAddress" optional="show"/>
+                <field name="outcome_summary" optional="show"/> <!-- outcome_summary is not in SDS, assuming a computed short description -->
+                <field name="details" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Audit Log Form View (Read-only) -->
+    <record id="view_audit_log_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.audit_log.form.admin</field>
+        <field name="model">influence_gen.audit_log</field>
+        <field name="arch" type="xml">
+            <form string="Audit Log Entry" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group string="Event Details">
+                            <field name="timestamp" readonly="1"/>
+                            <field name="eventType" readonly="1"/>
+                            <field name="action" readonly="1"/>
+                        </group>
+                        <group string="Actor & Origin">
+                            <field name="actorUserId" readonly="1" options="{'no_open': True}"/>
+                            <field name="ipAddress" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Target Information">
+                        <field name="targetEntity" readonly="1"/>
+                        <field name="targetId" readonly="1"/>
+                        <field name="target_display_name" readonly="1" string="Target Record"/> <!-- Assumed related field for display name -->
+                    </group>
+                    <group string="Log Data">
+                        <field name="outcome_summary" readonly="1" string="Summary"/>
+                        <field name="details" widget="json" readonly="1" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Audit Log Action Window -->
+    <record id="action_audit_log_admin" model="ir.actions.act_window">
+        <field name="name">Audit Trail</field>
+        <field name="res_model">influence_gen.audit_log</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_audit_log_admin_search"/>
+        <field name="context">{'search_default_filter_today': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No audit logs found for the selected period.
+            </p><p>
+                Review system audit trails for security, compliance, and operational insights.
+            </p>
+        </field>
+    </record>
+
+</odoo>

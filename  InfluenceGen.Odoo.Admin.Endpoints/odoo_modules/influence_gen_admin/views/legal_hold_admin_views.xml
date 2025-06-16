@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-DRH-008, REQ-DRH-009: Legal Hold Management UI -->
+
+    <!-- Legal Hold Search View -->
+    <record id="view_legal_hold_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.legal_hold.search.admin</field>
+        <field name="model">influence_gen.legal_hold</field>
+        <field name="arch" type="xml">
+            <search string="Search Legal Holds">
+                <field name="name" string="Reason/Case Name"/>
+                <field name="targetModel"/>
+                <field name="targetRecordId"/>
+                <field name="status"/>
+                <field name="placedByUserId"/>
+                <field name="liftedByUserId"/>
+                <filter string="Active Holds" name="filter_active" domain="[('status', '=', 'active')]"/>
+                <filter string="Lifted Holds" name="filter_lifted" domain="[('status', '=', 'lifted')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Target Model" name="group_by_target_model" context="{'group_by': 'targetModel'}"/>
+                    <filter string="Placed By" name="group_by_placed_by" context="{'group_by': 'placedByUserId'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Legal Hold Tree View -->
+    <record id="view_legal_hold_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.legal_hold.tree.admin</field>
+        <field name="model">influence_gen.legal_hold</field>
+        <field name="arch" type="xml">
+            <tree string="Legal Holds" decoration-warning="status=='active'" decoration-muted="status=='lifted'">
+                <field name="name" string="Reason/Case Name"/>
+                <field name="targetModel" optional="show"/>
+                <field name="targetRecordDisplay" string="Target Record"/> <!-- Assuming computed field -->
+                <field name="status"/>
+                <field name="placedAt"/>
+                <field name="placedByUserId"/>
+                <field name="liftedAt" optional="show"/>
+                <field name="liftedByUserId" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Legal Hold Form View -->
+    <record id="view_legal_hold_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.legal_hold.form.admin</field>
+        <field name="model">influence_gen.legal_hold</field>
+        <field name="arch" type="xml">
+            <form string="Legal Hold">
+                <header>
+                    <button name="action_lift_hold" string="Lift Hold" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('status', '!=', 'active')]}"
+                            confirm="Are you sure you want to lift this legal hold?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                     <button name="action_reactivate_hold" string="Re-activate Hold" type="object"
+                            attrs="{'invisible': [('status', '!=', 'lifted')]}"
+                            confirm="Are you sure you want to re-activate this legal hold?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="status" widget="statusbar" statusbar_visible="active,lifted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Reason for Hold / Case Name" required="1" attrs="{'readonly': [('status', '=', 'lifted')]}"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Hold Scope">
+                            <field name="targetModel" required="1" options="{'no_create_edit': True}" attrs="{'readonly': [('status', '=', 'lifted')]}"/>
+                            <field name="targetRecordId" string="Target Record ID" placeholder="ID of the specific record (e.g., UUID)" attrs="{'readonly': [('status', '=', 'lifted')]}"/>
+                            <!-- Could add a Reference field if targetModel is dynamic -->
+                            <!-- <field name="target_record_ref" widget="reference" string="Target Record (Reference)" domain="[('model', '=', targetModel)]"/> -->
+                        </group>
+                        <group string="Hold Management">
+                            <field name="placedAt" readonly="1"/>
+                            <field name="placedByUserId" readonly="1" options="{'no_open': True}"/>
+                            <field name="liftedAt" readonly="1"/>
+                            <field name="liftedByUserId" readonly="1" options="{'no_open': True}"/>
+                        </group>
+                    </group>
+                    <group string="Details & Justification">
+                        <field name="description" nolabel="1" placeholder="Detailed description of the legal hold, scope, relevant parties, and justification..." attrs="{'readonly': [('status', '=', 'lifted')]}"/>
+                    </group>
+                     <group string="Responsible Users/Team">
+                         <field name="responsible_user_ids" widget="many2many_tags" options="{'no_create_edit': True}"
+                                attrs="{'readonly': [('status', '=', 'lifted')]}"/>
+                     </group>
+                </sheet>
+                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Legal Hold Action Window -->
+    <record id="action_legal_hold_admin" model="ir.actions.act_window">
+        <field name="name">Legal Holds</field>
+        <field name="res_model">influence_gen.legal_hold</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_legal_hold_admin_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No legal holds found.
+            </p><p>
+                Manage legal holds to preserve data for legal, regulatory, or investigative purposes.
+            </p>
+        </field>
+    </record>
+
+</odoo>

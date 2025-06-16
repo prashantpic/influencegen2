@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REQ-2-010: Content Submission Moderation UI -->
+
+    <!-- Content Submission Search View -->
+    <record id="view_content_submission_admin_search" model="ir.ui.view">
+        <field name="name">influence_gen.content_submission.search.admin</field>
+        <field name="model">influence_gen.content_submission</field>
+        <field name="arch" type="xml">
+            <search string="Search Content Submissions">
+                <field name="campaignApplicationId" string="Application (Campaign - Influencer)"/>
+                <field name="influencer_name" string="Influencer Name"/> <!-- Assuming related field -->
+                <field name="campaign_name" string="Campaign Name"/> <!-- Assuming related field -->
+                <field name="reviewStatus"/>
+                <field name="submissionDate"/>
+                <filter string="Pending Review" name="filter_status_pending" domain="[('reviewStatus', '=', 'pending')]"/>
+                <filter string="Approved" name="filter_status_approved" domain="[('reviewStatus', '=', 'approved')]"/>
+                <filter string="Rejected" name="filter_status_rejected" domain="[('reviewStatus', '=', 'rejected')]"/>
+                <filter string="Needs Revision" name="filter_status_needs_revision" domain="[('reviewStatus', '=', 'needs_revision')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Review Status" name="group_by_status" context="{'group_by': 'reviewStatus'}"/>
+                    <filter string="Campaign" name="group_by_campaign" context="{'group_by': 'campaign_id'}"/> <!-- Assuming campaign_id direct link or related from application -->
+                    <filter string="Influencer" name="group_by_influencer" context="{'group_by': 'influencer_profile_id'}"/> <!-- Assuming influencer_profile_id direct link or related from application -->
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Content Submission Tree View -->
+    <record id="view_content_submission_admin_tree" model="ir.ui.view">
+        <field name="name">influence_gen.content_submission.tree.admin</field>
+        <field name="model">influence_gen.content_submission</field>
+        <field name="arch" type="xml">
+            <tree string="Content Submissions" decoration-info="reviewStatus=='pending'" decoration-success="reviewStatus=='approved'" decoration-danger="reviewStatus=='rejected'" decoration-warning="reviewStatus=='needs_revision'">
+                <field name="campaignApplicationId" string="Application (Campaign - Influencer)" options="{'no_open': True}"/>
+                <field name="influencer_name" string="Influencer"/> <!-- Assuming related field -->
+                <field name="campaign_name" string="Campaign"/> <!-- Assuming related field -->
+                <field name="contentUrl" widget="url" string="Content Link"/>
+                <field name="reviewStatus"/>
+                <field name="submissionDate"/>
+                <field name="reviewedByUserId" optional="show"/>
+                <field name="reviewedAt" optional="show"/>
+                <field name="version"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Content Submission Form View -->
+    <record id="view_content_submission_admin_form" model="ir.ui.view">
+        <field name="name">influence_gen.content_submission.form.admin</field>
+        <field name="model">influence_gen.content_submission</field>
+        <field name="arch" type="xml">
+            <form string="Content Submission">
+                <header>
+                    <!-- REQ-2-010 -->
+                    <button name="action_approve_content" string="Approve Content" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('reviewStatus', 'in', ['approved', 'rejected'])]}"
+                            confirm="Are you sure you want to approve this content?"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="action_reject_content" string="Reject Content" type="object" class="oe_highlight"
+                            attrs="{'invisible': [('reviewStatus', 'in', ['approved', 'rejected'])]}"
+                            confirm="Are you sure you want to reject this content? Provide feedback in the chatter."
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <button name="%(influence_gen_admin.action_content_revision_wizard)d" string="Request Revision" type="action"
+                            attrs="{'invisible': [('reviewStatus', 'in', ['approved', 'rejected'])]}"
+                            context="{'default_submission_id': active_id}"
+                            groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                    <field name="reviewStatus" widget="statusbar" statusbar_visible="pending,approved,rejected,needs_revision"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Submission Details">
+                            <field name="campaignApplicationId" options="{'no_open': True, 'no_create': True}" required="1" readonly="1" force_save="1"/>
+                            <field name="influencer_name" string="Influencer" readonly="1"/> <!-- Assuming related field -->
+                            <field name="campaign_name" string="Campaign" readonly="1"/> <!-- Assuming related field -->
+                            <field name="contentUrl" widget="url" string="Content Link" readonly="1" required="1"/>
+                            <field name="fileType" readonly="1"/>
+                            <field name="fileSize" readonly="1"/>
+                            <field name="submissionDate" readonly="1"/>
+                            <field name="version" readonly="1"/>
+                        </group>
+                        <group string="Review Information">
+                            <field name="reviewedByUserId" readonly="1" options="{'no_open': True}"/>
+                            <field name="reviewedAt" readonly="1"/>
+                            <field name="generatedImageId" options="{'no_open': True}" readonly="1" attrs="{'invisible': [('generatedImageId', '=', False)]}"/>
+                        </group>
+                    </group>
+                     <group string="Content Preview" attrs="{'invisible': [('contentUrl', '=', False)]}">
+                        <!-- Basic preview using iframe or image tag if direct image URL. More advanced previews might need custom widgets or JS. -->
+                        <field name="contentUrl_preview" widget="url_preview" nolabel="1" readonly="1"/>
+                     </group>
+                    <notebook>
+                         <page string="Feedback History (Chatter)">
+                             <field name="feedback" nolabel="1" placeholder="Current feedback for revision request will appear here. General discussion in chatter below." readonly="1"/>
+                         </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Content Submission Action Window -->
+    <record id="action_content_submission_admin" model="ir.actions.act_window">
+        <field name="name">Content Submissions</field>
+        <field name="res_model">influence_gen.content_submission</field>
+        <field name="view_mode">tree,form,search</field>
+        <field name="search_view_id" ref="view_content_submission_admin_search"/>
+        <field name="context">{'search_default_filter_status_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No content submissions found.
+            </p><p>
+                Review and moderate content submitted by influencers for campaigns.
+            </p>
+        </field>
+    </record>
+
+</odoo>
