@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _
+from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 
 class InfluenceGenBankAccount(models.Model):
@@ -7,14 +7,21 @@ class InfluenceGenBankAccount(models.Model):
     _description = "Influencer Bank Account"
 
     influencer_profile_id = fields.Many2one(
-        'influence_gen.influencer_profile', string="Influencer Profile",
-        required=True, ondelete='cascade', index=True
+        'influence_gen.influencer_profile',
+        string="Influencer Profile",
+        required=True,
+        ondelete='cascade',
+        index=True
     )
     account_holder_name = fields.Char(string="Account Holder Name", required=True)
+    # Stored encrypted, actual encryption handled by utilities/infra layer
     account_number_encrypted = fields.Char(string="Account Number (Encrypted)", required=True)
     bank_name = fields.Char(string="Bank Name", required=True)
+    # Stored encrypted
     routing_number_encrypted = fields.Char(string="Routing Number (Encrypted)")
+    # Stored encrypted
     iban_encrypted = fields.Char(string="IBAN (Encrypted)")
+    # Stored encrypted
     swift_code_encrypted = fields.Char(string="SWIFT Code (Encrypted)")
     bank_address = fields.Text(string="Bank Address")
     country_id = fields.Many2one('res.country', string="Bank Country")
@@ -29,122 +36,119 @@ class InfluenceGenBankAccount(models.Model):
         ('third_party_api', 'Third-Party API'),
         ('manual_document', 'Manual Document Review')
     ], string="Verification Method")
-    is_primary = fields.Boolean(
-        string="Primary Account", default=False,
-        help="Is this the primary account for payouts?"
-    )
+    is_primary = fields.Boolean(string="Primary Account", default=False, help="Is this the primary account for payouts?")
 
     @api.constrains('influencer_profile_id', 'is_primary')
-    def _check_single_primary_account(self):
-        """Ensure an influencer has only one primary bank account."""
-        for record in self.filtered(lambda r: r.is_primary):
-            other_primary_accounts = self.search([
-                ('influencer_profile_id', '=', record.influencer_profile_id.id),
-                ('is_primary', '=', True),
-                ('id', '!=', record.id)
-            ])
-            if other_primary_accounts:
-                raise ValidationError(_("An influencer can only have one primary bank account."))
+    def _check_single_primary_account(self) -> None:
+        """
+        Ensure an influencer has only one primary bank account.
+        """
+        for record in self:
+            if record.is_primary:
+                other_primary_accounts = self.search([
+                    ('influencer_profile_id', '=', record.influencer_profile_id.id),
+                    ('is_primary', '=', True),
+                    ('id', '!=', record.id)
+                ])
+                if other_primary_accounts:
+                    raise ValidationError(_("An influencer can only have one primary bank account. Please uncheck 'Primary Account' for other accounts first."))
 
-    def action_set_as_primary(self):
-        """Sets this bank account as primary, ensuring others are not."""
+    def action_set_as_primary(self) -> None:
+        """
+        Sets this bank account as primary, ensuring others are not.
+        """
         self.ensure_one()
+        # Unset other primary accounts for this influencer
         other_accounts = self.search([
             ('influencer_profile_id', '=', self.influencer_profile_id.id),
-            ('id', '!=', self.id),
-            ('is_primary', '=', True)
+            ('is_primary', '=', True),
+            ('id', '!=', self.id)
         ])
         other_accounts.write({'is_primary': False})
+        
+        # Set this one as primary
         self.write({'is_primary': True})
+        
         self.env['influence_gen.audit_log_entry'].create_log(
             event_type='BANK_ACCOUNT_SET_PRIMARY',
             actor_user_id=self.env.user.id,
             action_performed='SET_PRIMARY',
             target_object=self
         )
-        return True
 
-    def action_initiate_verification(self, method):
-        """Called by OnboardingService to start bank verification. REQ-IOKYC-008."""
+    def action_initiate_verification(self, method: str) -> dict:
+        """
+        Called by OnboardingService to start bank verification. REQ-IOKYC-008.
+        """
         self.ensure_one()
-        self.write({
-            'verification_method': method,
-            'verification_status': 'verification_initiated'
-        })
+        self.verification_method = method
+        self.verification_status = 'verification_initiated'
+        details = {'instructions': ''}
 
         if method == 'micro_deposit':
             # Trigger external process (via infra layer) to send micro-deposits
-            # self.env['influence_gen.infrastructure.integration.services'].initiate_micro_deposits(self.id)
-            _logger.info("Micro-deposit verification initiated for BankAccount %s (Placeholder)", self.id)
+            # self.env['influence_gen_integration.payment_gateway_service'].initiate_micro_deposits(self.id)
+            details['instructions'] = _("Micro-deposits have been initiated. Please check your bank account in 1-3 business days and confirm the amounts.")
+        elif method == 'third_party_api':
+            # Potentially call infrastructure layer here if direct API call is needed from Odoo side to start
+            # e.g., self.env['influence_gen_integration.bank_verification_api'].start_verification(self.id)
+            details['instructions'] = _("Bank account verification has been initiated via our third-party provider.")
+        elif method == 'manual_document':
+            details['instructions'] = _("Please upload necessary bank statement or document for manual verification.")
         
         self.env['influence_gen.audit_log_entry'].create_log(
-            event_type='BANK_ACCOUNT_VERIFICATION_INITIATED',
+            event_type='BANK_VERIFICATION_INITIATED',
             actor_user_id=self.env.user.id,
             action_performed='INITIATE_VERIFICATION',
             target_object=self,
             details_dict={'method': method}
         )
-        # Return details if needed (e.g., instructions for influencer)
-        return {'message': _("Bank account verification initiated using %s method.", method)}
+        return details
 
-    def action_confirm_verification(self, verification_input=None):
-        """Called by OnboardingService to confirm bank verification. REQ-IOKYC-008."""
+    def action_confirm_verification(self, verification_input: str = None) -> bool:
+        """
+        Called by OnboardingService to confirm bank verification. REQ-IOKYC-008.
+        """
         self.ensure_one()
         success = False
-        audit_details = {'method': self.verification_method, 'input': verification_input}
+        audit_details = {'method': self.verification_method, 'input_provided': bool(verification_input)}
 
-        # Logic based on verification_method
         if self.verification_method == 'micro_deposit':
-            # E.g., verification_input = {'amount1': 0.05, 'amount2': 0.12}
-            # Compare with expected amounts (placeholder logic)
-            # expected_amounts = self.env['influence_gen.infrastructure.integration.services'].get_micro_deposit_amounts(self.id)
-            # if verification_input and expected_amounts and \
-            #    verification_input.get('amount1') == expected_amounts.get('amount1') and \
-            #    verification_input.get('amount2') == expected_amounts.get('amount2'):
-            #    success = True
-            # For SDS, simplified:
-            if verification_input and verification_input.get('status') == 'confirmed':
-                 success = True
+            # Infrastructure layer would typically handle the verification of amounts
+            # micro_deposit_amounts = ... (parse verification_input if it contains amounts)
+            # success = self.env['influence_gen_integration.payment_gateway_service'].confirm_micro_deposits(self.id, micro_deposit_amounts)
+            # Simulating success for now
+            if verification_input == "amounts_match": # Placeholder
+                success = True
+            else:
+                audit_details['failure_reason'] = 'Micro-deposit amounts did not match.'
 
         elif self.verification_method == 'third_party_api':
-            # E.g., verification_input = {'api_response_status': 'verified'}
-            if verification_input and verification_input.get('status') == 'verified':
+            # Callback from third-party or result polling via infra layer would determine success
+            # Simulating success
+            if verification_input == "api_verified": # Placeholder
                 success = True
+            else:
+                audit_details['failure_reason'] = 'Third-party API could not verify the account.'
+        
         elif self.verification_method == 'manual_document':
-            # Admin manually confirms
-            success = True # Assuming this action is called by an admin marking it as verified
-        else:
-            raise UserError(_("Unknown bank account verification method: %s", self.verification_method))
+            # Admin marks as verified directly
+            success = True # Assuming this method is called by an admin confirming it
 
         if success:
             self.write({'verification_status': 'verified'})
             self.influencer_profile_id.update_onboarding_step_status('bank_account_verified', True)
-            audit_outcome = 'success'
+            audit_details['outcome'] = 'verified'
         else:
             self.write({'verification_status': 'failed'})
-            audit_outcome = 'failure'
+            audit_details['outcome'] = 'failed'
             
         self.env['influence_gen.audit_log_entry'].create_log(
-            event_type='BANK_ACCOUNT_VERIFICATION_CONFIRMED',
+            event_type='BANK_VERIFICATION_CONFIRMED',
             actor_user_id=self.env.user.id,
             action_performed='CONFIRM_VERIFICATION',
             target_object=self,
             details_dict=audit_details,
-            outcome=audit_outcome
+            outcome='success' if success else 'failure'
         )
         return success
-    
-    # Placeholder for decryption, actual decryption would be handled by infra/utility layer
-    # These compute methods are illustrative and would need secure context/permissions
-    def _get_decrypted_value(self, encrypted_field_name):
-        # In a real scenario, this would call an encryption service
-        # For SDS, we assume fields are just stored. This is a conceptual placeholder.
-        # self.ensure_one()
-        # return self.env['encryption.service'].decrypt(self[encrypted_field_name])
-        return f"Decrypted value of {encrypted_field_name}"
-
-    # Example of how one might provide access to decrypted values if needed (use with extreme caution)
-    # def get_decrypted_account_number(self):
-    #     self.ensure_one()
-    #     # Check permissions here
-    #     return self._get_decrypted_value('account_number_encrypted')

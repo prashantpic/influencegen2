@@ -1,36 +1,51 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 class InfluenceGenAiImageGenerationRequest(models.Model):
     _name = 'influence_gen.ai_image_generation_request'
     _description = "AI Image Generation Request"
     _order = 'create_date desc'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     user_id = fields.Many2one(
-        'res.users', string="Requesting User",
-        required=True, ondelete='restrict', index=True
+        'res.users',
+        string="Requesting User",
+        required=True,
+        ondelete='restrict', # Don't delete request if user is deleted, keep history
+        index=True,
+        default=lambda self: self.env.user
     )
     influencer_profile_id = fields.Many2one(
-        'influence_gen.influencer_profile', string="Associated Influencer Profile",
-        compute='_compute_influencer_profile', store=True, readonly=True, index=True
+        'influence_gen.influencer_profile',
+        string="Associated Influencer Profile",
+        compute='_compute_influencer_profile',
+        store=True,
+        readonly=True,
+        index=True
     )
     campaign_id = fields.Many2one(
-        'influence_gen.campaign', string="Associated Campaign",
-        ondelete='set null', index=True
+        'influence_gen.campaign',
+        string="Associated Campaign",
+        ondelete='set null', # Keep request if campaign deleted
+        index=True
     )
     prompt = fields.Text(string="Prompt", required=True)
     negative_prompt = fields.Text(string="Negative Prompt")
     model_id = fields.Many2one(
-        'influence_gen.ai_image_model', string="AI Model Used",
-        required=True, ondelete='restrict'
+        'influence_gen.ai_image_model',
+        string="AI Model Used",
+        required=True,
+        ondelete='restrict', # Don't allow deleting model if requests used it
+        domain="[('is_active', '=', True)]"
     )
     resolution_width = fields.Integer(string="Width (px)")
     resolution_height = fields.Integer(string="Height (px)")
-    aspect_ratio = fields.Char(string="Aspect Ratio", help="e.g., '1:1', '16:9'")
+    aspect_ratio = fields.Char(string="Aspect Ratio", help="e.g., '1:1', '16:9'") # Store as string, can be computed or set
     seed = fields.Integer(string="Seed")
     inference_steps = fields.Integer(string="Inference Steps")
-    cfg_scale = fields.Float(string="CFG Scale", digits=(3, 1))
+    cfg_scale = fields.Float(string="CFG Scale", digits=(3,1)) # e.g., 7.5
+
     status = fields.Selection([
         ('queued', 'Queued'),
         ('processing', 'Processing'),
@@ -38,25 +53,31 @@ class InfluenceGenAiImageGenerationRequest(models.Model):
         ('failed', 'Failed'),
         ('cancelled', 'Cancelled')
     ], string="Status", default='queued', required=True, tracking=True, index=True)
+    
     intended_use = fields.Selection([
         ('personal_exploration', 'Personal Exploration'),
         ('campaign_specific', 'Campaign Specific')
     ], string="Intended Use", default='personal_exploration', required=True)
+    
     error_details = fields.Text(string="Error Details", readonly=True)
-    n8n_execution_id = fields.Char(string="N8N Execution ID", readonly=True, index=True)
+    n8n_execution_id = fields.Char(string="N8N Execution ID", readonly=True, index=True, copy=False)
+    
     generated_image_ids = fields.One2many(
-        'influence_gen.generated_image', 'request_id', string="Generated Images"
+        'influence_gen.generated_image',
+        'request_id',
+        string="Generated Images"
     )
-    # usage_tracking_log_ids: This field is mentioned in the SDS text but not in the field list for this specific model.
-    # It seems to be a One2many from UsageTrackingLog to this model, so it would be defined on UsageTrackingLog.
-    # If it was intended here it would be:
+    # This field was defined in SDS, but `_log_usage` method logs to `audit_log_entry`
+    # If a separate usage log specific to AI is needed, a new model `influence_gen.usage_tracking_log`
+    # would be required. For now, assuming audit log covers usage tracking as per REQ-AIGS-007.
     # usage_tracking_log_ids = fields.One2many('influence_gen.usage_tracking_log', 'ai_request_id', string="Usage Logs")
-    # For now, assuming it's on UsageTrackingLog as 'ai_request_id' Many2one.
 
     @api.depends('user_id')
-    def _compute_influencer_profile(self):
+    def _compute_influencer_profile(self) -> None:
         for request in self:
             if request.user_id:
+                # Assuming one influencer profile per user for simplicity here.
+                # Adjust if a user can be linked to multiple profiles or no profile.
                 profile = self.env['influence_gen.influencer_profile'].search([
                     ('user_id', '=', request.user_id.id)
                 ], limit=1)
@@ -64,47 +85,54 @@ class InfluenceGenAiImageGenerationRequest(models.Model):
             else:
                 request.influencer_profile_id = False
 
-    def action_cancel_request(self):
-        """Cancels the AI image generation request if possible."""
-        for request in self:
-            if request.status not in ('queued', 'processing'):
-                raise UserError(_("Only queued or processing requests can be cancelled. Current status: %s", request.status))
+    def action_cancel_request(self) -> None:
+        """
+        Cancels the AI generation request.
+        """
+        for record in self:
+            if record.status not in ['queued', 'processing']:
+                raise UserError(_("Only requests in 'Queued' or 'Processing' status can be cancelled."))
             
-            # If 'processing', might need to notify N8N to attempt to stop the job
-            if request.status == 'processing' and request.n8n_execution_id:
-                try:
-                    # self.env['influence_gen.infrastructure.integration.services'].cancel_n8n_workflow(request.n8n_execution_id)
-                    _logger.info("N8N workflow cancellation attempted for %s (Placeholder)", request.n8n_execution_id)
-                except Exception as e:
-                    _logger.error("Failed to signal N8N for cancellation of request %s: %s", request.id, e)
-                    # Potentially raise UserError if strict cancellation is required or proceed with local cancellation.
+            # If 'processing', attempt to notify N8N to cancel (via infra layer)
+            if record.status == 'processing' and record.n8n_execution_id:
+                # self.env['influence_gen_integration.n8n_service'].cancel_workflow(record.n8n_execution_id)
+                pass # Placeholder for infra call
 
-            request.write({'status': 'cancelled'})
-            self.env['influence_gen.audit_log_entry'].create_log(
-                event_type='AI_REQUEST_CANCELLED',
-                actor_user_id=self.env.user.id,
-                action_performed='CANCEL_REQUEST',
-                target_object=request
-            )
+            record.write({'status': 'cancelled'})
+            record._log_usage(event_type='AI_REQUEST_CANCELLED', details={'reason': 'User cancelled'})
             
-            # Revert quota if applicable (handled by AIImageService typically)
-            # self.env['influence_gen.ai_image_service'].revert_quota_for_request(request.id)
-        return True
+            # Revert quota if it was pre-authorized/decremented. This logic would be in AIImageService.
+            # For now, just logging.
+            # self.env['influence_gen.services.ai_image_service'](self.env).revert_quota_for_request(record.id)
 
-    def _log_usage(self, event_type="request_created", details=None):
-        """Internal helper to create UsageTrackingLog entries. REQ-AIGS-007."""
-        # Assuming UsageTrackingLog model exists and has an 'ai_request_id' field.
-        # This method is primarily called by AIImageService.
-        # For direct calls from this model (if any), ensure all fields are correctly populated.
+
+    def _log_usage(self, event_type: str = "AI_REQUEST_CREATED", details: dict = None) -> None:
+        """
+        Internal helper to create AuditLogEntry entries for AI usage. REQ-AIGS-007.
+        """
         self.ensure_one()
-        # Example:
-        # self.env['influence_gen.usage_tracking_log'].create({
-        #     'user_id': self.user_id.id,
-        #     'influencer_profile_id': self.influencer_profile_id.id,
-        #     'ai_request_id': self.id,
-        #     'event_type': event_type, # e.g., 'ai_generation_initiated', 'ai_generation_completed', 'ai_generation_failed'
-        #     'quantity_consumed': 1, # or based on number of images, complexity, etc.
-        #     'details': json.dumps(details) if details else None,
-        # })
-        _logger.info(f"Usage log to be created for AI Request {self.id}, Event: {event_type}. (Actual creation by AIImageService)")
-        return True
+        log_details = {
+            'prompt_length': len(self.prompt or ''),
+            'model_used': self.model_id.name,
+            'status': self.status,
+        }
+        if self.campaign_id:
+            log_details['campaign_id'] = self.campaign_id.id
+            log_details['campaign_name'] = self.campaign_id.name
+        if details:
+            log_details.update(details)
+
+        self.env['influence_gen.audit_log_entry'].create_log(
+            event_type=event_type, # e.g., 'AI_REQUEST_CREATED', 'AI_GENERATION_SUCCESS', 'AI_GENERATION_FAILED'
+            actor_user_id=self.user_id.id,
+            action_performed='AI_USAGE_EVENT',
+            target_object=self,
+            details_dict=log_details,
+            outcome='success' if self.status == 'completed' else ('failure' if self.status == 'failed' else None) # Outcome more relevant on completion
+        )
+
+    # Note: Methods like validate_prompt_and_params, check_user_quota, decrement_user_quota,
+    # and process_generation_result are typically part of the AIImageService as per SDS,
+    # not directly on the model, as they orchestrate logic beyond simple model state.
+    # This model primarily stores the data and simple state transitions like cancel.
+    # The _log_usage is a helper called by the service or upon specific model actions.

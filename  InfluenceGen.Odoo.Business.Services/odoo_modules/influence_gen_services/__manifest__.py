@@ -29,6 +29,7 @@
         'views/ai_image_model_views.xml',
         'views/platform_setting_views.xml',
         'views/data_retention_policy_views.xml',
+        'views/audit_log_entry_views.xml', # Added for Audit Log
         'views/menu_items.xml', # To access admin configurations for this module
     ],
     'installable': True,
