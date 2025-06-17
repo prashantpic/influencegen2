@@ -1,0 +1,46 @@
+erDiagram
+    res_users {
+        UUID id PK
+    }
+    InfluencerProfile {
+        UUID id PK
+        UUID userId FK
+    }
+    SocialMediaProfile {
+        UUID id PK
+        UUID influencerProfileId FK
+    }
+    KYCData {
+        UUID id PK
+        UUID influencerProfileId FK
+        UUID reviewerUserId FK
+    }
+    BankAccount {
+        UUID id PK
+        UUID influencerProfileId FK
+    }
+    TermsConsent {
+        UUID id PK
+        UUID influencerProfileId FK
+    }
+    AreaOfInfluence {
+        UUID id PK
+    }
+    InfluencerAreaOfInfluence {
+        UUID influencerProfileId PK
+        UUID areaOfInfluenceId PK
+    }
+    AuditLog {
+        UUID id PK
+        UUID actorUserId FK
+    }
+
+    InfluencerProfile ||--|| res_users : "linked to" userId
+    InfluencerProfile ||--o{ SocialMediaProfile : "has" socialMedia
+    InfluencerProfile ||--o{ KYCData : "submits" kycData
+    InfluencerProfile ||--o{ BankAccount : "has" bankAccount
+    InfluencerProfile ||--o{ TermsConsent : "agrees to" termsConsent
+    res_users }|--o{ KYCData : "reviewed by" reviewerUserId
+    InfluencerProfile }o--{ InfluencerAreaOfInfluence : "categorized by" influencerProfileId
+    AreaOfInfluence }o--{ InfluencerAreaOfInfluence : "used in" areaOfInfluenceId
+    res_users }|--o{ AuditLog : "acted by" actorUserId

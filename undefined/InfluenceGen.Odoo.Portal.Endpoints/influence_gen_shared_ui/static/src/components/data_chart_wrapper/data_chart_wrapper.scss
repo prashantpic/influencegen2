@@ -1,0 +1,14 @@
+// SCSS styles for the DataChartWrapper component
+
+.o_data_chart_wrapper {
+    position: relative; // Important for Chart.js responsiveness and tooltips
+    width: 100%;
+    // height: auto; // Or a specific height, e.g., 300px
+    // aspect-ratio: 16 / 9; // Modern CSS for aspect ratio, or manage via JS options
+    
+    // Example: Maintain a 2:1 aspect ratio
+    // canvas {
+    //     max-width: 100%;
+    //     height: auto !important; // Override Chart.js inline style if needed for specific scenarios
+    // }
+}
