@@ -1,0 +1,65 @@
+// SCSS styles for the LoadingIndicator component
+
+.o_loading_indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: $ig-primary-color; // Default color for spinner and text
+
+    // Size modifiers for the spinner (using Bootstrap's spinner-border sizes as reference)
+    &--sm .spinner-border {
+        width: $ig-spinner-width-sm;  // e.g., 1rem
+        height: $ig-spinner-height-sm; // e.g., 1rem
+        border-width: $ig-spinner-border-width-sm; // e.g., .2em
+    }
+    &--md .spinner-border { // Default Bootstrap spinner-border size
+        width: $ig-spinner-width; // e.g., 2rem
+        height: $ig-spinner-height; // e.g., 2rem
+        border-width: $ig-spinner-border-width; // e.g., .25em
+    }
+    &--lg .spinner-border {
+        width: $ig-spinner-width-lg; // e.g., 3rem
+        height: $ig-spinner-height-lg; // e.g., 3rem
+        border-width: $ig-spinner-border-width-lg; // e.g., .3em
+    }
+
+    // Fullscreen styling
+    &--fullscreen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8); // Semi-transparent overlay
+        z-index: $ig-zindex-modal; // Ensure it's above other content
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .o_loading_message {
+        font-size: $ig-font-size-base;
+        color: $ig-text-color;
+    }
+}
+
+// Assuming Bootstrap's spinner-border is available.
+// If not, a custom spinner animation would be defined here.
+// For example:
+// .o_loading_spinner > div {
+//   display: inline-block;
+//   width: 2rem;
+//   height: 2rem;
+//   vertical-align: text-bottom;
+//   border: .25em solid currentColor;
+//   border-right-color: transparent;
+//   border-radius: 50%;
+//   animation: ig-spinner-border .75s linear infinite;
+// }
+
+// @keyframes ig-spinner-border {
+//   to { transform: rotate(360deg); }
+// }

@@ -1,0 +1,41 @@
+sequenceDiagram
+    actor "User Browser Client" as UserBrowserClient
+    participant "Platform Odoo Core (Auth System)" as PlatformOdooCore
+    UserBrowserClient-PlatformOdooCore: 1. GET /login (Request Login Page for Portal/Backend)
+    activate PlatformOdooCore
+    note over PlatformOdooCore: Login page could be for influencer portal or admin backend depending on initial URL.
+    PlatformOdooCore--UserBrowserClient: HTTP 200 OK (Login Page HTML)
+    deactivate PlatformOdooCore
+    UserBrowserClient-PlatformOdooCore: 2. POST /login (credentials: username, password)
+    activate PlatformOdooCore
+    PlatformOdooCore-PlatformOdooCore: 2.1. Validate username and password
+    note right of PlatformOdooCore: Database lookup and password hashing/comparison occurs here.
+    alt Credential Validation
+        PlatformOdooCore--UserBrowserClient: 2.2.1. [Invalid Credentials] HTTP 200 OK (Login Page with Error: "Invalid credentials")
+    else Valid Credentials
+        PlatformOdooCore-PlatformOdooCore: 2.2.2. [Valid Credentials] Check if MFA is enabled for user
+        note right of PlatformOdooCore: MFA check involves looking up user's MFA configuration (e.g., TOTP secret).
+        alt MFA Status
+            PlatformOdooCore--UserBrowserClient: 2.2.2.1.1. [MFA Enabled] HTTP 200 OK (MFA Challenge Page/Prompt)
+            UserBrowserClient-PlatformOdooCore: 2.2.2.1.1.1. POST /login/mfa (mfacode: "123456")
+            activate PlatformOdooCore
+            PlatformOdooCore-PlatformOdooCore: 2.2.2.1.1.1.1. Validate MFA code
+            note right of PlatformOdooCore: MFA code validation against user's TOTP secret or other MFA method.
+            alt MFA Code Validation
+                PlatformOdooCore--UserBrowserClient: 2.2.2.1.1.1.2.1. [Invalid MFA Code] HTTP 200 OK (MFA Challenge Page with Error: "Invalid MFA code")
+            else Valid MFA Code
+                PlatformOdooCore-PlatformOdooCore: 2.2.2.1.1.1.2.2. [Valid MFA Code] Create session
+                note right of PlatformOdooCore: Session creation involves generating a unique session ID and storing it server-side, associated with the user.
+                PlatformOdooCore--UserBrowserClient: 2.2.2.1.1.1.2.2.1. HTTP 302 Redirect (Location: /dashboard, Set-Cookie: sessionid=...)
+            end
+            deactivate PlatformOdooCore
+        else MFA Not Enabled
+            PlatformOdooCore-PlatformOdooCore: 2.2.2.1.2. [MFA Not Enabled] Create session
+            PlatformOdooCore--UserBrowserClient: 2.2.2.1.2.1. HTTP 302 Redirect (Location: /dashboard, Set-Cookie: sessionid=...)
+        end
+    end
+    deactivate PlatformOdooCore
+    UserBrowserClient-PlatformOdooCore: 3. GET /dashboard (Cookie: sessionid=...)
+    activate PlatformOdooCore
+    PlatformOdooCore--UserBrowserClient: HTTP 200 OK (Dashboard Page HTML)
+    deactivate PlatformOdooCore
