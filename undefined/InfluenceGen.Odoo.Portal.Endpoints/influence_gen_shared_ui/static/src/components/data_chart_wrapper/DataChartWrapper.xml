@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="InfluenceGen.Odoo.Shared.UI.Components.DataChartWrapper" owl="1">
+        <div class="o_data_chart_wrapper">
+            <canvas t-att-id="props.chartId" t-ref="'chartCanvas'"></canvas>
+        </div>
+    </t>
+</templates>
