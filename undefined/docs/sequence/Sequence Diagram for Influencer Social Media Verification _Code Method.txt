@@ -1,0 +1,82 @@
+sequenceDiagram
+    actor "«Influencer»\nInfluencer Portal" as UIInfluencerPortal
+    participant "«Service»\nOnboarding Service" as ServiceOnboarding
+    participant "«Database»\nOdoo Core (DB)" as PlatformOdooCore
+    actor "«Admin»\nAdmin Backend" as UIAdminBackend
+    participant "«Service»\nNotification Platform" as PlatformNotification
+
+    note over UIInfluencerPortal, PlatformNotification: This sequence focuses on the code placement method for social media account verification (REQ-IOKYC-006).
+    note over UIInfluencerPortal, PlatformNotification: It includes an optional programmatic check followed by a manual review if the programmatic check is inconclusive or not performed.
+
+    UIInfluencerPortal-ServiceOnboarding: 1. POST /socialmedia/{socialMediaProfileId}/requestverificationcode
+    activate ServiceOnboarding
+    ServiceOnboarding-ServiceOnboarding: 1.1. generateUniqueCode()
+    ServiceOnboarding-PlatformOdooCore: 1.2. SocialMediaProfile.write(id=socialMediaProfileId, {'verificationcode': uniqueCode, 'verificationstatus': 'codegenerated', 'verificationmethod': 'codeplacement'})
+    activate PlatformOdooCore
+    PlatformOdooCore--ServiceOnboarding: True
+    deactivate PlatformOdooCore
+    ServiceOnboarding--UIInfluencerPortal: 200 OK {code: uniqueCode, instructions: 'Place this code in your social media profile/post.'}
+    deactivate ServiceOnboarding
+
+    note over UIInfluencerPortal: 2. Influencer places code on their social media profile/post (External Action by Influencer)
+
+    UIInfluencerPortal-ServiceOnboarding: 3. POST /socialmedia/{socialMediaProfileId}/confirmcodeplacement
+    activate ServiceOnboarding
+    note right of UIInfluencerPortal: Influencer confirms they have placed the code.
+    ServiceOnboarding-ServiceOnboarding: 3.1. attemptProgrammaticVerification(socialMediaProfileId)
+    note right of ServiceOnboarding: Programmatic check involves fetching public profile/post via social media URL and searching for the generated code. This does not involve login credentials (REQ-IOKYC-006).
+
+    alt Programmatic Verification Successful (programmaticVerificationResult == 'success')
+        ServiceOnboarding-PlatformOdooCore: 3.2.1. SocialMediaProfile.write(id=socialMediaProfileId, {'verificationstatus': 'verified', 'verifiedat': now()})
+        activate PlatformOdooCore
+        PlatformOdooCore--ServiceOnboarding: True
+        deactivate PlatformOdooCore
+        ServiceOnboarding-PlatformNotification: 3.2.2. sendNotification(to=influencer, template='socialmediaverified', context={'profileid': socialMediaProfileId})
+        activate PlatformNotification
+        deactivate PlatformNotification
+    else Programmatic Verification Failed or Requires Manual Review (programmaticVerificationResult != 'success')
+        ServiceOnboarding-PlatformOdooCore: 3.3.1. SocialMediaProfile.write(id=socialMediaProfileId, {'verificationstatus': 'pendingmanualreview'})
+        activate PlatformOdooCore
+        PlatformOdooCore--ServiceOnboarding: True
+        deactivate PlatformOdooCore
+        ServiceOnboarding-PlatformNotification: 3.3.2. sendNotification(to=admingroup, template='manualsocialverificationrequired', context={'profileid': socialMediaProfileId})
+        activate PlatformNotification
+        note right of PlatformNotification: This notifies admins a task is pending. Alternatively, admins may poll a queue.
+        deactivate PlatformNotification
+    end
+    ServiceOnboarding--UIInfluencerPortal: 200 OK {status: programmaticVerificationResult, message: 'Your verification status is being updated.'}
+    deactivate ServiceOnboarding
+
+    UIAdminBackend-ServiceOnboarding: 4. GET /socialmediaverifications?status=pendingmanualreview (Admin requests list)
+    activate ServiceOnboarding
+    note right of UIAdminBackend: This interaction occurs if programmatic verification led to 'pendingmanualreview' status.
+    ServiceOnboarding-PlatformOdooCore: 4.1. SocialMediaProfile.search([('verificationstatus', '=', 'pendingmanualreview')])
+    activate PlatformOdooCore
+    PlatformOdooCore--ServiceOnboarding: pendingProfilesList
+    deactivate PlatformOdooCore
+    ServiceOnboarding--UIAdminBackend: 200 OK {data: pendingProfilesList}
+    deactivate ServiceOnboarding
+
+    note over UIAdminBackend: 5. Admin selects a profile, views its details (URL, expected code), and manually checks the social media platform (External Action by Admin)
+
+    UIAdminBackend-ServiceOnboarding: 6. POST /socialmedia/{socialMediaProfileId}/submitmanualverification {'result': 'verified' | 'failed', 'adminnotes': '...'}
+    activate ServiceOnboarding
+    alt Manual Verification 'verified'
+        ServiceOnboarding-PlatformOdooCore: 6.1.1. SocialMediaProfile.write(id=socialMediaProfileId, {'verificationstatus': 'verified', 'verifiedat': now(), 'revieweruserid': adminUserId, 'reviewnotes': adminNotes})
+        activate PlatformOdooCore
+        PlatformOdooCore--ServiceOnboarding: True
+        deactivate PlatformOdooCore
+        ServiceOnboarding-PlatformNotification: 6.1.2. sendNotification(to=influencer, template='socialmediaverified', context={'profile_id': socialMediaProfileId})
+        activate PlatformNotification
+        deactivate PlatformNotification
+    else Manual Verification 'failed'
+        ServiceOnboarding-PlatformOdooCore: 6.2.1. SocialMediaProfile.write(id=socialMediaProfileId, {'verificationstatus': 'failed', 'revieweruserid': adminUserId, 'reviewnotes': adminNotes})
+        activate PlatformOdooCore
+        PlatformOdooCore--ServiceOnboarding: True
+        deactivate PlatformOdooCore
+        ServiceOnboarding-PlatformNotification: 6.2.2. sendNotification(to=influencer, template='socialmediaverificationfailed', context={'profileid': socialMediaProfileId, 'reason': adminNotes})
+        activate PlatformNotification
+        deactivate PlatformNotification
+    end
+    ServiceOnboarding--UIAdminBackend: 200 OK {message: 'Verification status updated.'}
+    deactivate ServiceOnboarding

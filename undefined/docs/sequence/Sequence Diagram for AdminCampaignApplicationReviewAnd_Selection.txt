@@ -1,0 +1,51 @@
+sequenceDiagram
+    actor "Admin UI (Odoo Backend)" as UIAdminBackend
+    participant "Campaign Service" as ServiceCampaign
+    participant "Odoo Core (ORM/DB)" as PlatformOdooCore
+    participant "Notification Service" as PlatformNotification
+
+    note over UIAdminBackend: Admin is assumed to be authenticated and authorized. The UI presents applications for a selected campaign based on previous navigation.
+
+    UIAdminBackend-UIAdminBackend: 1. Admin navigates to 'Campaign Applications' list for Campaign 'InfluencerLaunch Oct24'
+
+    UIAdminBackend-ServiceCampaign: 2. Request applications for campaign 'InfluencerLaunch Oct24'
+    activate ServiceCampaign
+    ServiceCampaign-PlatformOdooCore: 2.1. Fetch CampaignApplication records (campaignid='InfluencerLaunch Oct24')
+    activate PlatformOdooCore
+    PlatformOdooCore--ServiceCampaign: Application records
+    deactivate PlatformOdooCore
+    ServiceCampaign--UIAdminBackend: Returns [ApplicationListData]
+    deactivate ServiceCampaign
+
+    UIAdminBackend-UIAdminBackend: 3. Admin selects 'Application123' (Influencer: 'John Doe') and chooses 'Approve' (with notes 'Great profile!') OR 'Reject' (with notes 'Not a good fit')
+
+    UIAdminBackend-ServiceCampaign: 4. Process review for Application123 (decision: [Approved/Rejected], notes: ...)
+    activate ServiceCampaign
+    note over ServiceCampaign: Error handling (e.g., if DB update or notification queueing fails) is managed within Service.Campaign. An appropriate error status/message is returned to UI.AdminBackend in step 4, and displayed to the Admin in step 5.
+
+    alt 4.1. [IF decision is 'Approved']
+        ServiceCampaign-PlatformOdooCore: 4.1.1. Update CampaignApplication 'Application123' (status='Approved', reviewerid=currentadmin, reviewedat=now, notes='Great profile!')
+        activate PlatformOdooCore
+        PlatformOdooCore--ServiceCampaign: DB Update successful
+        deactivate PlatformOdooCore
+        ServiceCampaign-PlatformNotification: 4.1.2. Trigger notification (to='John Doe', status='Approved', campaign='InfluencerLaunch Oct24')
+        activate PlatformNotification
+        PlatformNotification--ServiceCampaign: Notification Queued
+        deactivate PlatformNotification
+    else 4.2. [ELSE IF decision is 'Rejected']
+        ServiceCampaign-PlatformOdooCore: 4.2.1. Update CampaignApplication 'Application123' (status='Rejected', reviewerid=currentadmin, reviewedat=now, rejectionreason='Not a good fit')
+        activate PlatformOdooCore
+        PlatformOdooCore--ServiceCampaign: DB Update successful
+        deactivate PlatformOdooCore
+        ServiceCampaign-PlatformNotification: 4.2.2. Trigger notification (to='John Doe', status='Rejected', campaign='InfluencerLaunch Oct24', reason='Not a good fit')
+        activate PlatformNotification
+        PlatformNotification--ServiceCampaign: Notification Queued
+        deactivate PlatformNotification
+    end
+
+    ServiceCampaign--UIAdminBackend: Review processed successfully (or error message)
+    deactivate ServiceCampaign
+
+    UIAdminBackend-UIAdminBackend: 5. Display confirmation to Admin (e.g., 'Application Approved/Rejected successfully' or error message)
+
+    note over UIAdminBackend,PlatformNotification: This flow covers REQ-2-007 (Admin ability to review, select, approve/reject applications) and REQ-2-008 (Automated notifications to influencers regarding application status).

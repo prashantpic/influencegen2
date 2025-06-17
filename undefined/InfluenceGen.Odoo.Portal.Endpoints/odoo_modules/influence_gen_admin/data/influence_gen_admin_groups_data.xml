@@ -1,0 +1,9 @@
+<odoo>
+    <data noupdate="1">
+        <record id="module_category_influence_gen_administration" model="ir.module.category">
+            <field name="name">InfluenceGen</field>
+            <field name="description">Manages all aspects of the InfluenceGen Platform.</field>
+            <field name="sequence">25</field>
+        </record>
+    </data>
+</odoo>
