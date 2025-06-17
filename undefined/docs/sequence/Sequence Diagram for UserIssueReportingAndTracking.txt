@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor "User's Web Browser" as UserBrowserClient
+    participant "InfluenceGen Support System (Odoo)" as OperationalSupportSystem
+    note over UserBrowserClient,OperationalSupportSystem: User can be an Influencer or Platform Administrator accessing the support system via their respective Odoo interfaces (Portal or Backend). Flow illustrates generic user reporting.
+    UserBrowserClient-+OperationalSupportSystem: 1. GET /helpdesk/submit (Request Support Interface)
+    OperationalSupportSystem---UserBrowserClient: HTML (Support Form Page)
+    activate UserBrowserClient
+    UserBrowserClient-UserBrowserClient: 2. User fills out issue details (title, description, category, attachments if any)
+    deactivate UserBrowserClient
+    UserBrowserClient-+OperationalSupportSystem: 3. POST /helpdesk/ticket/submit (Issue Details: title, description, category, attachments)
+    OperationalSupportSystem-OperationalSupportSystem: 3.1. Validate submitted issue details (as per REQ-DMG-013, SRS 9.4.1)
+    alt If ValidationResult is Valid
+        OperationalSupportSystem-OperationalSupportSystem: 3.2.1. Create helpdesk.ticket record (parsedIssueData) in Odoo Database
+        note right of OperationalSupportSystem: Ticket creation involves writing to Odoo's 'helpdesk.ticket' model or an equivalent data store within the Operational Support System (SRS 9.4.1).
+        OperationalSupportSystem-OperationalSupportSystem: 3.2.2. Trigger New Ticket Notification to Support Staff (createdTicketObject) via Odoo Mail System
+        note right of OperationalSupportSystem: Notification uses Odoo's internal mail/bus system (asynchronous). Support staff are notified/assigned based on Odoo Helpdesk configuration. (REQ-OP-SUP-IRT, REQ-16-001)
+        OperationalSupportSystem-OperationalSupportSystem: 3.2.3. Prepare success response (HTTP 200 OK with Ticket ID)
+    else If ValidationResult is Invalid
+        OperationalSupportSystem-OperationalSupportSystem: 3.3.1. Prepare error response (HTTP 400 Bad Request with validation errors)
+    end
+    OperationalSupportSystem---UserBrowserClient: HTTP Response (Submission Confirmation with Ticket ID / Error Message)
