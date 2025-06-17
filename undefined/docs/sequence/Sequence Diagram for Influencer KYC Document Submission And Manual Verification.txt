@@ -1,0 +1,87 @@
+sequenceDiagram
+    actor "UI InfluencerPortal" as uiinfluencerportal
+    participant "Service Onboarding" as serviceonboarding
+    participant "Adapter FileStorage" as adapterfilestorage
+    participant "Platform OdooCore" as platformodoocore
+    actor "UI AdminBackend" as uiadminbackend
+    participant "Platform Notification" as platformnotification
+
+    note over uiinfluencerportal: Influencer initiates KYC document upload.
+    uiinfluencerportal-serviceonboarding: 1. submitKYCDocuments(documents, influencerId)
+    activate serviceonboarding
+
+    serviceonboarding-serviceonboarding: 1.1. validateKYCDocuments(documents)
+    note right of serviceonboarding: File validation includes checks for type, size, and clarity as per platform policy (REQ-IOKYC-004). If validation fails, an error is immediately returned to the influencer.
+
+    alt If validationResult.valid is false
+        serviceonboarding--uiinfluencerportal: 1.2.1. return submissionResponse(status='failed', message=validationResult.errors)
+    else Else (validationResult.valid is true)
+        serviceonboarding-adapterfilestorage: 1.3.1. storeSecureFile(document, {type: 'kyc', influencerId: influencerId})
+        activate adapterfilestorage
+        note right of adapterfilestorage: Secure storage of KYC documents (REQ-IOKYC-004). Performance consideration: Large file uploads can be time-consuming.
+        adapterfilestorage--serviceonboarding: return fileReference
+        deactivate adapterfilestorage
+
+        serviceonboarding-platformodoocore: 1.3.2. createOrUpdateKYCData(influencerId, status='inreview', documentReferences=[fileReference])
+        activate platformodoocore
+        platformodoocore--serviceonboarding: return kycDataId
+        deactivate platformodoocore
+    end
+    serviceonboarding--uiinfluencerportal: return submissionResponse(status, message, kycDataId)
+    deactivate serviceonboarding
+
+    note over uiadminbackend: Administrator reviews pending KYC submissions from a dedicated interface (REQ-IOKYC-011).
+    uiadminbackend-serviceonboarding: 2. getPendingKYCReviews(filterCriteria)
+    activate serviceonboarding
+    serviceonboarding-platformodoocore: 2.1. queryKYCData({status: 'inreview', ...filterCriteria})
+    activate platformodoocore
+    platformodoocore--serviceonboarding: return pendingSubmissionsList
+    deactivate platformodoocore
+    serviceonboarding--uiadminbackend: return displayPendingReviews(pendingSubmissionsList)
+    deactivate serviceonboarding
+
+    uiadminbackend-serviceonboarding: 3. getKYCSubmissionDetails(kycDataId)
+    activate serviceonboarding
+    serviceonboarding-platformodoocore: 3.1. getKYCDataRecord(kycDataId)
+    activate platformodoocore
+    platformodoocore--serviceonboarding: return kycRecordWithDocRefs
+    deactivate platformodoocore
+    serviceonboarding--uiadminbackend: return displayKYCDetails(kycRecordWithDocRefs)
+    deactivate serviceonboarding
+
+    uiadminbackend-adapterfilestorage: 4. retrieveSecureFile(documentReference)
+    activate adapterfilestorage
+    note right of adapterfilestorage: Administrator securely retrieves and views submitted documents (REQ-IOKYC-005).
+    adapterfilestorage--uiadminbackend: return documentFileContent
+    deactivate adapterfilestorage
+
+    note over uiadminbackend: Administrator makes a decision (Approve/Reject) based on document review.
+    uiadminbackend-serviceonboarding: 5. processKYCDecision(kycDataId, decision, adminNotes, adminUserId)
+    activate serviceonboarding
+
+    serviceonboarding-platformodoocore: 5.1. updateKYCData(kycDataId, status=decision, reviewerId=adminUserId, reviewNotes=adminNotes, reviewedAt=now())
+    activate platformodoocore
+    platformodoocore--serviceonboarding: return updateSuccess
+    deactivate platformodoocore
+
+    alt If decision is 'approved'
+        serviceonboarding-platformodoocore: 5.2.1. updateInfluencerProfile(influencerId, {kycStatus: 'approved'})
+        activate platformodoocore
+        note right of platformodoocore: Influencer profile status is updated based on KYC decision.
+        platformodoocore--serviceonboarding: return profileUpdateSuccess
+        deactivate platformodoocore
+    else If decision is 'rejected'
+        serviceonboarding-platformodoocore: 5.3.1. updateInfluencerProfile(influencerId, {kycStatus: 'rejected'})
+        activate platformodoocore
+        platformodoocore--serviceonboarding: return profileUpdateSuccess
+        deactivate platformodoocore
+    end
+
+    serviceonboarding-platformnotification: 5.4. sendKYCStatusUpdateNotification(influencerId, decision, adminNotes)
+    activate platformnotification
+    note right of platformnotification: Influencer is notified of the KYC decision outcome (REQ-IOKYC-010).
+    platformnotification--serviceonboarding: return notificationQueuedStatus
+    deactivate platformnotification
+
+    serviceonboarding--uiadminbackend: return decisionProcessedResponse(status)
+    deactivate serviceonboarding
