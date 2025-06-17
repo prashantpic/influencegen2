@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="InfluenceGen.Odoo.Shared.UI.Components.CampaignCard" owl="1">
+        <div class="o_campaign_card border rounded shadow-sm p-3 bg-white mb-3">
+            <t t-if="props.campaign.imageUrl">
+                <img t-att-src="props.campaign.imageUrl" class="o_campaign_card_image img-fluid rounded mb-3" alt="Campaign Image"/>
+            </t>
+            <div class="o_campaign_card_content">
+                <h3 class="o_campaign_card_title h5 mb-2" t-esc="props.campaign.name"/>
+                
+                <div class="mb-2">
+                    <StatusBadge
+                        statusText="props.campaign.status"
+                        statusType="props.campaign.statusType || 'default'"
+                        isPill="true"
+                    />
+                </div>
+
+                <div class="o_campaign_card_dates small text-muted mb-2">
+                    <span>Start: <t t-esc="getFormattedDate(props.campaign.startDate)"/></span> | 
+                    <span>End: <t t-esc="getFormattedDate(props.campaign.endDate)"/></span>
+                </div>
+
+                <t t-if="props.campaign.brandName">
+                    <div class="o_campaign_card_brand small mb-2">
+                        <strong>Brand:</strong> <t t-esc="props.campaign.brandName"/>
+                    </div>
+                </t>
+
+                <t t-if="props.campaign.descriptionShort">
+                    <p class="o_campaign_card_description small mb-2" t-esc="props.campaign.descriptionShort"/>
+                </t>
+
+                <div class="o_campaign_card_finance_info small mb-2">
+                    <t t-if="props.campaign.budgetFormatted">
+                        <div class="o_campaign_card_budget">
+                            <strong>Budget:</strong> <t t-esc="props.campaign.budgetFormatted"/>
+                        </div>
+                    </t>
+                    <t t-if="props.campaign.compensationModelText">
+                        <div class="o_campaign_card_compensation">
+                            <strong>Compensation:</strong> <t t-esc="props.campaign.compensationModelText"/>
+                        </div>
+                    </t>
+                </div>
+
+                <t t-if="props.campaign.targetAudienceSummary">
+                    <div class="o_campaign_card_audience small mb-3">
+                        <strong>Target Audience:</strong> <t t-esc="props.campaign.targetAudienceSummary"/>
+                    </div>
+                </t>
+
+                <button class="btn btn-primary btn-sm o_campaign_card_details_btn" t-on-click="onViewDetailsClick">
+                    View Details
+                </button>
+            </div>
+        </div>
+    </t>
+</templates>

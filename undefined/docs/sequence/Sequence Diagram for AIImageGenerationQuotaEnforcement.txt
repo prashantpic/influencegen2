@@ -1,0 +1,34 @@
+sequenceDiagram
+    actor "UI InfluencerPortal" as UIInfluencerPortal
+    participant "Service AI Odoo" as ServiceAIOdoo
+    participant "Service DataManagement" as ServiceDataManagement
+    participant "Platform OdooCore" as PlatformOdooCore
+
+    note left of UIInfluencerPortal: User initiates AI image generation request via the Influencer Portal UI, providing necessary parameters like prompt and model settings.
+    UIInfluencerPortal-ServiceAIOdoo: 1. processAIGenerationRequest(userId, prompt, params)
+    activate ServiceAIOdoo
+    note over ServiceAIOdoo: Service.AI.Odoo is responsible for the core logic of checking quota availability.
+
+    note over ServiceDataManagement: Service.DataManagement provides the configured quota limits (e.g., from Platform Settings or User Profile Extensions). Could be ir.config_parameter or a custom model.
+    ServiceAIOdoo-ServiceDataManagement: 1.1. getUserAIQuota(userId)
+    activate ServiceDataManagement
+    ServiceDataManagement--ServiceAIOdoo: quotaConfiguration {limit, period}
+    deactivate ServiceDataManagement
+
+    note over PlatformOdooCore: Platform.OdooCore provides access to AIUsageTrackingLog (or equivalent) to get the current usage count for the user.
+    ServiceAIOdoo-PlatformOdooCore: 1.2. getCurrentAIUsage(userId, quotaConfiguration.period)
+    activate PlatformOdooCore
+    PlatformOdooCore--ServiceAIOdoo: currentUsageCount
+    deactivate PlatformOdooCore
+
+    alt 1.3.1: currentUsageCount n        note over ServiceAIOdoo: Quota available. Proceed to initiate AI generation.
+        note right of ServiceAIOdoo: If quota is available, the service would proceed to trigger the actual AI image generation process (e.g., as detailed in SEQ-AIG-001). This diagram focuses only on the quota check.
+    else 1.3.2: Quota Exceeded
+        note right of ServiceAIOdoo: If quota is exceeded, the user is informed, and the generation process is not initiated.
+        ServiceAIOdoo-PlatformOdooCore: 1.3.2.1. logEvent('AI Quota Exceeded', {userId, quota, usage})
+    end
+
+    ServiceAIOdoo--UIInfluencerPortal: generationStatus {accepted: boolean, message: string}
+    deactivate ServiceAIOdoo
+
+    UIInfluencerPortal-UIInfluencerPortal: 2. displayResultToUser(generationStatus.message)
