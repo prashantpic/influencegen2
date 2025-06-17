@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="InfluenceGen.Odoo.Shared.UI.Components.MetricTile" owl="1">
+        <div class="o_metric_tile card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-start">
+                    <t t-if="props.iconClass">
+                        <div class="o_metric_tile_icon_wrapper me-3">
+                            <i t-att-class="props.iconClass + ' fa-2x text-primary'"/>
+                        </div>
+                    </t>
+                    <div class="flex-grow-1">
+                        <div class="o_metric_tile_label text-muted small text-uppercase" t-esc="props.label"/>
+                        <div class="o_metric_tile_value_container d-flex align-items-baseline">
+                            <span class="o_metric_tile_value h3 mb-0 fw-bold" t-esc="props.value"/>
+                            <t t-if="props.unit">
+                                <span class="o_metric_tile_unit ms-1 small" t-esc="props.unit"/>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+                <div class="o_metric_tile_trend_info_container mt-2">
+                    <t t-if="props.trend || props.trendValue">
+                        <div class="o_metric_tile_trend d-flex align-items-center small">
+                            <t t-if="props.trend">
+                                <i t-att-class="trendIconClass + ' me-1'"/>
+                            </t>
+                            <t t-if="props.trendValue">
+                                <span class="o_metric_tile_trend_value" t-esc="props.trendValue"/>
+                            </t>
+                        </div>
+                    </t>
+                    <t t-if="props.infoText">
+                        <div class="o_metric_tile_info small text-muted mt-1" t-esc="props.infoText"/>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

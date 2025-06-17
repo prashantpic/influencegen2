@@ -1,0 +1,73 @@
+// SCSS styles for the StatusBadge component
+
+.o_status_badge {
+    display: inline-block;
+    padding: $ig-badge-padding-y $ig-badge-padding-x; // e.g., .35em .65em
+    font-size: $ig-font-size-sm; // e.g., 75%
+    font-weight: $ig-font-weight-bold; // e.g., 700
+    line-height: 1;
+    color: $ig-white; // Default text color, often overridden
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: $ig-border-radius; // e.g., .25rem
+
+    // Pill shape
+    &--pill {
+        padding-right: $ig-badge-pill-padding-x; // e.g., .6em
+        padding-left: $ig-badge-pill-padding-x; // e.g., .6em
+        border-radius: $ig-badge-pill-border-radius; // e.g., 10rem or 50rem
+    }
+
+    // Type modifiers using shared color variables
+    &--default {
+        background-color: $ig-secondary-color; // Or a specific $ig-default-color
+        color: $ig-white;
+    }
+    &--primary {
+        background-color: $ig-primary-color;
+        color: $ig-white;
+    }
+    &--secondary {
+        background-color: $ig-secondary-color;
+        color: $ig-white;
+    }
+    &--success {
+        background-color: $ig-success-color;
+        color: $ig-white;
+    }
+    &--danger {
+        background-color: $ig-danger-color;
+        color: $ig-white;
+    }
+    &--warning {
+        background-color: $ig-warning-color;
+        color: $ig-black; // Or a dark text color for better contrast on yellow
+    }
+    &--info {
+        background-color: $ig-info-color;
+        color: $ig-white;
+    }
+    &--neutral {
+        background-color: $ig-neutral-color; // Assuming $ig-neutral-color like a grey
+        color: $ig-text-color; // Or $ig-white depending on neutral color
+    }
+    &--light { // Added as an example for more variety
+        background-color: $ig-light-color; // e.g. a light grey
+        color: $ig-dark-color; // e.g. dark text
+    }
+    &--dark { // Added as an example for more variety
+        background-color: $ig-dark-color; // e.g. a dark grey or black
+        color: $ig-white;
+    }
+
+    // Ensure link styles are removed if the badge is inside an <a> tag
+    a.o_status_badge {
+        &:hover,
+        &:focus {
+            text-decoration: none;
+            // Optionally slightly change background on hover/focus for interactivity
+            // filter: brightness(90%);
+        }
+    }
+}
