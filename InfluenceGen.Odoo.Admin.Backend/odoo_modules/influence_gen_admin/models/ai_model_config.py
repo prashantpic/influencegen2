@@ -2,7 +2,7 @@ from odoo import api, fields, models
 
 class AiModelConfig(models.Model):
     _name = 'influence_gen.ai_model_config'
-    _description = "InfluenceGen AI Model Configuration"
+    _description = 'InfluenceGen AI Model Configuration'
 
     name = fields.Char(
         required=True,

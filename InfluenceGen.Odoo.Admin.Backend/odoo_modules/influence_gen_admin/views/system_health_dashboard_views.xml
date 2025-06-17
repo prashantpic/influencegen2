@@ -1,75 +1,81 @@
 <odoo>
     <data>
-        <record id="view_influence_gen_system_health_dashboard" model="ir.ui.view">
+        <!-- System Health Dashboard View (Placeholder or Client Action Trigger) -->
+        <record id="influence_gen_system_health_dashboard_view" model="ir.ui.view">
             <field name="name">influence.gen.system.health.dashboard</field>
-            <field name="model">ir.actions.client</field> <!-- Using a client action model for custom QWeb dashboard -->
-            <field name="tag">influence_gen_admin.system_health_dashboard_tag</field> <!-- Custom tag for JS widget -->
+            <!-- 
+                Option 1: Basic Odoo Dashboard (limited for real-time external data)
+                <field name="model">ir.actions.act_window</field> 
+                <field name="type">ir.actions.client</field>
+                <field name="tag">influence_gen_system_health_dashboard_client</field> 
+            -->
+            <!-- Option 2: Using a QWeb view rendered by controller (more flexible) -->
+            <!-- For this option, the action would typically call a controller route that renders a qweb template -->
+            <!-- This example uses a basic dashboard structure. A client action would be more powerful for dynamic data. -->
+            <field name="model">res.config.settings</field> <!-- Dummy model, as dashboards don't usually have their own model -->
             <field name="arch" type="xml">
                 <dashboard>
-                    <!-- This dashboard will be rendered by a custom QWeb template and JavaScript. -->
-                    <!-- The actual content will be fetched via the controller. -->
-                    <group string="System Health Overview" col="2">
-                         <div id="api_error_rate_placeholder" class="o_box">
-                            <h3>API Error Rates</h3>
-                            <p>Loading API Error Rate data...</p>
-                        </div>
-                         <div id="n8n_queue_length_placeholder" class="o_box">
-                            <h3>N8N Workflow Queues</h3>
-                            <p>Loading N8N Queue Length data...</p>
-                        </div>
-                         <div id="ai_service_availability_placeholder" class="o_box">
-                            <h3>AI Service Availability</h3>
-                            <p>Loading AI Service Status...</p>
-                        </div>
-                         <div id="server_resource_utilization_placeholder" class="o_box">
-                            <h3>Server Resource Utilization</h3>
-                            <p>Loading Server Resource data (CPU, Memory, Disk)...</p>
-                        </div>
-                         <div id="db_performance_placeholder" class="o_box">
-                            <h3>Database Performance</h3>
-                            <p>Loading DB Performance Metrics...</p>
-                        </div>
+                    <group>
+                        <group string="API Health (Placeholder)">
+                            <widget name="web_kpi" title="API Error Rate" value="'N/A'"/>
+                            <widget name="web_kpi" title="Avg. API Latency" value="'N/A'"/>
+                        </group>
+                        <group string="N8N Workflow Health (Placeholder)">
+                            <widget name="web_kpi" title="Queue Length" value="'N/A'"/>
+                            <widget name="web_kpi" title="Failed Workflows (24h)" value="'N/A'"/>
+                        </group>
                     </group>
+                    <group>
+                         <group string="AI Service Status (Placeholder)">
+                            <widget name="web_kpi" title="Image Gen. Service" value="'N/A'"/>
+                        </group>
+                        <group string="Database Health (Placeholder)">
+                            <widget name="web_kpi" title="Active Connections" value="'N/A'"/>
+                            <widget name="web_kpi" title="Slow Queries (1h)" value="'N/A'"/>
+                        </group>
+                    </group>
+                    <view type="graph" ref="influence_gen_admin.placeholder_system_health_graph"/>
                 </dashboard>
             </field>
         </record>
 
-        <!-- Client Action to render the dashboard -->
-        <record id="action_influence_gen_system_health_dashboard_client" model="ir.actions.client">
-            <field name="name">System Health Dashboard</field>
-            <field name="tag">influence_gen_admin.system_health_dashboard_tag</field>
+        <!-- Placeholder graph view for the dashboard -->
+        <record id="placeholder_system_health_graph" model="ir.ui.view">
+            <field name="name">placeholder.system.health.graph</field>
+            <field name="model">influence_gen.maintenance_window</field> <!-- Using an existing model for placeholder structure -->
+            <field name="arch" type="xml">
+                <graph string="System Metric Over Time (Placeholder)">
+                    <field name="start_datetime" type="row" interval="hour"/>
+                    <field name="id" type="measure" operator="count" string="Events"/>
+                </graph>
+            </field>
         </record>
 
-
-        <!-- Action Window to open the dashboard (can also be client action) -->
+        <!-- System Health Dashboard Action Window -->
         <record id="action_influence_gen_system_health_dashboard" model="ir.actions.act_window">
             <field name="name">System Health Dashboard</field>
-            <!--
-                If using a custom model for the dashboard, set res_model here.
-                For pure QWeb/JS dashboard, a client action might be more direct.
-                Let's assume for now it's a client action.
-            -->
+            <!-- If using a client action that renders its own template:
             <field name="res_model">ir.actions.client</field>
-            <field name="view_mode">form</field> <!-- Not really a form, but dashboard tag is used -->
-            <field name="target">main</field>
-             <field name="tag">influence_gen_admin.system_health_dashboard_tag</field>
+            <field name="tag">YOUR_CLIENT_ACTION_TAG_HERE</field> -->
+            <!-- If using the Odoo dashboard view type for a (dummy) model: -->
+            <field name="res_model">res.config.settings</field> <!-- Or your dummy model -->
+            <field name="view_mode">dashboard</field>
+            <field name="view_id" ref="influence_gen_system_health_dashboard_view"/>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     System Health Dashboard
                 </p><p>
-                    Monitor key system health metrics and operational status.
-                    Data is fetched dynamically.
+                    This dashboard displays key system health metrics.
+                    (Data is currently placeholder and requires integration with monitoring systems or controllers.)
                 </p>
             </field>
         </record>
 
-        <!--
-        TODO: Create a JS file (e.g., static/src/js/system_health_dashboard.js)
-        and a QWeb template (e.g., static/src/xml/system_health_dashboard_templates.xml)
-        to handle the rendering and data fetching for the 'influence_gen_admin.system_health_dashboard_tag'.
-        The JS would call the controller endpoint '/influence_gen/admin/system_health_data'.
-        This part is more complex and involves frontend assets not fully detailed in the current SDS scope for pure XML generation.
+        <!-- Note: A true dynamic system health dashboard often requires:
+             1. A controller method (like get_system_health_data) to fetch data.
+             2. A client-side JavaScript action (tagged via ir.actions.client) to call the controller
+                and render the data using a QWeb template or charting libraries.
+             The example above provides a basic Odoo <dashboard> structure with placeholders.
         -->
-
     </data>
 </odoo>

@@ -5,7 +5,7 @@
             <field name="name">influence.gen.legal.document.version.tree</field>
             <field name="model">influence_gen.legal_document_version</field>
             <field name="arch" type="xml">
-                <tree string="Legal Document Versions" decoration-bf="is_active == True">
+                <tree string="Legal Document Versions" decoration-bf="is_active==True">
                     <field name="document_type"/>
                     <field name="version"/>
                     <field name="effective_date"/>
@@ -21,8 +21,6 @@
             <field name="arch" type="xml">
                 <form string="Legal Document Version">
                     <sheet>
-                         <widget name="web_ribbon" title="Active" bg_color="bg-success"
-                                attrs="{'invisible': [('is_active', '=', False)]}"/>
                         <group>
                             <group>
                                 <field name="document_type"/>
@@ -30,16 +28,16 @@
                             </group>
                             <group>
                                 <field name="effective_date"/>
-                                <field name="is_active" widget="boolean_toggle"/>
+                                <field name="is_active"/>
+                                <field name="attachment_id" widget="many2one_binary" filename="attachment_filename"/>
+                                <field name="attachment_filename" invisible="1"/>
                             </group>
                         </group>
-                        <group string="Content">
-                            <field name="content" nolabel="1" widget="html"/>
-                        </group>
-                        <group string="Attachment">
-                            <field name="attachment_id" widget="many2one_binary" filename="attachment_filename"/>
-                            <field name="attachment_filename" invisible="1"/>
-                        </group>
+                        <notebook>
+                            <page string="Content">
+                                <field name="content" widget="html"/>
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>
@@ -52,9 +50,9 @@
             <field name="view_mode">tree,form</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    Create a new Legal Document Version
+                    Create a new Legal Document Version.
                 </p><p>
-                    Manage versions of Terms of Service, Privacy Policy, etc.
+                    Manage versions of your Terms of Service and Privacy Policy.
                 </p>
             </field>
         </record>

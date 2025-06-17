@@ -1,22 +1,9 @@
 <odoo>
     <data noupdate="1">
-        <!--
-            The ir.module.category 'module_category_influence_gen_administration'
-            is defined in 'security/influence_gen_admin_groups.xml' with noupdate="1".
-            This file can be used for other noupdate="1" data, like assigning
-            default users to groups.
-        -->
-
-        <!--
-            Assign the default Odoo Administrator (Superuser) to the
-            InfluenceGen Platform Administrator group.
-            This ensures that the main admin user has access to InfluenceGen
-            admin functionalities upon module installation.
-            The group 'group_influence_gen_platform_admin' itself is defined in
-            'security/influence_gen_admin_groups.xml'.
-        -->
-        <record id="influence_gen_admin.group_influence_gen_platform_admin" model="res.groups">
-            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+        <record id="module_category_influence_gen_administration" model="ir.module.category">
+            <field name="name">InfluenceGen</field>
+            <field name="description">Manages all aspects of the InfluenceGen Platform.</field>
+            <field name="sequence">25</field>
         </record>
     </data>
 </odoo>

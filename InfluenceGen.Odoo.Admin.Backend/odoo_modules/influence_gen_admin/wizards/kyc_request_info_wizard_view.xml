@@ -4,14 +4,16 @@
             <field name="name">influence.gen.kyc.request.info.wizard.form</field>
             <field name="model">influence_gen.kyc_request_info_wizard</field>
             <field name="arch" type="xml">
-                <form string="Request More KYC Information">
-                    <group>
-                        <field name="kyc_submission_id" readonly="1" options="{'no_open': True}"/>
-                        <field name="influencer_profile_id" related="kyc_submission_id.influencer_profile_id" readonly="1" string="Influencer"/>
-                    </group>
-                    <group>
-                        <field name="message_to_influencer" nolabel="1" placeholder="Clearly state what additional information or clarification is needed from the influencer..."/>
-                    </group>
+                <form string="Request More Information for KYC">
+                    <sheet>
+                        <group>
+                            <field name="kyc_submission_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="influencer_name" readonly="1" string="Influencer"/> <!-- Assuming influencer_name is a related field on the wizard -->
+                        </group>
+                        <group string="Message to Influencer">
+                            <field name="message_to_influencer" nolabel="1" placeholder="Clearly state what additional information or clarification is needed from the influencer..."/>
+                        </group>
+                    </sheet>
                     <footer>
                         <button name="action_send_request" string="Send Request" type="object" class="btn-primary"/>
                         <button string="Cancel" class="btn-secondary" special="cancel"/>
@@ -21,12 +23,12 @@
         </record>
 
         <record id="action_influence_gen_kyc_request_info_wizard" model="ir.actions.act_window">
-            <field name="name">Request More KYC Information</field>
+            <field name="name">Request More Information</field>
             <field name="res_model">influence_gen.kyc_request_info_wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
-            <!-- Context is typically passed by the button calling this action -->
-            <!-- e.g., context="{'default_kyc_submission_id': active_id}" -->
+            <!-- context is typically passed from the button that opens this wizard -->
+            <!-- e.g. context="{'default_kyc_submission_id': active_id}" -->
         </record>
     </data>
 </odoo>

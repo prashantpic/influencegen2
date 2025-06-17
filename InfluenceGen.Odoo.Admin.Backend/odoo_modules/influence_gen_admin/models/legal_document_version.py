@@ -3,7 +3,7 @@ from odoo.exceptions import ValidationError
 
 class LegalDocumentVersion(models.Model):
     _name = 'influence_gen.legal_document_version'
-    _description = "InfluenceGen Legal Document Version"
+    _description = 'InfluenceGen Legal Document Version'
     _order = 'document_type, effective_date desc'
 
     document_type = fields.Selection(
@@ -34,7 +34,9 @@ class LegalDocumentVersion(models.Model):
     )
     attachment_id = fields.Many2one(
         'ir.attachment',
-        string="Document File"
+        string="Document File",
+        # Store as binary in db for simplicity unless large files are expected
+        # attachment=True #This is for fields.Binary not Many2one
     )
 
     @api.constrains('is_active', 'document_type')
@@ -47,4 +49,5 @@ class LegalDocumentVersion(models.Model):
                     ('is_active', '=', True)
                 ]
                 if self.search_count(domain) > 0:
-                    raise ValidationError(f"Only one version of {record.display_name} for document type '{record.document_type}' can be active at a time.")
+                    doc_type_label = dict(self._fields['document_type'].selection).get(record.document_type)
+                    raise ValidationError(f"Only one version of {doc_type_label} can be active at a time.")

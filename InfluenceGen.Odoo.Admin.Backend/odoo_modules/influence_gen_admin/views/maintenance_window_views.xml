@@ -5,7 +5,7 @@
             <field name="name">influence.gen.maintenance.window.tree</field>
             <field name="model">influence_gen.maintenance_window</field>
             <field name="arch" type="xml">
-                <tree string="Maintenance Windows" decoration-muted="status == 'cancelled'" decoration-success="status == 'completed'" decoration-info="status == 'in_progress'">
+                <tree string="Maintenance Windows" decoration-info="status=='planned'" decoration-warning="status=='in_progress'" decoration-success="status=='completed'" decoration-muted="status=='cancelled'">
                     <field name="name"/>
                     <field name="start_datetime"/>
                     <field name="end_datetime"/>
@@ -23,24 +23,22 @@
                 <form string="Maintenance Window">
                     <header>
                         <button name="action_send_notification" string="Send Notification" type="object"
-                                attrs="{'invisible': [('notify_users', '=', False)]}"
-                                class="oe_highlight"
-                                groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                                class="oe_highlight" attrs="{'invisible': [('status', '!=', 'planned')]}"/>
                         <button name="action_start_maintenance" string="Start Maintenance" type="object"
-                                attrs="{'invisible': [('status', '!=', 'planned')]}"
-                                groups="influence_gen_admin.group_influence_gen_platform_admin"/>
-                        <button name="action_complete_maintenance" string="Complete" type="object"
-                                attrs="{'invisible': [('status', '!=', 'in_progress')]}"
-                                groups="influence_gen_admin.group_influence_gen_platform_admin"/>
-                        <button name="action_cancel_maintenance" string="Cancel" type="object"
-                                attrs="{'invisible': [('status', 'in', ['completed', 'cancelled'])]}"
-                                groups="influence_gen_admin.group_influence_gen_platform_admin"/>
+                                class="oe_highlight" attrs="{'invisible': [('status', '!=', 'planned')]}"/>
+                        <button name="action_complete_maintenance" string="Complete Maintenance" type="object"
+                                class="oe_highlight" attrs="{'invisible': [('status', '!=', 'in_progress')]}"/>
+                        <button name="action_cancel_maintenance" string="Cancel Maintenance" type="object"
+                                attrs="{'invisible': [('status', 'in', ['completed', 'cancelled'])]}"/>
                         <field name="status" widget="statusbar" statusbar_visible="planned,in_progress,completed,cancelled"/>
                     </header>
                     <sheet>
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1><field name="name" placeholder="e.g. Server Upgrade"/></h1>
+                        </div>
                         <group>
                             <group>
-                                <field name="name"/>
                                 <field name="start_datetime"/>
                                 <field name="end_datetime"/>
                             </group>
@@ -49,10 +47,11 @@
                             </group>
                         </group>
                         <group string="Description/Impact">
-                            <field name="description" nolabel="1"/>
+                            <field name="description" nolabel="1" placeholder="Details about the maintenance and expected impact..."/>
                         </group>
-                        <group string="Notification Message" attrs="{'invisible': [('notify_users', '=', False)]}">
-                            <field name="notification_message" nolabel="1" placeholder="Default message will be used if left empty."/>
+                        <group string="Notification Message (if notify users is checked)">
+                            <field name="notification_message" nolabel="1" placeholder="Custom message for users. If empty, a default message will be used."
+                                   attrs="{'invisible': [('notify_users', '=', False)]}"/>
                         </group>
                     </sheet>
                 </form>
@@ -64,9 +63,9 @@
             <field name="name">influence.gen.maintenance.window.calendar</field>
             <field name="model">influence_gen.maintenance_window</field>
             <field name="arch" type="xml">
-                <calendar string="Maintenance Windows" date_start="start_datetime" date_stop="end_datetime" mode="month"
-                          color="status">
+                <calendar string="Maintenance Windows" date_start="start_datetime" date_stop="end_datetime" display="name" color="status">
                     <field name="name"/>
+                    <field name="status"/>
                 </calendar>
             </field>
         </record>
@@ -78,9 +77,9 @@
             <field name="view_mode">tree,form,calendar</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    Schedule a new Maintenance Window
+                    Schedule a new Maintenance Window.
                 </p><p>
-                    Plan and communicate system downtimes or maintenance periods.
+                    Manage planned system downtimes and notify users.
                 </p>
             </field>
         </record>

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-
 from odoo import http
 from odoo.http import request
 from odoo.exceptions import AccessError
@@ -11,97 +10,147 @@ _logger = logging.getLogger(__name__)
 class InfluenceGenAdminController(http.Controller):
 
     def _check_admin_access(self):
-        """ Checks if the current user has Platform Administrator rights. """
+        """ Helper method to check if the current user is a Platform Administrator. """
         if not request.env.user.has_group('influence_gen_admin.group_influence_gen_platform_admin'):
-            _logger.warning(
-                "Unauthorized access attempt to InfluenceGen Admin controller by user %s (ID: %s)",
-                request.env.user.name, request.env.user.id
-            )
-            raise AccessError("You do not have sufficient rights to access this resource.")
+            raise AccessError("Access denied. You must be a Platform Administrator to perform this action.")
 
     @http.route('/influence_gen/admin/system_health_data', type='json', auth='user', methods=['POST'], csrf=False)
     def get_system_health_data(self, **kwargs):
-        self._check_admin_access()
-        # Placeholder logic for fetching system health data
-        # In a real scenario, this would involve:
-        # 1. Querying internal Odoo models (e.g., cron job statuses, specific queue models if they exist)
-        # 2. Making API calls to external monitoring systems (Prometheus, Datadog, N8N API for queue length)
-        #    - This requires secure credential management.
-        # 3. Aggregating this data.
+        """
+        Fetches system health metrics.
+        This is a placeholder and needs actual integration with monitoring systems.
+        """
+        try:
+            self._check_admin_access()
+        except AccessError as e:
+            return {'error': str(e), 'status': 'access_denied'}
+        except Exception as e:
+            _logger.error(f"Error checking admin access in get_system_health_data: {e}")
+            return {'error': 'Internal server error during access check.', 'status': 'error'}
 
-        _logger.info("Fetching system health data for admin dashboard by user %s", request.env.user.name)
-
+        # Placeholder data - In a real scenario, this would involve:
+        # - Querying internal Odoo models for specific metrics
+        # - Making API calls to external monitoring systems (e.g., Prometheus, Datadog)
+        # - Checking status of dependent services (e.g., N8N, AI service endpoints)
+        
         # Example placeholder data structure
         health_data = {
-            'api_error_rate': {'value': 0.02, 'unit': '%', 'status': 'normal'}, # Example: 2% error rate
-            'n8n_workflow_main_queue_length': {'value': 5, 'unit': 'items', 'status': 'normal'},
-            'n8n_workflow_image_gen_queue_length': {'value': 2, 'unit': 'items', 'status': 'normal'},
-            'ai_service_stability_ai': {'name': 'Stability AI', 'status': 'operational', 'last_check': '2023-10-27T10:00:00Z'},
-            'ai_service_custom_lora': {'name': 'Custom LoRA Service', 'status': 'degraded_performance', 'last_check': '2023-10-27T09:55:00Z'},
-            'odoo_server_cpu_avg_1m': {'value': 15, 'unit': '%', 'status': 'normal'},
-            'odoo_server_memory_usage': {'value': 60, 'unit': '%', 'status': 'normal'},
-            'odoo_db_active_connections': {'value': 25, 'unit': 'connections', 'status': 'normal'},
-            'odoo_db_slow_queries_last_hr': {'value': 3, 'unit': 'queries', 'status': 'warning'},
-            'disk_space_app_server_root': {'value': 75, 'unit': '% used', 'status': 'normal'},
-            'disk_space_db_server_data': {'value': 85, 'unit': '% used', 'status': 'warning'},
-            'failed_cron_jobs_last_24h': {'value': 1, 'unit': 'jobs', 'status': 'warning'},
+            'api_status': {
+                'overall': 'operational', # or 'degraded', 'outage'
+                'error_rate_percentage': 0.1, # Example: 0.1%
+                'avg_latency_ms': 150, # Example: 150ms
+            },
+            'n8n_workflow_status': {
+                'queue_length': 5, # Example
+                'failed_workflows_last_24h': 1, # Example
+                'service_status': 'operational',
+            },
+            'ai_service_status': {
+                'image_generation_api': 'operational',
+                'model_loading_time_avg_ms': 5000, # Example
+            },
+            'database_performance': {
+                'active_connections': 25,
+                'slow_queries_last_hour': 0,
+                'db_size_gb': 10.5, # Example
+            },
+            'server_resources': {
+                'odoo_cpu_usage_percentage': 30,
+                'odoo_memory_usage_percentage': 60,
+                'n8n_cpu_usage_percentage': 20, # If monitored
+                'n8n_memory_usage_percentage': 40, # If monitored
+            },
+            'last_updated': http.request.env['ir.fields.datetime'].now().isoformat(),
         }
 
-        # Simulate fetching data, add some dynamic element
-        # In a real scenario, you'd integrate with monitoring tools
-        # For example, to get N8N queue length, you might call N8N's API if available
-        # or check a shared database/queue broker if N8N writes metrics there.
-        # For AI service availability, you might ping an endpoint or check a status page.
+        # Simulate fetching or error
+        # if some_condition_fails:
+        #     _logger.error("Failed to fetch some critical health metric.")
+        #     return {'error': 'Failed to retrieve complete health data.', 'status': 'partial_error', 'data': health_data_partial}
 
-        return health_data
+        _logger.info("System health data requested by admin.")
+        return {'status': 'success', 'data': health_data}
 
     @http.route('/influence_gen/admin/performance_dashboard_data', type='json', auth='user', methods=['POST'], csrf=False)
     def get_admin_performance_dashboard_data(self, **kwargs):
-        self._check_admin_access()
-        _logger.info("Fetching admin performance dashboard data by user %s", request.env.user.name)
+        """
+        Fetches data for the admin performance dashboard.
+        This would typically aggregate data from various InfluenceGen models.
+        """
+        try:
+            self._check_admin_access()
+        except AccessError as e:
+            return {'error': str(e), 'status': 'access_denied'}
+        except Exception as e:
+            _logger.error(f"Error checking admin access in get_admin_performance_dashboard_data: {e}")
+            return {'error': 'Internal server error during access check.', 'status': 'error'}
 
-        # Fetch data for the admin performance dashboard.
-        # This could involve querying:
-        # - CampaignPerformanceMV (if it's a model: request.env['influence_gen.campaign.performance.mv'].search_read(...))
-        # - Aggregating from influence_gen.campaign, influence_gen.campaign_application, etc.
-
-        # Example: Aggregate campaign statuses
-        campaign_obj = request.env['influence_gen.campaign']
-        status_counts = campaign_obj.read_group(
-            domain=[('active', '=', True)], # Example domain
-            fields=['status'],
-            groupby=['status'],
-            lazy=False
-        )
+        # Placeholder logic for fetching data.
+        # In a real application, you would query models like:
+        # - influence_gen.campaign
+        # - influence_gen.campaign_application
+        # - influence_gen.content_submission
+        # - influence_gen.payment_record
+        # - A Materialized View like 'CampaignPerformanceMV' if it exists and is defined in Odoo.
         
-        # Example: Total active influencers
-        influencer_obj = request.env['influence_gen.influencer_profile']
-        active_influencers_count = influencer_obj.search_count([('account_status', '=', 'active')]) # Assuming from SDS
-
-        # Example: Recent KYC approvals
-        kyc_data_obj = request.env['influence_gen.kyc_data']
-        recent_kyc_approvals = kyc_data_obj.search_count([
-            ('verification_status', '=', 'approved'),
-            ('reviewed_at', '>=', fields.Datetime.subtract(fields.Datetime.now(), days=7)) # Requires 'fields' import if used
+        # Example: Number of active campaigns
+        active_campaigns = request.env['influence_gen.campaign'].search_count([
+            ('status', 'in', ['published', 'open_for_applications', 'in_execution'])
         ])
+        
+        # Example: Total budget of active campaigns
+        active_campaigns_records = request.env['influence_gen.campaign'].search([
+            ('status', 'in', ['published', 'open_for_applications', 'in_execution'])
+        ])
+        total_budget_active = sum(active_campaigns_records.mapped('budget'))
+        
+        # Example: Total influencers registered (assuming a way to count them, e.g., from influencer_profile)
+        total_influencers = request.env['influence_gen.influencer_profile'].search_count([('active','=',True)]) # or based on kyc_status etc.
+
+        # Example: Pending KYC submissions
+        pending_kyc = request.env['influence_gen.kyc_data'].search_count([('verification_status', '=', 'pending')])
+
+        # Example: Campaign status distribution
+        campaign_statuses = request.env['influence_gen.campaign'].read_group(
+            domain=[],
+            fields=['status'],
+            groupby=['status']
+        )
+        campaign_status_data = {item['status']: item['status_count'] for item in campaign_statuses}
 
 
-        # Placeholder data structure
-        performance_data = {
-            'total_campaigns': campaign_obj.search_count([]),
-            'campaign_statuses': [{'status': s['status'], 'count': s['status_count']} for s in status_counts],
-            'active_influencers': active_influencers_count,
-            'kyc_approvals_last_7_days': recent_kyc_approvals,
-            'total_payments_processed_mtd': {'amount': 12500.00, 'currency': 'USD', 'count': 15}, # Example
-            'ai_images_generated_mtd': {'count': 1200}, # Example
-            # Add more aggregated data as per REQ-2-012
-            'aggregated_campaign_performance': [
-                {'campaign_name': 'Summer Splash', 'goal_completion': 0.85, 'budget_vs_actual': 0.9},
-                {'campaign_name': 'Winter Warmup', 'goal_completion': 0.70, 'budget_vs_actual': 1.1},
-            ], # Placeholder
-            'influencer_contribution_summary': [
-                {'influencer_name': 'Influencer A', 'approved_submissions': 10, 'total_engagement': 5000},
-                {'influencer_name': 'Influencer B', 'approved_submissions': 8, 'total_engagement': 4200},
-            ] # Placeholder
+        dashboard_data = {
+            'key_metrics': {
+                'active_campaigns': active_campaigns,
+                'total_budget_active_campaigns': total_budget_active,
+                'total_influencers': total_influencers,
+                'pending_kyc_submissions': pending_kyc,
+            },
+            'campaign_summary': {
+                'status_distribution': campaign_status_data,
+                # Add more like: campaigns_by_type, top_performing_campaigns (placeholder)
+            },
+            'influencer_activity': {
+                'new_signups_last_30d': 0, # Placeholder
+                'active_influencers_in_campaigns': 0, # Placeholder
+            },
+            'financial_overview': {
+                'total_payouts_pending': 0.0, # Placeholder, sum from payment_record
+                'total_paid_last_30d': 0.0, # Placeholder
+            },
+            'last_updated': http.request.env['ir.fields.datetime'].now().isoformat(),
         }
-        return performance_data
+        
+        _logger.info("Admin performance dashboard data requested.")
+        return {'status': 'success', 'data': dashboard_data}
+
+    # Example of a route that could render a QWeb template for a dashboard component
+    # @http.route('/influence_gen/admin/widgets/some_widget', type='http', auth='user', website=False)
+    # def render_some_widget(self, **kwargs):
+    #     try:
+    #         self._check_admin_access()
+    #     except AccessError:
+    #         return request.make_response("Access Denied", status=403)
+    #
+    #     widget_data = {'title': 'My Dynamic Widget', 'value': 123} # Fetch actual data
+    #     return request.render('influence_gen_admin.qweb_template_for_widget', widget_data)

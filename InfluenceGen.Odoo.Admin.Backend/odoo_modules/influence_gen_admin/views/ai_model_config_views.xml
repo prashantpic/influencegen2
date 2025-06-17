@@ -20,21 +20,19 @@
             <field name="arch" type="xml">
                 <form string="AI Model Configuration">
                     <sheet>
-                        <widget name="web_ribbon" title="Archived" bg_color="bg-danger"
-                                attrs="{'invisible': [('is_active', '=', True)]}"/>
                         <group>
                             <group>
                                 <field name="name"/>
                                 <field name="model_type"/>
-                                <field name="is_active" widget="boolean_toggle"/>
+                                <field name="is_active"/>
                             </group>
                             <group>
-                                <field name="trigger_keywords" placeholder="keyword1, keyword2"/>
-                                <field name="api_endpoint_info" placeholder="e.g., n8n_workflow_id_modelX"/>
+                                <field name="trigger_keywords"/>
+                                <field name="api_endpoint_info"/>
                             </group>
                         </group>
                         <group string="Description">
-                            <field name="description" nolabel="1"/>
+                             <field name="description" nolabel="1"/>
                         </group>
                         <group string="Default Parameters (JSON)">
                             <field name="default_params_json" nolabel="1" placeholder='{"sampler": "euler_a", "scheduler": "karras"}'/>
@@ -51,9 +49,9 @@
             <field name="view_mode">tree,form</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    Create a new AI Model Configuration
+                    Create a new AI Model Configuration.
                 </p><p>
-                    Manage the AI models available for image generation, like Flux LoRAs or Stable Diffusion models.
+                    Define AI models available for image generation, their types, trigger keywords, and API identifiers.
                 </p>
             </field>
         </record>
